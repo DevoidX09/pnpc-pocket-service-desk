@@ -10,20 +10,45 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$current_user = wp_get_current_user();
-$tickets      = PNPC_PSD_Ticket::get_by_user( $current_user->ID, array( 'limit' => 5 ) );
-$open_count   = count( array_filter( $tickets, function( $ticket ) {
-	return 'open' === $ticket->status || 'in-progress' === $ticket->status;
-} ) );
+$pnpc_current_user = wp_get_current_user();
+$tickets           = PNPC_PSD_Ticket::get_by_user( $pnpc_current_user->ID, array( 'limit' => 5 ) );
+$open_count        = count(
+	array_filter(
+		$tickets,
+		function ( $ticket ) {
+			return 'open' === $ticket->status || 'in-progress' === $ticket->status;
+		}
+	)
+);
 ?>
 
 <div class="pnpc-psd-dashboard">
-	<h2>
-		<?php
-		/* translators: %s: user display name */
-		printf( esc_html__( 'Welcome, %s!', 'pnpc-pocket-service-desk' ), esc_html( $current_user->display_name ) );
-		?>
-	</h2>
+	<?php
+	// Embed profile block.
+	$profile_image  = get_user_meta( $pnpc_current_user->ID, 'pnpc_psd_profile_image', true );
+	$default_avatar = get_avatar_url( $pnpc_current_user->ID );
+	?>
+	<div class="pnpc-psd-profile-block">
+		<div class="pnpc-psd-profile-image">
+			<img id="dashboard-profile-image" src="<?php echo esc_url( $profile_image ? $profile_image : $default_avatar ); ?>" alt="<?php esc_attr_e( 'Profile Image', 'pnpc-pocket-service-desk' ); ?>" />
+		</div>
+		<div class="pnpc-psd-profile-info">
+			<h2>
+				<?php
+				/* translators: %s: user display name */
+				printf( esc_html__( 'Welcome, %s!', 'pnpc-pocket-service-desk' ), esc_html( $pnpc_current_user->display_name ) );
+				?>
+			</h2>
+			<form id="pnpc-psd-profile-upload-form" class="pnpc-psd-compact-upload" enctype="multipart/form-data">
+				<label for="dashboard-profile-upload" class="pnpc-psd-button pnpc-psd-button-small">
+					<?php esc_html_e( 'Update Image', 'pnpc-pocket-service-desk' ); ?>
+				</label>
+				<input type="file" id="dashboard-profile-upload" name="profile_image" accept="image/*" style="display: none;" />
+				<p class="pnpc-psd-help-text"><?php esc_html_e( 'Max 2MB', 'pnpc-pocket-service-desk' ); ?></p>
+				<div id="dashboard-profile-message" class="pnpc-psd-message"></div>
+			</form>
+		</div>
+	</div>
 
 	<div class="pnpc-psd-dashboard-stats">
 		<div class="pnpc-psd-stat-box">

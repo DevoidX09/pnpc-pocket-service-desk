@@ -237,6 +237,55 @@ class PNPC_PSD_Public {
 		);
 
 		if ( $ticket_id ) {
+			// Handle file attachments if any.
+			if ( ! empty( $_FILES['attachments'] ) && is_array( $_FILES['attachments']['name'] ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+				require_once ABSPATH . 'wp-admin/includes/image.php';
+				require_once ABSPATH . 'wp-admin/includes/media.php';
+
+				$files      = $_FILES['attachments'];
+				$file_count = count( $files['name'] );
+
+				for ( $i = 0; $i < $file_count; $i++ ) {
+					if ( empty( $files['name'][ $i ] ) ) {
+						continue;
+					}
+
+					// Validate file size (max 5MB per file).
+					if ( $files['size'][ $i ] > 5242880 ) {
+						continue; // Skip files over 5MB.
+					}
+
+					// Prepare file array for wp_handle_upload.
+					$file = array(
+						'name'     => $files['name'][ $i ],
+						'type'     => $files['type'][ $i ],
+						'tmp_name' => $files['tmp_name'][ $i ],
+						'error'    => $files['error'][ $i ],
+						'size'     => $files['size'][ $i ],
+					);
+
+					$upload = wp_handle_upload( $file, array( 'test_form' => false ) );
+
+					if ( ! isset( $upload['error'] ) ) {
+						$attachment_id = wp_insert_attachment(
+							array(
+								'post_title'     => sanitize_file_name( $files['name'][ $i ] ),
+								'post_content'   => '',
+								'post_status'    => 'inherit',
+								'post_mime_type' => $upload['type'],
+							),
+							$upload['file']
+						);
+
+						if ( $attachment_id ) {
+							wp_update_attachment_metadata( $attachment_id, wp_generate_attachment_metadata( $attachment_id, $upload['file'] ) );
+							PNPC_PSD_Ticket::attach_file( $ticket_id, $attachment_id );
+						}
+					}
+				}
+			}
+
 			$ticket = PNPC_PSD_Ticket::get( $ticket_id );
 			wp_send_json_success(
 				array(

@@ -265,7 +265,7 @@ class PNPC_PSD_Ticket {
 	 */
 	private static function generate_ticket_number() {
 		$counter = get_option( 'pnpc_psd_ticket_counter', 1000 );
-		$counter++;
+		++$counter;
 		update_option( 'pnpc_psd_ticket_counter', $counter );
 
 		return 'PNPC-' . $counter;
@@ -296,7 +296,8 @@ class PNPC_PSD_Ticket {
 
 		$message = sprintf(
 			/* translators: 1: user display name, 2: ticket number, 3: ticket subject */
-			__( 'Hello %1$s,
+			__(
+				'Hello %1$s,
 
 Your support ticket has been created successfully.
 
@@ -305,7 +306,9 @@ Subject: %3$s
 
 We will respond to your ticket as soon as possible.
 
-Thank you for contacting us!', 'pnpc-pocket-service-desk' ),
+Thank you for contacting us!',
+				'pnpc-pocket-service-desk'
+			),
 			$user->display_name,
 			$ticket->ticket_number,
 			$ticket->subject
@@ -314,7 +317,7 @@ Thank you for contacting us!', 'pnpc-pocket-service-desk' ),
 		wp_mail( $user->user_email, $subject, $message );
 
 		// Notify admins.
-		$admin_email = get_option( 'admin_email' );
+		$admin_email   = get_option( 'admin_email' );
 		$admin_subject = sprintf(
 			/* translators: %s: ticket number */
 			__( 'New Support Ticket: %s', 'pnpc-pocket-service-desk' ),
@@ -323,13 +326,16 @@ Thank you for contacting us!', 'pnpc-pocket-service-desk' ),
 
 		$admin_message = sprintf(
 			/* translators: 1: ticket number, 2: user display name, 3: ticket subject */
-			__( 'A new support ticket has been created.
+			__(
+				'A new support ticket has been created.
 
 Ticket Number: %1$s
 From: %2$s
 Subject: %3$s
 
-Please log in to the admin panel to view and respond to this ticket.', 'pnpc-pocket-service-desk' ),
+Please log in to the admin panel to view and respond to this ticket.',
+				'pnpc-pocket-service-desk'
+			),
 			$ticket->ticket_number,
 			$user->display_name,
 			$ticket->subject
@@ -364,5 +370,37 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		}
 
 		return absint( $count );
+	}
+
+	/**
+	 * Attach file to ticket.
+	 *
+	 * @since 1.1.0
+	 * @param int $ticket_id Ticket ID.
+	 * @param int $attachment_id WordPress attachment ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function attach_file( $ticket_id, $attachment_id ) {
+		global $wpdb;
+
+		$table_name    = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$ticket_id     = absint( $ticket_id );
+		$attachment_id = absint( $attachment_id );
+
+		if ( ! $ticket_id || ! $attachment_id ) {
+			return false;
+		}
+
+		$result = $wpdb->insert(
+			$table_name,
+			array(
+				'ticket_id'     => $ticket_id,
+				'attachment_id' => $attachment_id,
+				'uploaded_by'   => get_current_user_id(),
+			),
+			array( '%d', '%d', '%d' )
+		);
+
+		return false !== $result;
 	}
 }

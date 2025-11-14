@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<phpunit
+	bootstrap="tests/bootstrap.php"
+	backupGlobals="false"
+	colors="true"
+	convertErrorsToExceptions="true"
+	convertNoticesToExceptions="true"
+	convertWarningsToExceptions="true"
+>
+	<testsuites>
+		<testsuite name="PNPC Pocket Service Desk Test Suite">
+			<directory>./tests/</directory>
+		</testsuite>
+	</testsuites>
+	<filter>
+		<whitelist>
+			<directory suffix=".php">./includes/</directory>
+			<directory suffix=".php">./admin/</directory>
+			<directory suffix=".php">./public/</directory>
+		</whitelist>
+	</filter>
+</phpunit>

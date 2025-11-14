@@ -218,6 +218,8 @@ class PNPC_PSD_Admin {
 		register_setting( 'pnpc_psd_settings', 'pnpc_psd_email_notifications' );
 		register_setting( 'pnpc_psd_settings', 'pnpc_psd_auto_assign_tickets' );
 		register_setting( 'pnpc_psd_settings', 'pnpc_psd_allowed_file_types' );
+		register_setting( 'pnpc_psd_settings', 'pnpc_psd_products_mode' );
+		register_setting( 'pnpc_psd_settings', 'pnpc_psd_enable_user_products' );
 	}
 
 	/**
@@ -355,5 +357,76 @@ class PNPC_PSD_Admin {
 		}
 
 		return strpos( $screen->id, 'pnpc-service-desk' ) !== false;
+	}
+
+	/**
+	 * Add custom fields to user profile.
+	 *
+	 * @since 1.1.0
+	 * @param WP_User $user User object.
+	 */
+	public function add_user_profile_fields( $user ) {
+		if ( ! current_user_can( 'edit_users' ) ) {
+			return;
+		}
+
+		$assigned_products = get_user_meta( $user->ID, 'pnpc_psd_assigned_products', true );
+		if ( ! is_array( $assigned_products ) ) {
+			$assigned_products = array();
+		}
+
+		// Get products if WooCommerce is active.
+		$products = array();
+		if ( class_exists( 'WooCommerce' ) ) {
+			$products = wc_get_products(
+				array(
+					'limit'  => -1,
+					'status' => 'publish',
+				)
+			);
+		}
+		?>
+		<h3><?php esc_html_e( 'Service Desk Settings', 'pnpc-pocket-service-desk' ); ?></h3>
+		<table class="form-table">
+			<tr>
+				<th><label for="pnpc_psd_assigned_products"><?php esc_html_e( 'Assigned Products', 'pnpc-pocket-service-desk' ); ?></label></th>
+				<td>
+					<?php if ( ! empty( $products ) ) : ?>
+						<select name="pnpc_psd_assigned_products[]" id="pnpc_psd_assigned_products" multiple size="10" style="width: 25em;">
+							<?php foreach ( $products as $product ) : ?>
+								<option value="<?php echo absint( $product->get_id() ); ?>" <?php selected( in_array( $product->get_id(), $assigned_products, true ) ); ?>>
+									<?php echo esc_html( $product->get_name() ); ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+						<p class="description">
+							<?php esc_html_e( 'Select which products this user can access. Hold Ctrl/Cmd to select multiple.', 'pnpc-pocket-service-desk' ); ?>
+						</p>
+					<?php else : ?>
+						<p><?php esc_html_e( 'No products available. WooCommerce may not be active.', 'pnpc-pocket-service-desk' ); ?></p>
+					<?php endif; ?>
+				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Save user profile fields.
+	 *
+	 * @since 1.1.0
+	 * @param int $user_id User ID.
+	 */
+	public function save_user_profile_fields( $user_id ) {
+		if ( ! current_user_can( 'edit_users' ) ) {
+			return;
+		}
+
+		if ( isset( $_POST['pnpc_psd_assigned_products'] ) && is_array( $_POST['pnpc_psd_assigned_products'] ) ) {
+			$assigned_products = array_map( 'absint', wp_unslash( $_POST['pnpc_psd_assigned_products'] ) );
+			update_user_meta( $user_id, 'pnpc_psd_assigned_products', $assigned_products );
+		} else {
+			delete_user_meta( $user_id, 'pnpc_psd_assigned_products' );
+		}
 	}
 }

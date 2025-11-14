@@ -119,6 +119,12 @@ class PNPC_PSD {
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_plugin_admin_menu' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'register_settings' );
 
+		// User profile hooks.
+		$this->loader->add_action( 'show_user_profile', $plugin_admin, 'add_user_profile_fields' );
+		$this->loader->add_action( 'edit_user_profile', $plugin_admin, 'add_user_profile_fields' );
+		$this->loader->add_action( 'personal_options_update', $plugin_admin, 'save_user_profile_fields' );
+		$this->loader->add_action( 'edit_user_profile_update', $plugin_admin, 'save_user_profile_fields' );
+
 		// AJAX handlers for admin.
 		$this->loader->add_action( 'wp_ajax_pnpc_psd_respond_to_ticket', $plugin_admin, 'ajax_respond_to_ticket' );
 		$this->loader->add_action( 'wp_ajax_pnpc_psd_assign_ticket', $plugin_admin, 'ajax_assign_ticket' );

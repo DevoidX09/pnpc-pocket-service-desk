@@ -135,6 +135,52 @@
 			});
 		});
 
+		// Handle dashboard profile image upload
+		$('#dashboard-profile-upload').on('change', function() {
+			var file = this.files[0];
+			
+			if (!file) {
+				return;
+			}
+
+			// Validate file type
+			var allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+			if (allowedTypes.indexOf(file.type) === -1) {
+				showDashboardMessage('error', 'Invalid file type. Only JPEG, PNG, and GIF are allowed.');
+				return;
+			}
+
+			// Validate file size (max 2MB)
+			if (file.size > 2097152) {
+				showDashboardMessage('error', 'File size must not exceed 2MB.');
+				return;
+			}
+
+			var formData = new FormData();
+			formData.append('action', 'pnpc_psd_upload_profile_image');
+			formData.append('nonce', pnpcPsdPublic.nonce);
+			formData.append('profile_image', file);
+
+			$.ajax({
+				url: pnpcPsdPublic.ajax_url,
+				type: 'POST',
+				data: formData,
+				processData: false,
+				contentType: false,
+				success: function(response) {
+					if (response.success) {
+						showDashboardMessage('success', response.data.message);
+						$('#dashboard-profile-image').attr('src', response.data.url);
+					} else {
+						showDashboardMessage('error', response.data.message);
+					}
+				},
+				error: function() {
+					showDashboardMessage('error', 'An error occurred. Please try again.');
+				}
+			});
+		});
+
 		// Show message helper function
 		function showMessage(type, message) {
 			var $messageDiv = $('#ticket-create-message, #response-message').filter(function() {
@@ -151,6 +197,16 @@
 		// Show profile message helper function
 		function showProfileMessage(type, message) {
 			var $messageDiv = $('#profile-image-message');
+			$messageDiv.removeClass('success error').addClass(type).text(message).show();
+
+			setTimeout(function() {
+				$messageDiv.fadeOut();
+			}, 5000);
+		}
+
+		// Show dashboard message helper function
+		function showDashboardMessage(type, message) {
+			var $messageDiv = $('#dashboard-profile-message');
 			$messageDiv.removeClass('success error').addClass(type).text(message).show();
 
 			setTimeout(function() {

@@ -185,7 +185,8 @@ class PNPC_PSD_Ticket_Response {
 
 				$message = sprintf(
 					/* translators: 1: user display name, 2: ticket number, 3: response */
-					__( 'Hello %1$s,
+					__(
+						'Hello %1$s,
 
 You have received a new response to your support ticket.
 
@@ -196,7 +197,9 @@ Response:
 
 Please log in to view and respond to this ticket.
 
-Thank you!', 'pnpc-pocket-service-desk' ),
+Thank you!',
+						'pnpc-pocket-service-desk'
+					),
 					$ticket_owner->display_name,
 					$ticket->ticket_number,
 					wp_strip_all_tags( $response->response )
@@ -215,7 +218,8 @@ Thank you!', 'pnpc-pocket-service-desk' ),
 
 			$message = sprintf(
 				/* translators: 1: ticket number, 2: user display name, 3: response */
-				__( 'A customer has responded to a support ticket.
+				__(
+					'A customer has responded to a support ticket.
 
 Ticket Number: %1$s
 From: %2$s
@@ -223,7 +227,9 @@ From: %2$s
 Response:
 %3$s
 
-Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-desk' ),
+Please log in to the admin panel to view and respond.',
+					'pnpc-pocket-service-desk'
+				),
 				$ticket->ticket_number,
 				$responder->display_name,
 				wp_strip_all_tags( $response->response )

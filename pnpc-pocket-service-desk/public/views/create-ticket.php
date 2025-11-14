@@ -14,7 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="pnpc-psd-create-ticket">
 	<h2><?php esc_html_e( 'Create New Support Ticket', 'pnpc-pocket-service-desk' ); ?></h2>
 
-	<form id="pnpc-psd-create-ticket-form">
+	<form id="pnpc-psd-create-ticket-form" enctype="multipart/form-data">
+		<?php wp_nonce_field( 'pnpc_psd_create_ticket_nonce', 'create_ticket_nonce' ); ?>
+		
 		<div class="pnpc-psd-form-group">
 			<label for="ticket-subject"><?php esc_html_e( 'Subject', 'pnpc-pocket-service-desk' ); ?> <span class="required">*</span></label>
 			<input type="text" id="ticket-subject" name="subject" required placeholder="<?php esc_attr_e( 'Brief description of your issue', 'pnpc-pocket-service-desk' ); ?>" />
@@ -33,6 +35,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="pnpc-psd-form-group">
 			<label for="ticket-description"><?php esc_html_e( 'Description', 'pnpc-pocket-service-desk' ); ?> <span class="required">*</span></label>
 			<textarea id="ticket-description" name="description" rows="8" required placeholder="<?php esc_attr_e( 'Please describe your issue in detail...', 'pnpc-pocket-service-desk' ); ?>"></textarea>
+		</div>
+
+		<div class="pnpc-psd-form-group">
+			<label for="ticket-attachments"><?php esc_html_e( 'Attachments', 'pnpc-pocket-service-desk' ); ?></label>
+			<input type="file" id="ticket-attachments" name="attachments[]" multiple />
+			<p class="pnpc-psd-help-text">
+				<?php esc_html_e( 'You can attach multiple files. Maximum 5MB per file.', 'pnpc-pocket-service-desk' ); ?>
+			</p>
 		</div>
 
 		<div class="pnpc-psd-form-group">

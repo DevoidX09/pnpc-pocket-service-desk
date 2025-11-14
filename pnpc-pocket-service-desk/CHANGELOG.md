@@ -5,6 +5,31 @@ All notable changes to PNPC Pocket Service Desk will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Dashboard profile block with compact profile image display and secure upload form
+- File attachment support for ticket creation (max 5MB per file)
+- Admin settings for products mode (`pnpc_psd_products_mode`) and per-user product assignments (`pnpc_psd_enable_user_products`)
+- User profile fields in admin for assigning products to specific users (`pnpc_psd_assigned_products`)
+- `attach_file()` method in `PNPC_PSD_Ticket` class to associate attachments with tickets
+- Profile block embedded in service desk dashboard view with greeting and quick upload
+- Support for multiple file attachments in ticket creation form
+- Admin hooks for user profile field rendering and saving
+
+### Changed
+- Service desk dashboard now displays embedded profile block instead of separate greeting
+- Create ticket form accepts file attachments with proper nonce verification
+- Public AJAX handler `ajax_create_ticket` now processes file uploads and attachments
+- Admin settings page includes new fields for products mode and PRO feature toggle
+
+### Technical
+- Added file upload validation (size limits: profile images 2MB, ticket attachments 5MB per file)
+- Enhanced security with nonce verification on all upload handlers
+- Implemented `wp_handle_upload` and `wp_insert_attachment` for proper WordPress file handling
+- User meta `pnpc_psd_profile_image` stores profile image URL
+- Ticket attachments stored via attachment post type and linked in `wp_pnpc_psd_ticket_attachments` table
+
 ## [1.0.0] - 2024-11-14
 
 ### Added
