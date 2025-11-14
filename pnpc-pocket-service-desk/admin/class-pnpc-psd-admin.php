@@ -422,6 +422,11 @@ class PNPC_PSD_Admin {
 			return;
 		}
 
+		// Verify nonce for security.
+		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'update-user_' . $user_id ) ) {
+			return;
+		}
+
 		if ( isset( $_POST['pnpc_psd_assigned_products'] ) && is_array( $_POST['pnpc_psd_assigned_products'] ) ) {
 			$assigned_products = array_map( 'absint', wp_unslash( $_POST['pnpc_psd_assigned_products'] ) );
 			update_user_meta( $user_id, 'pnpc_psd_assigned_products', $assigned_products );
