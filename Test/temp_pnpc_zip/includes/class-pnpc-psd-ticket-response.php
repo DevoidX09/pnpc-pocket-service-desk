@@ -1,0 +1,259 @@
+<?php
+/**
+ * Ticket response management functionality
+ *
+ * @package    PNPC_Pocket_Service_Desk
+ * @subpackage PNPC_Pocket_Service_Desk/includes
+ */
+
+/**
+ * Ticket response management class.
+ *
+ * Handles all ticket response-related operations.
+ *
+ * @since      1.0.0
+ * @package    PNPC_Pocket_Service_Desk
+ * @subpackage PNPC_Pocket_Service_Desk/includes
+ */
+class PNPC_PSD_Ticket_Response {
+
+	/**
+	 * Create a new ticket response.
+	 *
+	 * @since 1.0.0
+	 * @param array $data Response data.
+	 * @return int|false Response ID on success, false on failure.
+	 */
+	public static function create( $data ) {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+
+		$defaults = array(
+			'ticket_id'         => 0,
+			'user_id'           => get_current_user_id(),
+			'response'          => '',
+			'is_staff_response' => 0,
+		);
+
+		$data = wp_parse_args( $data, $defaults );
+
+		// Validate required fields.
+		if ( empty( $data['ticket_id'] ) || empty( $data['response'] ) ) {
+			return false;
+		}
+
+		// Check if user is staff.
+		$is_staff = current_user_can( 'pnpc_psd_respond_to_tickets' );
+
+		$insert_data = array(
+			'ticket_id'         => absint( $data['ticket_id'] ),
+			'user_id'           => absint( $data['user_id'] ),
+			'response'          => wp_kses_post( $data['response'] ),
+			'is_staff_response' => $is_staff ? 1 : 0,
+		);
+
+		$result = $wpdb->insert(
+			$table_name,
+			$insert_data,
+			array( '%d', '%d', '%s', '%d' )
+		);
+
+		if ( $result ) {
+			$response_id = $wpdb->insert_id;
+
+			// Send notification email.
+			self::send_response_notification( $response_id );
+
+			return $response_id;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get a response by ID.
+	 *
+	 * @since 1.0.0
+	 * @param int $response_id Response ID.
+	 * @return object|null Response object or null if not found.
+	 */
+	public static function get( $response_id ) {
+		global $wpdb;
+
+		$table_name  = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$response_id = absint( $response_id );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$response = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$table_name} WHERE id = %d",
+				$response_id
+			)
+		);
+
+		return $response;
+	}
+
+	/**
+	 * Get responses for a ticket.
+	 *
+	 * @since 1.0.0
+	 * @param int   $ticket_id Ticket ID.
+	 * @param array $args Query arguments.
+	 * @return array Array of response objects.
+	 */
+	public static function get_by_ticket( $ticket_id, $args = array() ) {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$ticket_id  = absint( $ticket_id );
+
+		$defaults = array(
+			'orderby' => 'created_at',
+			'order'   => 'ASC',
+		);
+
+		$args = wp_parse_args( $args, $defaults );
+
+		$orderby = sanitize_sql_orderby( "{$args['orderby']} {$args['order']}" );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$responses = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table_name} WHERE ticket_id = %d ORDER BY {$orderby}",
+				$ticket_id
+			)
+		);
+
+		return $responses;
+	}
+
+	/**
+	 * Delete responses for a ticket.
+	 *
+	 * @since 1.0.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function delete_by_ticket( $ticket_id ) {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$ticket_id  = absint( $ticket_id );
+
+		$result = $wpdb->delete(
+			$table_name,
+			array( 'ticket_id' => $ticket_id ),
+			array( '%d' )
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Send response notification.
+	 *
+	 * @since 1.0.0
+	 * @param int $response_id Response ID.
+	 */
+	private static function send_response_notification( $response_id ) {
+		$response = self::get( $response_id );
+		if ( ! $response ) {
+			return;
+		}
+
+		$ticket = PNPC_PSD_Ticket::get( $response->ticket_id );
+		if ( ! $ticket ) {
+			return;
+		}
+
+		$responder = get_userdata( $response->user_id );
+		if ( ! $responder ) {
+			return;
+		}
+
+		// Notify ticket owner if response is from staff.
+		if ( $response->is_staff_response ) {
+			$ticket_owner = get_userdata( $ticket->user_id );
+			if ( $ticket_owner ) {
+				$subject = sprintf(
+					/* translators: %s: ticket number */
+					__( 'New Response to Your Ticket: %s', 'pnpc-pocket-service-desk' ),
+					$ticket->ticket_number
+				);
+
+				$message = sprintf(
+					/* translators: 1: user display name, 2: ticket number, 3: response */
+					__( 'Hello %1$s,
+
+You have received a new response to your support ticket.
+
+Ticket Number: %2$s
+
+Response:
+%3$s
+
+Please log in to view and respond to this ticket.
+
+Thank you!', 'pnpc-pocket-service-desk' ),
+					$ticket_owner->display_name,
+					$ticket->ticket_number,
+					wp_strip_all_tags( $response->response )
+				);
+
+				wp_mail( $ticket_owner->user_email, $subject, $message );
+			}
+		} else {
+			// Notify admin if response is from customer.
+			$admin_email = get_option( 'admin_email' );
+			$subject     = sprintf(
+				/* translators: %s: ticket number */
+				__( 'New Customer Response: %s', 'pnpc-pocket-service-desk' ),
+				$ticket->ticket_number
+			);
+
+			$message = sprintf(
+				/* translators: 1: ticket number, 2: user display name, 3: response */
+				__( 'A customer has responded to a support ticket.
+
+Ticket Number: %1$s
+From: %2$s
+
+Response:
+%3$s
+
+Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-desk' ),
+				$ticket->ticket_number,
+				$responder->display_name,
+				wp_strip_all_tags( $response->response )
+			);
+
+			wp_mail( $admin_email, $subject, $message );
+		}
+	}
+
+	/**
+	 * Get response count for a ticket.
+	 *
+	 * @since 1.0.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return int Response count.
+	 */
+	public static function get_count( $ticket_id ) {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$ticket_id  = absint( $ticket_id );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$count = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table_name} WHERE ticket_id = %d",
+				$ticket_id
+			)
+		);
+
+		return absint( $count );
+	}
+}
