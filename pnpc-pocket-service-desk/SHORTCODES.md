@@ -100,6 +100,20 @@ Quick reference for all available shortcodes in PNPC Pocket Service Desk.
 
 **User Access**: Logged-in users only
 
+### 5. Services
+
+**Description**: 
+
+[pnpc_services]
+ Renders the Services/Products list. Respects plugin settings:
+- "Show Services/Products" (pnpc_psd_show_products)
+- "Use User-Specific Services" (pnpc_psd_user_specific_products)
+- Allocated products use user meta key pnpc_psd_allocated_products (comma-separated product IDs).
+**Recommended Page**: wherever you want the services/products list displayed.
+Deployment & test checklist (what I did and what you should run)
+
+
+
 ---
 
 ## Implementation Examples
