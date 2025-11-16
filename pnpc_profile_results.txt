@@ -1,0 +1,7 @@
+﻿
+(
+.FullName):
+(
+.LineNumber): 
+(
+_.Line.Trim())
