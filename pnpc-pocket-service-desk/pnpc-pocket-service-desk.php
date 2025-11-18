@@ -101,18 +101,43 @@ register_deactivation_hook(__FILE__, 'deactivate_pnpc_pocket_service_desk');
  * Defensive bootstrap: require core files if present and avoid fatals.
  * Logs missing files so issues are visible without white-screens.
  */
+
+// Core files that should exist (excluding ticket model which we handle separately)
 $pnpc_core_files = array(
 	PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd.php',
 	PNPC_PSD_PLUGIN_DIR . 'public/class-pnpc-psd-public.php',
-	PNPC_PSD_PLUGIN_DIR . 'includes/models/class-pnpc-psd-ticket.php',
 );
 
+// Require core files if available, otherwise log.
 foreach ($pnpc_core_files as $file) {
 	if (file_exists($file)) {
 		require_once $file;
 	} else {
 		error_log('pnpc-bootstrap: missing file ' . $file);
 	}
+}
+
+/**
+ * Load Ticket model in a backwards-compatible way:
+ * prefer the actual current path "includes/class-pnpc-psd-ticket.php" but
+ * fall back to legacy "includes/models/class-pnpc-psd-ticket.php" if present.
+ */
+$pnpc_ticket_paths = array(
+	PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-ticket.php',        // current path
+	PNPC_PSD_PLUGIN_DIR . 'includes/models/class-pnpc-psd-ticket.php', // legacy path
+);
+
+$pnpc_ticket_loaded = false;
+foreach ($pnpc_ticket_paths as $ticket_file) {
+	if (file_exists($ticket_file)) {
+		require_once $ticket_file;
+		$pnpc_ticket_loaded = true;
+		break;
+	}
+}
+if (! $pnpc_ticket_loaded) {
+	// Log a single diagnostic pointing to the current expected file to reduce noise.
+	error_log('pnpc-bootstrap: missing file ' . $pnpc_ticket_paths[0]);
 }
 
 /**

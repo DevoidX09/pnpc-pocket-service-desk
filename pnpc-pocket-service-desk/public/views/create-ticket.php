@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Public create ticket view
  *
@@ -6,38 +7,38 @@
  * @subpackage PNPC_Pocket_Service_Desk/public/views
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
 	exit;
 }
 ?>
 
 <div class="pnpc-psd-create-ticket">
-	<h2><?php esc_html_e( 'Create New Support Ticket', 'pnpc-pocket-service-desk' ); ?></h2>
+	<h2><?php esc_html_e('Create New Support Ticket', 'pnpc-pocket-service-desk'); ?></h2>
 
 	<form id="pnpc-psd-create-ticket-form">
 		<div class="pnpc-psd-form-group">
-			<label for="ticket-subject"><?php esc_html_e( 'Subject', 'pnpc-pocket-service-desk' ); ?> <span class="required">*</span></label>
-			<input type="text" id="ticket-subject" name="subject" required placeholder="<?php esc_attr_e( 'Brief description of your issue', 'pnpc-pocket-service-desk' ); ?>" />
+			<label for="ticket-subject"><?php esc_html_e('Subject', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span></label>
+			<input type="text" id="ticket-subject" name="subject" required placeholder="<?php esc_attr_e('Brief description of your issue', 'pnpc-pocket-service-desk'); ?>" />
 		</div>
 
 		<div class="pnpc-psd-form-group">
-			<label for="ticket-priority"><?php esc_html_e( 'Priority', 'pnpc-pocket-service-desk' ); ?></label>
+			<label for="ticket-priority"><?php esc_html_e('Priority', 'pnpc-pocket-service-desk'); ?></label>
 			<select id="ticket-priority" name="priority">
-				<option value="low"><?php esc_html_e( 'Low', 'pnpc-pocket-service-desk' ); ?></option>
-				<option value="normal" selected><?php esc_html_e( 'Normal', 'pnpc-pocket-service-desk' ); ?></option>
-				<option value="high"><?php esc_html_e( 'High', 'pnpc-pocket-service-desk' ); ?></option>
-				<option value="urgent"><?php esc_html_e( 'Urgent', 'pnpc-pocket-service-desk' ); ?></option>
+				<option value="low"><?php esc_html_e('Low', 'pnpc-pocket-service-desk'); ?></option>
+				<option value="normal" selected><?php esc_html_e('Normal', 'pnpc-pocket-service-desk'); ?></option>
+				<option value="high"><?php esc_html_e('High', 'pnpc-pocket-service-desk'); ?></option>
+				<option value="urgent"><?php esc_html_e('Urgent', 'pnpc-pocket-service-desk'); ?></option>
 			</select>
 		</div>
 
 		<div class="pnpc-psd-form-group">
-			<label for="ticket-description"><?php esc_html_e( 'Description', 'pnpc-pocket-service-desk' ); ?> <span class="required">*</span></label>
-			<textarea id="ticket-description" name="description" rows="8" required placeholder="<?php esc_attr_e( 'Please describe your issue in detail...', 'pnpc-pocket-service-desk' ); ?>"></textarea>
+			<label for="ticket-description"><?php esc_html_e('Description', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span></label>
+			<textarea id="ticket-description" name="description" rows="8" required placeholder="<?php esc_attr_e('Please describe your issue in detail...', 'pnpc-pocket-service-desk'); ?>"></textarea>
 		</div>
 
 		<div class="pnpc-psd-form-group">
-			<button type="submit" class="pnpc-psd-button pnpc-psd-button-primary">
-				<?php esc_html_e( 'Create Ticket', 'pnpc-pocket-service-desk' ); ?>
+			<button type="submit" class="pnpc-psd-button pnpc-psd-button-secondary">
+				<?php esc_html_e('Create Ticket', 'pnpc-pocket-service-desk'); ?>
 			</button>
 		</div>
 
