@@ -22,12 +22,12 @@ $default_avatar = get_avatar_url($user_id ?: 0);
 // helper: valid WP_User with non-zero ID
 $is_valid_user = ($current_user instanceof WP_User) && ($user_id > 0);
 
-// Admin-controlled toggle for the welcome message. Default to true (1).
-$show_welcome = (bool) get_option('pnpc_psd_show_welcome', 1);
+// Admin-controlled toggle for the profile-settings welcome message. Default to true (1).
+$show_welcome_profile = (bool) get_option('pnpc_psd_show_welcome_profile', 1);
 ?>
 <div class="pnpc-psd-profile-settings">
 
-	<?php if ($show_welcome && $is_valid_user) : ?>
+	<?php if ($show_welcome_profile && $is_valid_user) : ?>
 		<?php
 		/* translators: %s: user display name */
 		printf(
@@ -37,50 +37,78 @@ $show_welcome = (bool) get_option('pnpc_psd_show_welcome', 1);
 		?>
 	<?php endif; ?>
 
-	<h2><?php esc_html_e('Profile Settings', 'pnpc-pocket-service-desk'); ?></h2>
-
-	<div class="pnpc-psd-profile-section">
-		<h3><?php esc_html_e('Profile Image / Logo', 'pnpc-pocket-service-desk'); ?></h3>
-		<div class="pnpc-psd-profile-image-wrapper">
-			<div class="pnpc-psd-current-image">
-				<img id="profile-image-preview" src="<?php echo esc_url($profile_image ? $profile_image : $default_avatar); ?>" alt="<?php esc_attr_e('Profile Image', 'pnpc-pocket-service-desk'); ?>" />
-			</div>
-			<form id="pnpc-psd-profile-image-form" enctype="multipart/form-data">
-				<?php
-				// CSRF protection. Matches the AJAX handler's nonce name/action.
-				wp_nonce_field('pnpc_psd_public_nonce', 'nonce');
-				?>
-				<div class="pnpc-psd-form-group">
-					<label for="profile-image-upload" class="pnpc-psd-button">
-						<?php esc_html_e('Choose Image', 'pnpc-pocket-service-desk'); ?>
-					</label>
-					<input type="file" id="profile-image-upload" name="profile_image" accept="image/*" style="display: none;" />
-				</div>
-				<p class="pnpc-psd-help-text">
-					<?php esc_html_e('Supported formats: JPEG, PNG, GIF. Maximum size: 2MB.', 'pnpc-pocket-service-desk'); ?>
-				</p>
-				<div id="profile-image-message" class="pnpc-psd-message"></div>
-			</form>
-		</div>
-	</div>
-
 	<?php if ($is_valid_user) : ?>
-		<div class="pnpc-psd-profile-section">
-			<h3><?php esc_html_e('Account Settings', 'pnpc-pocket-service-desk'); ?></h3>
-			<p class="pnpc-psd-help-text">
-				<?php
-				/* translators: %s: URL to WordPress profile page */
-				$profile_link = esc_url(admin_url('profile.php'));
-				echo wp_kses_post(sprintf(__('To change your name or email, please visit your <a href="%s">WordPress profile page</a>.', 'pnpc-pocket-service-desk'), $profile_link));
-				?>
-			</p>
-			<p>
-				<a href="<?php echo esc_url(admin_url('profile.php')); ?>" class="pnpc-psd-button pnpc-psd-button-primary">
-					<?php esc_html_e('Edit Profile', 'pnpc-pocket-service-desk'); ?>
-				</a>
-			</p>
+		<!-- Two-column layout: profile image (left) and account settings (right) -->
+		<div class="pnpc-psd-profile-grid" style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
+			<div class="pnpc-psd-profile-column" style="flex:1;min-width:280px;">
+				<div class="pnpc-psd-profile-section">
+					<h3><?php esc_html_e('Profile Image / Logo', 'pnpc-pocket-service-desk'); ?></h3>
+					<div class="pnpc-psd-profile-image-wrapper">
+						<div class="pnpc-psd-current-image">
+							<img id="profile-image-preview" src="<?php echo esc_url($profile_image ? $profile_image : $default_avatar); ?>" alt="<?php esc_attr_e('Profile Image', 'pnpc-pocket-service-desk'); ?>" />
+						</div>
+						<form id="pnpc-psd-profile-image-form" enctype="multipart/form-data">
+							<?php
+							// CSRF protection. Matches the AJAX handler's nonce name/action.
+							wp_nonce_field('pnpc_psd_public_nonce', 'nonce');
+							?>
+							<div class="pnpc-psd-form-group">
+								<label for="profile-image-upload" class="pnpc-psd-button">
+									<?php esc_html_e('Choose Image', 'pnpc-pocket-service-desk'); ?>
+								</label>
+								<input type="file" id="profile-image-upload" name="profile_image" accept="image/*" style="display: none;" />
+							</div>
+							<p class="pnpc-psd-help-text">
+								<?php esc_html_e('Supported formats: JPEG, PNG, GIF. Maximum size: 2MB.', 'pnpc-pocket-service-desk'); ?>
+							</p>
+							<div id="profile-image-message" class="pnpc-psd-message"></div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<div class="pnpc-psd-profile-column" style="flex:1;min-width:280px;">
+				<div class="pnpc-psd-profile-section">
+					<h3><?php esc_html_e('Account Settings', 'pnpc-pocket-service-desk'); ?></h3>
+					<p class="pnpc-psd-help-text">
+						<?php
+						/* translators: %s: URL to WordPress profile page */
+						$profile_link = esc_url(admin_url('profile.php'));
+						echo wp_kses_post(sprintf(__('To change your name or email, please visit your <a href="%s">WordPress profile page</a>.', 'pnpc-pocket-service-desk'), $profile_link));
+						?>
+					</p>
+					<p>
+						<a href="<?php echo esc_url(admin_url('profile.php')); ?>" class="pnpc-psd-button pnpc-psd-button-primary">
+							<?php esc_html_e('Edit Profile', 'pnpc-pocket-service-desk'); ?>
+						</a>
+					</p>
+				</div>
+			</div>
 		</div>
 	<?php else : ?>
+		<!-- Not logged in: show profile image section alone and a friendly message -->
+		<div class="pnpc-psd-profile-section">
+			<h3><?php esc_html_e('Profile Image / Logo', 'pnpc-pocket-service-desk'); ?></h3>
+			<div class="pnpc-psd-profile-image-wrapper">
+				<div class="pnpc-psd-current-image">
+					<img id="profile-image-preview" src="<?php echo esc_url($profile_image ? $profile_image : $default_avatar); ?>" alt="<?php esc_attr_e('Profile Image', 'pnpc-pocket-service-desk'); ?>" />
+				</div>
+				<form id="pnpc-psd-profile-image-form" enctype="multipart/form-data">
+					<?php wp_nonce_field('pnpc_psd_public_nonce', 'nonce'); ?>
+					<div class="pnpc-psd-form-group">
+						<label for="profile-image-upload" class="pnpc-psd-button">
+							<?php esc_html_e('Choose Image', 'pnpc-pocket-service-desk'); ?>
+						</label>
+						<input type="file" id="profile-image-upload" name="profile_image" accept="image/*" style="display: none;" />
+					</div>
+					<p class="pnpc-psd-help-text">
+						<?php esc_html_e('Supported formats: JPEG, PNG, GIF. Maximum size: 2MB.', 'pnpc-pocket-service-desk'); ?>
+					</p>
+					<div id="profile-image-message" class="pnpc-psd-message"></div>
+				</form>
+			</div>
+		</div>
+
 		<div class="pnpc-psd-profile-section">
 			<p class="pnpc-psd-help-text">
 				<?php esc_html_e('User information is not available. Please log in to manage your profile.', 'pnpc-pocket-service-desk'); ?>

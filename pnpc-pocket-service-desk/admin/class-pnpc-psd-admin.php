@@ -7,55 +7,33 @@
  * @subpackage PNPC_Pocket_Service_Desk/admin
  */
 
-/**
- * The admin-specific functionality of the plugin.
- *
- * Defines the plugin name, version, and hooks for how to
- * enqueue the admin-specific stylesheet and JavaScript.
- *
- * @since      1.0.0
- * @package    PNPC_Pocket_Service_Desk
- * @subpackage PNPC_Pocket_Service_Desk/admin
- */
+if (! defined('ABSPATH')) {
+	exit;
+}
+
 class PNPC_PSD_Admin
 {
 
-	/**
-	 * The ID of this plugin.
-	 *
-	 * @since  1.0.0
-	 * @access private
-	 * @var    string    $plugin_name    The ID of this plugin.
-	 */
 	private $plugin_name;
-
-	/**
-	 * The version of this plugin.
-	 *
-	 * @since  1.0.0
-	 * @access private
-	 * @var    string    $version    The current version of this plugin.
-	 */
 	private $version;
 
-	/**
-	 * Initialize the class and set its properties.
-	 *
-	 * @since 1.0.0
-	 * @param string $plugin_name The name of this plugin.
-	 * @param string $version     The version of this plugin.
-	 */
 	public function __construct($plugin_name, $version)
 	{
 		$this->plugin_name = $plugin_name;
 		$this->version     = $version;
+
+		if (is_admin()) {
+			add_action('show_user_profile', array($this, 'render_user_allocated_products_field'));
+			add_action('edit_user_profile', array($this, 'render_user_allocated_products_field'));
+
+			add_action('personal_options_update', array($this, 'save_user_allocated_products'));
+			add_action('edit_user_profile_update', array($this, 'save_user_allocated_products'));
+
+			// Settings page - register and display
+			add_action('admin_init', array($this, 'register_settings'));
+		}
 	}
 
-	/**
-	 * Register the stylesheets for the admin area.
-	 *
-	 * @since 1.0.0
-	 */
 	public function enqueue_styles()
 	{
 		if ($this->is_plugin_page()) {
@@ -69,11 +47,6 @@ class PNPC_PSD_Admin
 		}
 	}
 
-	/**
-	 * Register the JavaScript for the admin area.
-	 *
-	 * @since 1.0.0
-	 */
 	public function enqueue_scripts()
 	{
 		if ($this->is_plugin_page()) {
@@ -96,14 +69,8 @@ class PNPC_PSD_Admin
 		}
 	}
 
-	/**
-	 * Add plugin admin menu.
-	 *
-	 * @since 1.0.0
-	 */
 	public function add_plugin_admin_menu()
 	{
-		// Main menu.
 		add_menu_page(
 			__('Service Desk', 'pnpc-pocket-service-desk'),
 			__('Service Desk', 'pnpc-pocket-service-desk'),
@@ -114,7 +81,6 @@ class PNPC_PSD_Admin
 			30
 		);
 
-		// All Tickets submenu.
 		add_submenu_page(
 			'pnpc-service-desk',
 			__('All Tickets', 'pnpc-pocket-service-desk'),
@@ -124,7 +90,6 @@ class PNPC_PSD_Admin
 			array($this, 'display_tickets_page')
 		);
 
-		// View Ticket submenu (hidden).
 		add_submenu_page(
 			null,
 			__('View Ticket', 'pnpc-pocket-service-desk'),
@@ -134,7 +99,6 @@ class PNPC_PSD_Admin
 			array($this, 'display_ticket_detail_page')
 		);
 
-		// Settings submenu.
 		add_submenu_page(
 			'pnpc-service-desk',
 			__('Settings', 'pnpc-pocket-service-desk'),
@@ -145,11 +109,6 @@ class PNPC_PSD_Admin
 		);
 	}
 
-	/**
-	 * Display tickets page.
-	 *
-	 * @since 1.0.0
-	 */
 	public function display_tickets_page()
 	{
 		if (! current_user_can('pnpc_psd_view_tickets')) {
@@ -170,11 +129,6 @@ class PNPC_PSD_Admin
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/tickets-list.php';
 	}
 
-	/**
-	 * Display ticket detail page.
-	 *
-	 * @since 1.0.0
-	 */
 	public function display_ticket_detail_page()
 	{
 		if (! current_user_can('pnpc_psd_view_tickets')) {
@@ -194,7 +148,6 @@ class PNPC_PSD_Admin
 			wp_die(esc_html__('Ticket not found.', 'pnpc-pocket-service-desk'));
 		}
 
-		// Get list of agents for assignment.
 		$agents = get_users(
 			array(
 				'role__in' => array('administrator', 'pnpc_psd_agent', 'pnpc_psd_manager'),
@@ -204,11 +157,6 @@ class PNPC_PSD_Admin
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/ticket-detail.php';
 	}
 
-	/**
-	 * Display settings page.
-	 *
-	 * @since 1.0.0
-	 */
 	public function display_settings_page()
 	{
 		if (! current_user_can('pnpc_psd_manage_settings')) {
@@ -225,153 +173,233 @@ class PNPC_PSD_Admin
 	 */
 	public function register_settings()
 	{
-		register_setting('pnpc_psd_settings', 'pnpc_psd_email_notifications');
-		register_setting('pnpc_psd_settings', 'pnpc_psd_auto_assign_tickets');
-		register_setting('pnpc_psd_settings', 'pnpc_psd_allowed_file_types');
-		// Register the welcome toggle setting.
+		// Email notifications (now an email input)
 		register_setting(
 			'pnpc_psd_settings',
-			'pnpc_psd_show_welcome',
+			'pnpc_psd_email_notifications',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_email',
+				'default'           => '',
+			)
+		);
+
+		// Existing toggles
+		register_setting('pnpc_psd_settings', 'pnpc_psd_auto_assign_tickets');
+		register_setting('pnpc_psd_settings', 'pnpc_psd_allowed_file_types');
+
+		// Welcome toggles
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_show_welcome_profile',
 			array(
 				'type'              => 'boolean',
 				'sanitize_callback' => 'absint',
 				'default'           => 1,
 			)
 		);
-	}
-
-	/**
-	 * AJAX handler to respond to a ticket.
-	 *
-	 * @since 1.0.0
-	 */
-	public function ajax_respond_to_ticket()
-	{
-		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
-
-		if (! current_user_can('pnpc_psd_respond_to_tickets')) {
-			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
-		}
-
-		$ticket_id = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
-		$response  = isset($_POST['response']) ? wp_kses_post(wp_unslash($_POST['response'])) : '';
-
-		if (! $ticket_id || empty($response)) {
-			wp_send_json_error(array('message' => __('Invalid data.', 'pnpc-pocket-service-desk')));
-		}
-
-		$response_id = PNPC_PSD_Ticket_Response::create(
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_show_welcome_service_desk',
 			array(
-				'ticket_id' => $ticket_id,
-				'response'  => $response,
+				'type'              => 'boolean',
+				'sanitize_callback' => 'absint',
+				'default'           => 1,
 			)
 		);
 
-		if ($response_id) {
-			wp_send_json_success(array('message' => __('Response added successfully.', 'pnpc-pocket-service-desk')));
-		} else {
-			wp_send_json_error(array('message' => __('Failed to add response.', 'pnpc-pocket-service-desk')));
-		}
-	}
-
-	/**
-	 * AJAX handler to assign a ticket.
-	 *
-	 * @since 1.0.0
-	 */
-	public function ajax_assign_ticket()
-	{
-		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
-
-		if (! current_user_can('pnpc_psd_assign_tickets')) {
-			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
-		}
-
-		$ticket_id   = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
-		$assigned_to = isset($_POST['assigned_to']) ? absint($_POST['assigned_to']) : 0;
-
-		if (! $ticket_id) {
-			wp_send_json_error(array('message' => __('Invalid data.', 'pnpc-pocket-service-desk')));
-		}
-
-		$result = PNPC_PSD_Ticket::update(
-			$ticket_id,
-			array('assigned_to' => $assigned_to)
+		// Products toggles
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_show_products',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'absint',
+				'default'           => 1,
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_user_specific_products',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'absint',
+				'default'           => 0,
+			)
 		);
 
-		if ($result) {
-			wp_send_json_success(array('message' => __('Ticket assigned successfully.', 'pnpc-pocket-service-desk')));
-		} else {
-			wp_send_json_error(array('message' => __('Failed to assign ticket.', 'pnpc-pocket-service-desk')));
-		}
-	}
-
-	/**
-	 * AJAX handler to update ticket status.
-	 *
-	 * @since 1.0.0
-	 */
-	public function ajax_update_ticket_status()
-	{
-		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
-
-		if (! current_user_can('pnpc_psd_respond_to_tickets')) {
-			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
-		}
-
-		$ticket_id = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
-		$status    = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : '';
-
-		if (! $ticket_id || empty($status)) {
-			wp_send_json_error(array('message' => __('Invalid data.', 'pnpc-pocket-service-desk')));
-		}
-
-		$result = PNPC_PSD_Ticket::update(
-			$ticket_id,
-			array('status' => $status)
+		// Color customization settings (hex colors)
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_primary_button_color',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_hex_color',
+				'default'           => '#2b9f6a',
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_primary_button_hover_color',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_hex_color',
+				'default'           => '#238a56',
+			)
 		);
 
-		if ($result) {
-			wp_send_json_success(array('message' => __('Ticket status updated successfully.', 'pnpc-pocket-service-desk')));
-		} else {
-			wp_send_json_error(array('message' => __('Failed to update ticket status.', 'pnpc-pocket-service-desk')));
-		}
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_secondary_button_color',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_hex_color',
+				'default'           => '#6c757d',
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_secondary_button_hover_color',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_hex_color',
+				'default'           => '#5a6268',
+			)
+		);
+
+		// Product card styling
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_card_bg_color',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_hex_color',
+				'default'           => '#ffffff',
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_card_bg_hover_color',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_hex_color',
+				'default'           => '#f7f9fb',
+			)
+		);
+
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_card_button_color',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_hex_color',
+				'default'           => '#2b9f6a',
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_card_button_hover_color',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_hex_color',
+				'default'           => '#238a56',
+			)
+		);
+
+		// Keep legacy setting registered for backward compatibility.
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_products_premium_only',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'absint',
+				'default'           => 0,
+			)
+		);
 	}
 
-	/**
-	 * AJAX handler to delete a ticket.
-	 *
-	 * @since 1.0.0
-	 */
-	public function ajax_delete_ticket()
+	// Render the "Assigned Services" field on user profile / edit user screens.
+	public function render_user_allocated_products_field($user)
 	{
-		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
-
-		if (! current_user_can('pnpc_psd_delete_tickets')) {
-			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
+		// Only show to administrators (manage_options).
+		if (! current_user_can('manage_options')) {
+			return;
 		}
 
-		$ticket_id = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
-
-		if (! $ticket_id) {
-			wp_send_json_error(array('message' => __('Invalid data.', 'pnpc-pocket-service-desk')));
+		// Fetch allocated products (comma-separated IDs) and convert to array of ints.
+		$allocated = get_user_meta($user->ID, 'pnpc_psd_allocated_products', true);
+		$selected_ids = array();
+		if (! empty($allocated)) {
+			$selected_ids = array_filter(array_map('absint', array_map('trim', explode(',', (string) $allocated))));
 		}
 
-		$result = PNPC_PSD_Ticket::delete($ticket_id);
+		// Get published WooCommerce products to populate the select.
+		$products = array();
+		if (class_exists('WooCommerce')) {
+			$products = wc_get_products(array('status' => 'publish', 'limit' => 200)); // limit to 200 for performance; adjust if needed
+		}
 
-		if ($result) {
-			wp_send_json_success(array('message' => __('Ticket deleted successfully.', 'pnpc-pocket-service-desk')));
+?>
+		<h2><?php esc_html_e('Allocated Products', 'pnpc-pocket-service-desk'); ?></h2>
+		<table class="form-table">
+			<tr>
+				<th><label for="pnpc_psd_allocated_products"><?php esc_html_e('Allocated Products', 'pnpc-pocket-service-desk'); ?></label></th>
+				<td>
+					<?php if (! class_exists('WooCommerce')) : ?>
+						<p class="description"><?php esc_html_e('WooCommerce is not active — you cannot allocate products until WooCommerce is installed and activated.', 'pnpc-pocket-service-desk'); ?></p>
+					<?php else : ?>
+						<select name="pnpc_psd_allocated_products[]" id="pnpc_psd_allocated_products" multiple size="8" style="width:100%;max-width:540px;">
+							<?php foreach ($products as $product) :
+								$p_id   = (int) $product->get_id();
+								$p_name = $product->get_name();
+							?>
+								<option value="<?php echo esc_attr($p_id); ?>" <?php echo in_array($p_id, $selected_ids, true) ? 'selected' : ''; ?>>
+									<?php echo esc_html($p_name . ' (ID: ' . $p_id . ')'); ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+						<p class="description">
+							<?php esc_html_e('Select one or more products to allocate to this user. Hold Ctrl (Windows) or Cmd (Mac) to select multiple. If you have many products, we can replace this with a search/select UI (select2) later.', 'pnpc-pocket-service-desk'); ?>
+						</p>
+						<?php wp_nonce_field('pnpc_psd_save_allocated_products', 'pnpc_psd_allocated_products_nonce'); ?>
+					<?php endif; ?>
+				</td>
+			</tr>
+		</table>
+<?php
+	}
+
+	// Save the assigned products when the profile is updated.
+	public function save_user_allocated_products($user_id)
+	{
+		// Only allow administrators to update this field.
+		if (! current_user_can('manage_options')) {
+			return;
+		}
+
+		// Verify nonce (fail closed).
+		if (! isset($_POST['pnpc_psd_allocated_products_nonce']) || ! wp_verify_nonce(wp_unslash($_POST['pnpc_psd_allocated_products_nonce']), 'pnpc_psd_save_allocated_products')) {
+			return;
+		}
+
+		// If the field is not submitted, remove the meta.
+		if (! isset($_POST['pnpc_psd_allocated_products'])) {
+			delete_user_meta($user_id, 'pnpc_psd_allocated_products');
+			return;
+		}
+
+		$posted = (array) $_POST['pnpc_psd_allocated_products'];
+		// Sanitize to integers and remove empties / duplicates.
+		$ids = array_filter(array_map('absint', $posted));
+		$ids = array_values(array_unique($ids));
+
+		if (empty($ids)) {
+			delete_user_meta($user_id, 'pnpc_psd_allocated_products');
 		} else {
-			wp_send_json_error(array('message' => __('Failed to delete ticket.', 'pnpc-pocket-service-desk')));
+			update_user_meta($user_id, 'pnpc_psd_allocated_products', implode(',', $ids));
 		}
 	}
 
-	/**
-	 * Check if current page is plugin page.
-	 *
-	 * @since  1.0.0
-	 * @return bool True if plugin page, false otherwise.
-	 */
 	private function is_plugin_page()
 	{
 		$screen = get_current_screen();
