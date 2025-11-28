@@ -462,7 +462,7 @@
 }
 
 
-/* New/unread indicators for public ticket lists */
+/* New/unread indicators for tickets (public) */
 .pnpc-psd-new-indicator-badge {
 	display: inline-block;
 	min-width: 18px;

@@ -154,7 +154,7 @@ class PNPC_PSD_Admin
 			wp_die(esc_html__('Invalid ticket ID.', 'pnpc-pocket-service-desk'));
 		}
 
-		$ticket    = PNPC_PSD_Ticket::get($ticket_id);
+				$ticket    = PNPC_PSD_Ticket::get($ticket_id);
 		$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket_id);
 
 		// Mark this ticket as viewed for the current admin so notifications can clear.

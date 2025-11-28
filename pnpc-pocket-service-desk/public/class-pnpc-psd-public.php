@@ -234,6 +234,7 @@ class PNPC_PSD_Public
 
 		$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket_id);
 
+
 		ob_start();
 		include PNPC_PSD_PLUGIN_DIR . 'public/views/ticket-detail.php';
 		return ob_get_clean();
@@ -276,7 +277,13 @@ class PNPC_PSD_Public
 	 */
 	public function ajax_create_ticket()
 	{
-		check_ajax_referer('pnpc_psd_public_nonce', 'nonce');
+		$nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
+		if (
+			! wp_verify_nonce( $nonce, 'pnpc_psd_public_nonce' )
+			&& ! wp_verify_nonce( $nonce, 'pnpc_psd_admin_nonce' )
+		) {
+			wp_send_json_error( array( 'message' => __('Security check failed. Please refresh and try again.', 'pnpc-pocket-service-desk') ) );
+		}
 
 		if (! is_user_logged_in()) {
 			wp_send_json_error(array('message' => __('You must be logged in.', 'pnpc-pocket-service-desk')));
@@ -317,7 +324,13 @@ class PNPC_PSD_Public
 	 */
 	public function ajax_respond_to_ticket()
 	{
-		check_ajax_referer('pnpc_psd_public_nonce', 'nonce');
+		$nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
+		if (
+			! wp_verify_nonce( $nonce, 'pnpc_psd_public_nonce' )
+			&& ! wp_verify_nonce( $nonce, 'pnpc_psd_admin_nonce' )
+		) {
+			wp_send_json_error( array( 'message' => __('Security check failed. Please refresh and try again.', 'pnpc-pocket-service-desk') ) );
+		}
 
 		if (! is_user_logged_in()) {
 			wp_send_json_error(array('message' => __('You must be logged in.', 'pnpc-pocket-service-desk')));

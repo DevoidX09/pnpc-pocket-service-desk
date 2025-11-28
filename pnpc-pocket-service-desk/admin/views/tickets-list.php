@@ -79,17 +79,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</td>
 						<td><?php echo $assigned_user ? esc_html( $assigned_user->display_name ) : esc_html__( 'Unassigned', 'pnpc-pocket-service-desk' ); ?></td>
 						<td><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $ticket->created_at ) ) ); ?></td>
-					<td>
-						<?php
-						$current_admin_id = get_current_user_id();
-						$new_responses    = 0;
+						<td>
+							<?php
+							$new_responses = 0;
+							$current_admin_id = get_current_user_id();
+							if ( $current_admin_id && $ticket->assigned_to && (int) $ticket->assigned_to === (int) $current_admin_id ) {
+								$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
+								$last_view_raw  = get_user_meta( $current_admin_id, $last_view_key, true );
+								$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
 
-						if ( $current_admin_id && $ticket->assigned_to && (int) $ticket->assigned_to === (int) $current_admin_id ) {
-							$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
-							$last_view_raw  = get_user_meta( $current_admin_id, $last_view_key, true );
-							$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
-
-							if ( $last_view_time > 0 ) {
 								$responses = PNPC_PSD_Ticket_Response::get_by_ticket( $ticket->id );
 								if ( ! empty( $responses ) ) {
 									foreach ( $responses as $response ) {
@@ -103,26 +101,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 									}
 								}
 							}
-						}
-						?>
-						<?php if ( $new_responses > 0 ) : ?>
-							<span class="pnpc-psd-new-indicator-badge">
-								<?php echo esc_html( $new_responses ); ?>
-							</span>
-						<?php else : ?>
-							<span class="screen-reader-text"><?php esc_html_e( 'No new responses', 'pnpc-pocket-service-desk' ); ?></span>
-						<?php endif; ?>
-					</td>
-					<td>
-						<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id ) ); ?>" class="button button-small">
-							<?php esc_html_e( 'View', 'pnpc-pocket-service-desk' ); ?>
-						</a>
-					</td>
-				</tr>
+							?>
+							<?php if ( $new_responses > 0 ) : ?>
+								<span class="pnpc-psd-new-indicator-badge"><?php echo esc_html( $new_responses ); ?></span>
+							<?php endif; ?>
+						</td>
+						<td>
+							<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id ) ); ?>" class="button button-small">
+								<?php esc_html_e( 'View', 'pnpc-pocket-service-desk' ); ?>
+							</a>
+						</td>
+					</tr>
 				<?php endforeach; ?>
 			<?php else : ?>
 				<tr>
-					<td colspan="9"><?php esc_html_e( 'No tickets found.', 'pnpc-pocket-service-desk' ); ?></td>
+					<td colspan="8"><?php esc_html_e( 'No tickets found.', 'pnpc-pocket-service-desk' ); ?></td>
 				</tr>
 			<?php endif; ?>
 		</tbody>

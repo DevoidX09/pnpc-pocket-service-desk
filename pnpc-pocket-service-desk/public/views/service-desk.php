@@ -33,9 +33,8 @@ if ( $user_id ) {
 		$last_view_key  = 'pnpc_psd_ticket_last_view_customer_' . (int) $ticket->id;
 		$last_view_raw  = get_user_meta( $user_id, $last_view_key, true );
 		$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
-		if ( $last_view_time <= 0 ) {
-			continue;
-		}
+
+		// Treat no last-view as "all responses are new" for this ticket.
 		$responses = PNPC_PSD_Ticket_Response::get_by_ticket( $ticket->id );
 		if ( empty( $responses ) ) {
 			continue;

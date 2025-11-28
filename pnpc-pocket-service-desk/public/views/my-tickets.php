@@ -31,17 +31,15 @@ if (! defined('ABSPATH')) {
 					$last_view_raw  = get_user_meta( $current_user_id, $last_view_key, true );
 					$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
 
-					if ( $last_view_time > 0 ) {
-						$responses = PNPC_PSD_Ticket_Response::get_by_ticket( $ticket->id );
-						if ( ! empty( $responses ) ) {
-							foreach ( $responses as $response ) {
-								if ( (int) $response->user_id === (int) $current_user_id ) {
-									continue;
-								}
-								$resp_time = strtotime( $response->created_at );
-								if ( $resp_time > $last_view_time ) {
-									$new_responses++;
-								}
+					$responses = PNPC_PSD_Ticket_Response::get_by_ticket( $ticket->id );
+					if ( ! empty( $responses ) ) {
+						foreach ( $responses as $response ) {
+							if ( (int) $response->user_id === (int) $current_user_id ) {
+								continue;
+							}
+							$resp_time = strtotime( $response->created_at );
+							if ( $resp_time > $last_view_time ) {
+								$new_responses++;
 							}
 						}
 					}
