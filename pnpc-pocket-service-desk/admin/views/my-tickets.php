@@ -50,8 +50,11 @@ $current_user_id = $current_user ? intval($current_user->ID) : 0;
                         if (function_exists('pnpc_psd_format_db_datetime_for_display')) {
                             $last_response = pnpc_psd_format_db_datetime_for_display($lr->created_at);
                         } else {
-                            $last_response = date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($lr->created_at));
-                        }
+                            if ( function_exists( 'pnpc_psd_format_db_datetime_for_display' ) ) {
+    $last_response = pnpc_psd_format_db_datetime_for_display( $lr->created_at );
+} else {
+    $last_response = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $lr->created_at ) );
+}
                     }
 
                     // Determine per-admin last viewed timestamp for this admin (if any)

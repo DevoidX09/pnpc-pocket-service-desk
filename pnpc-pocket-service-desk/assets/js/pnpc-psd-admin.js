@@ -7,6 +7,13 @@
 (function( $ ) {
 	'use strict';
 
+	// Debug: confirm script loaded and localization
+	try {
+		console.log('pnpc-psd-admin.js loaded', typeof pnpcPsdAdmin === 'undefined' ? 'pnpcPsdAdmin=undefined' : pnpcPsdAdmin);
+	} catch (e) {
+		console.log('pnpc-psd-admin.js debug injection error', e);
+	}
+
 	$(document).ready(function() {
 		// Handle ticket status change
 		$('#ticket-status').on('change', function() {
@@ -29,7 +36,8 @@
 						showMessage('error', response.data.message);
 					}
 				},
-				error: function() {
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error('pnpc-psd-admin.js AJAX error', textStatus, errorThrown, jqXHR && jqXHR.responseText);
 					showMessage('error', 'An error occurred. Please try again.');
 				}
 			});
@@ -56,7 +64,8 @@
 						showMessage('error', response.data.message);
 					}
 				},
-				error: function() {
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error('pnpc-psd-admin.js AJAX error', textStatus, errorThrown, jqXHR && jqXHR.responseText);
 					showMessage('error', 'An error occurred. Please try again.');
 				}
 			});
@@ -95,7 +104,8 @@
 						showMessage('error', result.data.message);
 					}
 				},
-				error: function() {
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error('pnpc-psd-admin.js AJAX error', textStatus, errorThrown, jqXHR && jqXHR.responseText);
 					showMessage('error', 'An error occurred. Please try again.');
 				}
 			});
@@ -125,7 +135,8 @@
 						alert(response.data.message);
 					}
 				},
-				error: function() {
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error('pnpc-psd-admin.js AJAX error', textStatus, errorThrown, jqXHR && jqXHR.responseText);
 					alert('An error occurred. Please try again.');
 				}
 			});

@@ -223,6 +223,15 @@ class PNPC_PSD_Public
 			return '<p>' . esc_html__('You do not have permission to view this ticket.', 'pnpc-pocket-service-desk') . '</p>';
 		}
 
+		// Mark this ticket as viewed for the current user so public notifications can clear.
+		if ( $current_user && ! empty( $current_user->ID ) && (int) $ticket->user_id === (int) $current_user->ID ) {
+			update_user_meta(
+				(int) $current_user->ID,
+				'pnpc_psd_ticket_last_view_customer_' . (int) $ticket_id,
+				(int) current_time('timestamp')
+			);
+		}
+
 		$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket_id);
 
 		ob_start();

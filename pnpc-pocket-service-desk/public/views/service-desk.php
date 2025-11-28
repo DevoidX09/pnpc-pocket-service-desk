@@ -23,6 +23,36 @@ $closed_count = count(array_filter($tickets, function ($ticket) {
 	return 'closed' === $ticket->status;
 }));
 
+// Count how many open / in-progress tickets have new staff responses since the customer last viewed them.
+$updated_open_count = 0;
+if ( $user_id ) {
+	foreach ( $tickets as $ticket ) {
+		if ( 'open' !== $ticket->status && 'in-progress' !== $ticket->status ) {
+			continue;
+		}
+		$last_view_key  = 'pnpc_psd_ticket_last_view_customer_' . (int) $ticket->id;
+		$last_view_raw  = get_user_meta( $user_id, $last_view_key, true );
+		$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
+		if ( $last_view_time <= 0 ) {
+			continue;
+		}
+		$responses = PNPC_PSD_Ticket_Response::get_by_ticket( $ticket->id );
+		if ( empty( $responses ) ) {
+			continue;
+		}
+		foreach ( $responses as $response ) {
+			if ( (int) $response->user_id === (int) $user_id ) {
+				continue;
+			}
+			$resp_time = strtotime( $response->created_at );
+			if ( $resp_time > $last_view_time ) {
+				$updated_open_count++;
+				break;
+			}
+		}
+	}
+}
+
 // Welcome toggle (service-desk specific)
 $show_welcome_service = (bool) get_option('pnpc_psd_show_welcome_service_desk', 1);
 
@@ -38,7 +68,12 @@ $show_welcome_service = (bool) get_option('pnpc_psd_show_welcome_service_desk', 
 		<h3 style="margin-top:0;color:#234; font-size:1.15rem;"><?php esc_html_e('Ticket Totals', 'pnpc-pocket-service-desk'); ?></h3>
 		<div style="display:flex;gap:20px;align-items:stretch;">
 			<div style="flex:1;padding:12px;border-radius:6px;background:#fff;border:1px solid #e6eef6;text-align:center;">
-				<div style="font-size:20px;font-weight:700;color:#e05a4f;"><?php echo esc_html($open_count); ?></div>
+				<div style="font-size:20px;font-weight:700;color:#e05a4f;">
+					<?php echo esc_html($open_count); ?>
+					<?php if ( ! empty( $updated_open_count ) ) : ?>
+						<span class="pnpc-psd-new-indicator-badge"><?php echo esc_html( $updated_open_count ); ?></span>
+					<?php endif; ?>
+				</div>
 				<div style="color:#666;"><?php esc_html_e('Open / In-Progress', 'pnpc-pocket-service-desk'); ?></div>
 			</div>
 			<div style="flex:1;padding:12px;border-radius:6px;background:#fff;border:1px solid #e6eef6;text-align:center;">

@@ -211,3 +211,18 @@
 	border-color: #bd2130;
 	color: #fff;
 }
+
+
+/* New/unread indicators for tickets */
+.pnpc-psd-new-indicator-badge {
+	display: inline-block;
+	min-width: 18px;
+	padding: 0 6px;
+	border-radius: 999px;
+	font-size: 11px;
+	line-height: 1.6;
+	text-align: center;
+	background: #46b450;
+	color: #fff;
+	font-weight: 600;
+}
