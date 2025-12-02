@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Ticket response management functionality
  *
@@ -15,7 +16,8 @@
  * @package    PNPC_Pocket_Service_Desk
  * @subpackage PNPC_Pocket_Service_Desk/includes
  */
-class PNPC_PSD_Ticket_Response {
+class PNPC_PSD_Ticket_Response
+{
 
 	/**
 	 * Create a new ticket response.
@@ -24,46 +26,70 @@ class PNPC_PSD_Ticket_Response {
 	 * @param array $data Response data.
 	 * @return int|false Response ID on success, false on failure.
 	 */
-	public static function create( $data ) {
+	public static function create($data)
+	{
 		global $wpdb;
 
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 
 		$defaults = array(
 			'ticket_id'         => 0,
 			'user_id'           => get_current_user_id(),
 			'response'          => '',
 			'is_staff_response' => 0,
+			'attachments'       => array(), // array of attachment arrays [url|file_path, file_name, file_type, file_size, uploaded_by]
 		);
 
-		$data = wp_parse_args( $data, $defaults );
+		$data = wp_parse_args($data, $defaults);
 
 		// Validate required fields.
-		if ( empty( $data['ticket_id'] ) || empty( $data['response'] ) ) {
+		if (empty($data['ticket_id']) || empty($data['response'])) {
 			return false;
 		}
 
 		// Check if user is staff.
-		$is_staff = current_user_can( 'pnpc_psd_respond_to_tickets' );
+		$is_staff = current_user_can('pnpc_psd_respond_to_tickets');
+
+		$created_at_utc = function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true);
 
 		$insert_data = array(
-			'ticket_id'         => absint( $data['ticket_id'] ),
-			'user_id'           => absint( $data['user_id'] ),
-			'response'          => wp_kses_post( $data['response'] ),
+			'ticket_id'         => absint($data['ticket_id']),
+			'user_id'           => absint($data['user_id']),
+			'response'          => wp_kses_post($data['response']),
 			'is_staff_response' => $is_staff ? 1 : 0,
+			'created_at'        => $created_at_utc,
 		);
 
 		$result = $wpdb->insert(
 			$table_name,
 			$insert_data,
-			array( '%d', '%d', '%s', '%d' )
+			array('%d', '%d', '%s', '%d', '%s')
 		);
 
-		if ( $result ) {
+		if ($result) {
 			$response_id = $wpdb->insert_id;
 
+			// Save attachments if provided (non-blocking)
+			if (! empty($data['attachments']) && is_array($data['attachments'])) {
+				foreach ($data['attachments'] as $att) {
+					// Expected: att = array('file_name'=>..., 'file_path'=>..., 'file_type'=>..., 'file_size'=>..., 'uploaded_by'=>int)
+					$att_data = array(
+						'ticket_id'   => absint($data['ticket_id']),
+						'response_id' => intval($response_id),
+						'file_name'   => sanitize_file_name(isset($att['file_name']) ? $att['file_name'] : basename($att['file_path'])),
+						'file_path'   => isset($att['file_path']) ? esc_url_raw($att['file_path']) : '',
+						'file_type'   => isset($att['file_type']) ? sanitize_text_field($att['file_type']) : '',
+						'file_size'   => isset($att['file_size']) ? intval($att['file_size']) : 0,
+						'uploaded_by' => isset($att['uploaded_by']) ? absint($att['uploaded_by']) : absint(get_current_user_id()),
+						'created_at'  => $created_at_utc,
+					);
+					$wpdb->insert($attachments_table, $att_data, array('%d', '%d', '%s', '%s', '%d', '%d', '%s'));
+				}
+			}
+
 			// Send notification email.
-			self::send_response_notification( $response_id );
+			self::send_response_notification($response_id);
 
 			return $response_id;
 		}
@@ -78,11 +104,12 @@ class PNPC_PSD_Ticket_Response {
 	 * @param int $response_id Response ID.
 	 * @return object|null Response object or null if not found.
 	 */
-	public static function get( $response_id ) {
+	public static function get($response_id)
+	{
 		global $wpdb;
 
 		$table_name  = $wpdb->prefix . 'pnpc_psd_ticket_responses';
-		$response_id = absint( $response_id );
+		$response_id = absint($response_id);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$response = $wpdb->get_row(
@@ -103,20 +130,21 @@ class PNPC_PSD_Ticket_Response {
 	 * @param array $args Query arguments.
 	 * @return array Array of response objects.
 	 */
-	public static function get_by_ticket( $ticket_id, $args = array() ) {
+	public static function get_by_ticket($ticket_id, $args = array())
+	{
 		global $wpdb;
 
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
-		$ticket_id  = absint( $ticket_id );
+		$ticket_id  = absint($ticket_id);
 
 		$defaults = array(
 			'orderby' => 'created_at',
 			'order'   => 'ASC',
 		);
 
-		$args = wp_parse_args( $args, $defaults );
+		$args = wp_parse_args($args, $defaults);
 
-		$orderby = sanitize_sql_orderby( "{$args['orderby']} {$args['order']}" );
+		$orderby = sanitize_sql_orderby("{$args['orderby']} {$args['order']}");
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$responses = $wpdb->get_results(
@@ -136,16 +164,17 @@ class PNPC_PSD_Ticket_Response {
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function delete_by_ticket( $ticket_id ) {
+	public static function delete_by_ticket($ticket_id)
+	{
 		global $wpdb;
 
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
-		$ticket_id  = absint( $ticket_id );
+		$ticket_id  = absint($ticket_id);
 
 		$result = $wpdb->delete(
 			$table_name,
-			array( 'ticket_id' => $ticket_id ),
-			array( '%d' )
+			array('ticket_id' => $ticket_id),
+			array('%d')
 		);
 
 		return false !== $result;
@@ -157,35 +186,36 @@ class PNPC_PSD_Ticket_Response {
 	 * @since 1.0.0
 	 * @param int $response_id Response ID.
 	 */
-	private static function send_response_notification( $response_id ) {
-		$response = self::get( $response_id );
-		if ( ! $response ) {
+	private static function send_response_notification($response_id)
+	{
+		$response = self::get($response_id);
+		if (! $response) {
 			return;
 		}
 
-		$ticket = PNPC_PSD_Ticket::get( $response->ticket_id );
-		if ( ! $ticket ) {
+		$ticket = PNPC_PSD_Ticket::get($response->ticket_id);
+		if (! $ticket) {
 			return;
 		}
 
-		$responder = get_userdata( $response->user_id );
-		if ( ! $responder ) {
+		$responder = get_userdata($response->user_id);
+		if (! $responder) {
 			return;
 		}
 
 		// Notify ticket owner if response is from staff.
-		if ( $response->is_staff_response ) {
-			$ticket_owner = get_userdata( $ticket->user_id );
-			if ( $ticket_owner ) {
+		if ($response->is_staff_response) {
+			$ticket_owner = get_userdata($ticket->user_id);
+			if ($ticket_owner) {
 				$subject = sprintf(
 					/* translators: %s: ticket number */
-					__( 'New Response to Your Ticket: %s', 'pnpc-pocket-service-desk' ),
+					__('New Response to Your Ticket: %s', 'pnpc-pocket-service-desk'),
 					$ticket->ticket_number
 				);
 
 				$message = sprintf(
 					/* translators: 1: user display name, 2: ticket number, 3: response */
-					__( 'Hello %1$s,
+					__('Hello %1$s,
 
 You have received a new response to your support ticket.
 
@@ -196,26 +226,26 @@ Response:
 
 Please log in to view and respond to this ticket.
 
-Thank you!', 'pnpc-pocket-service-desk' ),
+Thank you!', 'pnpc-pocket-service-desk'),
 					$ticket_owner->display_name,
 					$ticket->ticket_number,
-					wp_strip_all_tags( $response->response )
+					wp_strip_all_tags($response->response)
 				);
 
-				wp_mail( $ticket_owner->user_email, $subject, $message );
+				wp_mail($ticket_owner->user_email, $subject, $message);
 			}
 		} else {
 			// Notify admin if response is from customer.
-			$admin_email = get_option( 'admin_email' );
+			$admin_email = get_option('admin_email');
 			$subject     = sprintf(
 				/* translators: %s: ticket number */
-				__( 'New Customer Response: %s', 'pnpc-pocket-service-desk' ),
+				__('New Customer Response: %s', 'pnpc-pocket-service-desk'),
 				$ticket->ticket_number
 			);
 
 			$message = sprintf(
 				/* translators: 1: ticket number, 2: user display name, 3: response */
-				__( 'A customer has responded to a support ticket.
+				__('A customer has responded to a support ticket.
 
 Ticket Number: %1$s
 From: %2$s
@@ -223,13 +253,13 @@ From: %2$s
 Response:
 %3$s
 
-Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-desk' ),
+Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-desk'),
 				$ticket->ticket_number,
 				$responder->display_name,
-				wp_strip_all_tags( $response->response )
+				wp_strip_all_tags($response->response)
 			);
 
-			wp_mail( $admin_email, $subject, $message );
+			wp_mail($admin_email, $subject, $message);
 		}
 	}
 
@@ -240,11 +270,12 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 	 * @param int $ticket_id Ticket ID.
 	 * @return int Response count.
 	 */
-	public static function get_count( $ticket_id ) {
+	public static function get_count($ticket_id)
+	{
 		global $wpdb;
 
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
-		$ticket_id  = absint( $ticket_id );
+		$ticket_id  = absint($ticket_id);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$count = $wpdb->get_var(
@@ -254,6 +285,6 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 			)
 		);
 
-		return absint( $count );
+		return absint($count);
 	}
 }
