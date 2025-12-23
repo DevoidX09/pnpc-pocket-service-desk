@@ -120,7 +120,7 @@
 		});
 
 		function showMessage(type, message, targetId) {
-			var safeTarget = targetId ? String(targetId).replace(/[^A-Za-z0-9_-]/g, '') : '';
+			var safeTarget = targetId ? String(targetId).replace(/[^A-Za-z0-9_]/g, '') : '';
 			var $messageDiv;
 			if (safeTarget) {
 				var targetEl = document.getElementById(safeTarget);

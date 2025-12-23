@@ -24,9 +24,9 @@
 			createFiles.forEach(function(file, idx) {
 				var $item = $('<div/>').addClass('pnpc-psd-attachment-item').css({marginBottom:'6px'});
 				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size/1024) + ' KB)'));
-				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove').data('remove-index', idx);
+				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove');
 				$remove.on('click', function() {
-					var toRemove = $(this).data('remove-index');
+					var toRemove = $(this).closest('.pnpc-psd-attachment-item').index();
 					createFiles = createFiles.filter(function(_, fileIdx) {
 						return fileIdx !== toRemove;
 					});
@@ -83,7 +83,7 @@
 						if (result.data && result.data.ticket_detail_url) {
 							try {
 								var detailUrl = new URL(result.data.ticket_detail_url, window.location.origin);
-								if (detailUrl.origin === window.location.origin) {
+								if (detailUrl.origin === window.location.origin && detailUrl.pathname.indexOf('..') === -1 && detailUrl.pathname.charAt(0) === '/') {
 									setTimeout(function() {
 										window.location.href = detailUrl.toString();
 									}, 900);
@@ -134,9 +134,9 @@
 			responseFiles.forEach(function(file, idx) {
 				var $item = $('<div/>').addClass('pnpc-psd-attachment-item').css({marginBottom:'6px'});
 				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size/1024) + ' KB)'));
-				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove').data('remove-index', idx);
+				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove');
 				$remove.on('click', function() {
-					var toRemove = $(this).data('remove-index');
+					var toRemove = $(this).closest('.pnpc-psd-attachment-item').index();
 					responseFiles = responseFiles.filter(function(_, fileIdx) {
 						return fileIdx !== toRemove;
 					});
