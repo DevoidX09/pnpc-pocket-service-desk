@@ -5,7 +5,107 @@
 	'use strict';
 
 	$(document).ready(function() {
-		// Create ticket file handling and submission (unchanged)...
+		var createFiles = [];
+
+		$('#ticket-attachments').on('change', function(e) {
+			createFiles = Array.prototype.slice.call(e.target.files || []);
+			renderCreateAttachmentsList();
+		});
+
+		function renderCreateAttachmentsList() {
+			var $list = $('#pnpc-psd-attachments-list');
+			if (!$list.length) {
+				return;
+			}
+			$list.empty();
+			if (!createFiles.length) {
+				return;
+			}
+			createFiles.forEach(function(file, idx) {
+				var $item = $('<div/>').addClass('pnpc-psd-attachment-item').css({marginBottom:'6px'});
+				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size/1024) + ' KB)'));
+				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove');
+				$remove.on('click', function() {
+					createFiles.splice(idx, 1);
+					$('#ticket-attachments').val('');
+					renderCreateAttachmentsList();
+				});
+				$item.append($remove);
+				$list.append($item);
+			});
+		}
+
+		$('#pnpc-psd-create-ticket-form').on('submit', function(e) {
+			e.preventDefault();
+			if (typeof pnpcPsdPublic === 'undefined') {
+				return;
+			}
+
+			var subject = $('#ticket-subject').val();
+			var description = $('#ticket-description').val();
+			var priority = $('#ticket-priority').val() || 'normal';
+			var $submitBtn = $(this).find('button[type="submit"]');
+
+			if (!subject.trim() || !description.trim()) {
+				showCreateMessage('error', 'Please fill in all required fields.');
+				return;
+			}
+
+			var formData = new FormData();
+			formData.append('action', 'pnpc_psd_create_ticket');
+			formData.append('nonce', pnpcPsdPublic.nonce);
+			formData.append('subject', subject);
+			formData.append('description', description);
+			formData.append('priority', priority);
+
+			for (var i = 0; i < createFiles.length; i++) {
+				formData.append('attachments[]', createFiles[i]);
+			}
+
+			$submitBtn.prop('disabled', true);
+
+			$.ajax({
+				url: pnpcPsdPublic.ajax_url,
+				type: 'POST',
+				data: formData,
+				processData: false,
+				contentType: false,
+				success: function(result) {
+					if (result && result.success) {
+						showCreateMessage('success', result.data.message || 'Ticket created successfully.');
+						createFiles = [];
+						renderCreateAttachmentsList();
+						$('#pnpc-psd-create-ticket-form')[0].reset();
+
+						if (result.data && result.data.ticket_detail_url) {
+							setTimeout(function() {
+								window.location.href = result.data.ticket_detail_url;
+							}, 900);
+						}
+					} else if (result && result.data && result.data.message) {
+						showCreateMessage('error', result.data.message);
+					} else {
+						showCreateMessage('error', 'Failed to create ticket.');
+					}
+				},
+				error: function(xhr, status, err) {
+					console.error('pnpc-psd-public.js create ticket error', status, err, xhr && xhr.responseText);
+					showCreateMessage('error', 'An error occurred. Please try again.');
+				},
+				complete: function() {
+					$submitBtn.prop('disabled', false);
+				}
+			});
+		});
+
+		function showCreateMessage(type, message) {
+			var $messageDiv = $('#ticket-create-message');
+			if (!$messageDiv.length) {
+				return;
+			}
+			$messageDiv.removeClass('success error').addClass(type).text(message).show();
+			setTimeout(function() { $messageDiv.fadeOut(); }, 5000);
+		}
 
 		// Response attachments preview support
 		var responseFiles = [];
