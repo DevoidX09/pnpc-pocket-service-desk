@@ -120,7 +120,8 @@
 		});
 
 		function showMessage(type, message, targetId) {
-			var $messageDiv = targetId ? $('#' + targetId) : $('#response-message');
+			var safeTarget = targetId ? String(targetId).replace(/[^A-Za-z0-9_-]/g, '') : '';
+			var $messageDiv = safeTarget ? $('#' + safeTarget) : $('#response-message');
 			if (!$messageDiv.length) {
 				return;
 			}

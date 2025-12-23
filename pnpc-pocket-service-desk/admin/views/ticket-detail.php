@@ -28,6 +28,10 @@ $status_options = array(
 	'waiting'     => __('Waiting', 'pnpc-pocket-service-desk'),
 	'closed'      => __('Closed', 'pnpc-pocket-service-desk'),
 );
+
+$ticket_created_display = function_exists('pnpc_psd_format_db_datetime_for_display')
+	? pnpc_psd_format_db_datetime_for_display($ticket->created_at)
+	: date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($ticket->created_at));
 ?>
 
 <div class="wrap pnpc-psd-ticket-detail" id="pnpc-psd-ticket-detail" data-ticket-id="<?php echo esc_attr($ticket->id); ?>">
@@ -47,7 +51,7 @@ $status_options = array(
 					?>
 				</p>
 				<p><?php esc_html_e('Created:', 'pnpc-pocket-service-desk'); ?>
-					<?php echo esc_html(function_exists('pnpc_psd_format_db_datetime_for_display') ? pnpc_psd_format_db_datetime_for_display($ticket->created_at) : date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($ticket->created_at))); ?>
+					<?php echo esc_html($ticket_created_display); ?>
 				</p>
 			</div>
 		</div>

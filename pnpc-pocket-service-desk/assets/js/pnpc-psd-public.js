@@ -22,12 +22,13 @@
 				return;
 			}
 			createFiles.forEach(function(file, idx) {
+				var removeIndex = idx;
 				var $item = $('<div/>').addClass('pnpc-psd-attachment-item').css({marginBottom:'6px'});
 				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size/1024) + ' KB)'));
 				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove');
 				$remove.on('click', function() {
 					createFiles = createFiles.filter(function(_, fileIdx) {
-						return fileIdx !== idx;
+						return fileIdx !== removeIndex;
 					});
 					$('#ticket-attachments').val('');
 					renderCreateAttachmentsList();
@@ -124,12 +125,13 @@
 				return;
 			}
 			responseFiles.forEach(function(file, idx) {
+				var removeIndex = idx;
 				var $item = $('<div/>').addClass('pnpc-psd-attachment-item').css({marginBottom:'6px'});
 				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size/1024) + ' KB)'));
 				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove');
 				$remove.on('click', function() {
 					responseFiles = responseFiles.filter(function(_, fileIdx) {
-						return fileIdx !== idx;
+						return fileIdx !== removeIndex;
 					});
 					$('#response-attachments').val('');
 					renderResponseAttachmentsList();
