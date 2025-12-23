@@ -320,6 +320,10 @@ if (! function_exists('pnpc_psd_format_db_datetime_for_display')) {
         if ($ts <= 0) {
             return '';
         }
+        if (function_exists('wp_date')) {
+            $tz = pnpc_psd_get_wp_timezone();
+            return wp_date($format, $ts, $tz instanceof DateTimeZone ? $tz : null);
+        }
         if (function_exists('date_i18n')) {
             return date_i18n($format, $ts);
         }
