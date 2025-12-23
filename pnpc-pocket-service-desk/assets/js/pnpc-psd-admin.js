@@ -85,7 +85,7 @@
 			var response = $('#response-text').val();
 
 			if (!response.trim()) {
-				showMessage('error', 'Please enter a response.');
+				showMessage('error', 'Please enter a response.', 'response-message');
 				return;
 			}
 
