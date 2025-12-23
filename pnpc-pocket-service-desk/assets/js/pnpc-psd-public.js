@@ -7,6 +7,7 @@
 	$(document).ready(function() {
 		var createFiles = [];
 		var responseFiles = [];
+		var MAX_ATTACHMENTS = 10;
 
 		function renderAttachmentList(files, $list, inputSelector) {
 			if (!$list.length) {
@@ -37,6 +38,9 @@
 
 		$('#ticket-attachments').on('change', function(e) {
 			createFiles = Array.prototype.slice.call(e.target.files || []);
+			if (createFiles.length > MAX_ATTACHMENTS) {
+				createFiles = createFiles.slice(0, MAX_ATTACHMENTS);
+			}
 			renderAttachmentList(createFiles, $('#pnpc-psd-attachments-list'), '#ticket-attachments');
 		});
 
@@ -109,6 +113,9 @@
 
 		$('#response-attachments').on('change', function(e) {
 			responseFiles = Array.prototype.slice.call(e.target.files || []);
+			if (responseFiles.length > MAX_ATTACHMENTS) {
+				responseFiles = responseFiles.slice(0, MAX_ATTACHMENTS);
+			}
 			renderAttachmentList(responseFiles, $('#pnpc-psd-response-attachments-list'), '#response-attachments');
 		});
 

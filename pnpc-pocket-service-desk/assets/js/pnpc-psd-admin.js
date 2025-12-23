@@ -7,6 +7,7 @@
 	$(document).ready(function() {
 		var ticketId = $('#pnpc-psd-ticket-detail').data('ticket-id');
 		var adminNonce = (typeof pnpcPsdAdmin !== 'undefined') ? pnpcPsdAdmin.nonce : '';
+		var MESSAGE_TARGETS = ['pnpc-psd-admin-action-message', 'response-message'];
 
 		$('#pnpc-psd-assign-button').on('click', function(e) {
 			e.preventDefault();
@@ -130,8 +131,7 @@
 		});
 
 		function showMessage(type, message, targetId) {
-			var allowedTargets = ['pnpc-psd-admin-action-message', 'response-message'];
-			var safeTarget = (targetId && allowedTargets.includes(targetId)) ? targetId : '';
+			var safeTarget = (targetId && MESSAGE_TARGETS.includes(targetId)) ? targetId : '';
 			var $messageDiv;
 			if (safeTarget) {
 				var targetEl = document.getElementById(safeTarget);

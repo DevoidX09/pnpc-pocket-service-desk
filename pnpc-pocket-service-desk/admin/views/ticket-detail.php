@@ -29,13 +29,16 @@ $status_options = array(
 	'closed'      => __('Closed', 'pnpc-pocket-service-desk'),
 );
 
-$format_datetime = function ($datetime) {
-	return function_exists('pnpc_psd_format_db_datetime_for_display')
-		? pnpc_psd_format_db_datetime_for_display($datetime)
-		: date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($datetime));
-};
+if (! function_exists('pnpc_psd_admin_format_datetime')) {
+	function pnpc_psd_admin_format_datetime($datetime)
+	{
+		return function_exists('pnpc_psd_format_db_datetime_for_display')
+			? pnpc_psd_format_db_datetime_for_display($datetime)
+			: date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($datetime));
+	}
+}
 
-$ticket_created_display = $format_datetime($ticket->created_at);
+$ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 ?>
 
 <div class="wrap pnpc-psd-ticket-detail" id="pnpc-psd-ticket-detail" data-ticket-id="<?php echo esc_attr($ticket->id); ?>">
@@ -101,7 +104,7 @@ $ticket_created_display = $format_datetime($ticket->created_at);
 				<li>
 					<a href="<?php echo esc_url($att->file_path); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($att->file_name); ?></a>
 					<span style="color:#777;margin-left:8px;"><?php echo esc_html(pnpc_psd_format_filesize($att->file_size)); ?></span>
-					<span style="color:#777;margin-left:8px;"><?php echo esc_html($format_datetime($att->created_at)); ?></span>
+					<span style="color:#777;margin-left:8px;"><?php echo esc_html(pnpc_psd_admin_format_datetime($att->created_at)); ?></span>
 				</li>
 			<?php endforeach; ?>
 		</ul>
@@ -120,7 +123,7 @@ $ticket_created_display = $format_datetime($ticket->created_at);
 				<div class="pnpc-psd-response-header">
 					<strong><?php echo $responder ? esc_html($responder->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></strong>
 					<span class="pnpc-psd-response-date">
-						<?php echo esc_html($format_datetime($r->created_at)); ?>
+						<?php echo esc_html(pnpc_psd_admin_format_datetime($r->created_at)); ?>
 					</span>
 				</div>
 				<div class="pnpc-psd-response-content">
