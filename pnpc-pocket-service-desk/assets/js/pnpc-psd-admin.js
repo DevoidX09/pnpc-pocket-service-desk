@@ -14,15 +14,16 @@
 				return;
 			}
 			var assignedTo = $('#pnpc-psd-assign-agent').val() || 0;
-			$.post(
-				pnpcPsdAdmin.ajax_url,
-				{
+			$.ajax({
+				url: pnpcPsdAdmin.ajax_url,
+				type: 'POST',
+				data: {
 					action: 'pnpc_psd_assign_ticket',
 					nonce: adminNonce,
 					ticket_id: ticketId,
 					assigned_to: assignedTo
 				},
-				function(result) {
+				success: function(result) {
 					if (result && result.success) {
 						showMessage('success', result.data.message, 'pnpc-psd-admin-action-message');
 						setTimeout(function() {
@@ -33,8 +34,12 @@
 					} else {
 						showMessage('error', 'Failed to assign ticket.', 'pnpc-psd-admin-action-message');
 					}
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error('pnpc-psd-admin.js assign AJAX error', textStatus, errorThrown, jqXHR && jqXHR.responseText);
+					showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-admin-action-message');
 				}
-			);
+			});
 		});
 
 		$('#pnpc-psd-status-button').on('click', function(e) {
@@ -43,15 +48,16 @@
 				return;
 			}
 			var status = $('#pnpc-psd-status-select').val();
-			$.post(
-				pnpcPsdAdmin.ajax_url,
-				{
+			$.ajax({
+				url: pnpcPsdAdmin.ajax_url,
+				type: 'POST',
+				data: {
 					action: 'pnpc_psd_update_ticket_status',
 					nonce: adminNonce,
 					ticket_id: ticketId,
 					status: status
 				},
-				function(result) {
+				success: function(result) {
 					if (result && result.success) {
 						showMessage('success', result.data.message, 'pnpc-psd-admin-action-message');
 						setTimeout(function() {
@@ -62,8 +68,12 @@
 					} else {
 						showMessage('error', 'Failed to update status.', 'pnpc-psd-admin-action-message');
 					}
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error('pnpc-psd-admin.js status AJAX error', textStatus, errorThrown, jqXHR && jqXHR.responseText);
+					showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-admin-action-message');
 				}
-			);
+			});
 		});
 
 		// Handle admin response form submission (supports attachments)
@@ -120,7 +130,7 @@
 		});
 
 		function showMessage(type, message, targetId) {
-			var safeTarget = targetId ? String(targetId).replace(/[^A-Za-z0-9_]/g, '') : '';
+			var safeTarget = targetId ? String(targetId).replace(/[^A-Za-z0-9_-]/g, '') : '';
 			var $messageDiv;
 			if (safeTarget) {
 				var targetEl = document.getElementById(safeTarget);

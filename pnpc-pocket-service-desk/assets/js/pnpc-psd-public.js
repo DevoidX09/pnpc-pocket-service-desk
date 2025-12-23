@@ -83,7 +83,8 @@
 						if (result.data && result.data.ticket_detail_url) {
 							try {
 								var detailUrl = new URL(result.data.ticket_detail_url, window.location.origin);
-								if (detailUrl.origin === window.location.origin && detailUrl.pathname.indexOf('..') === -1 && detailUrl.pathname.charAt(0) === '/') {
+								var decodedPath = decodeURIComponent(detailUrl.pathname || '');
+								if (detailUrl.origin === window.location.origin && decodedPath.indexOf('..') === -1 && decodedPath.charAt(0) === '/') {
 									setTimeout(function() {
 										window.location.href = detailUrl.toString();
 									}, 900);
