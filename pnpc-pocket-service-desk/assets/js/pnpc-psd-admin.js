@@ -103,18 +103,18 @@
 				contentType: false,
 				success: function(result) {
 					if (result.success) {
-						showMessage('success', result.data.message);
+						showMessage('success', result.data.message, 'response-message');
 						$('#response-text').val('');
 						setTimeout(function() {
 							location.reload();
 						}, 900);
 					} else {
-						showMessage('error', result.data.message);
+						showMessage('error', result.data.message, 'response-message');
 					}
 				},
 				error: function(jqXHR, textStatus, errorThrown) {
 					console.error('pnpc-psd-admin.js AJAX error', textStatus, errorThrown, jqXHR && jqXHR.responseText);
-					showMessage('error', 'An error occurred. Please try again.');
+					showMessage('error', 'An error occurred. Please try again.', 'response-message');
 				}
 			});
 		});

@@ -26,7 +26,9 @@
 				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size/1024) + ' KB)'));
 				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove');
 				$remove.on('click', function() {
-					createFiles.splice(idx, 1);
+					createFiles = createFiles.filter(function(_, fileIdx) {
+						return fileIdx !== idx;
+					});
 					$('#ticket-attachments').val('');
 					renderCreateAttachmentsList();
 				});
@@ -126,7 +128,9 @@
 				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size/1024) + ' KB)'));
 				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove');
 				$remove.on('click', function() {
-					responseFiles.splice(idx, 1);
+					responseFiles = responseFiles.filter(function(_, fileIdx) {
+						return fileIdx !== idx;
+					});
 					$('#response-attachments').val('');
 					renderResponseAttachmentsList();
 				});
