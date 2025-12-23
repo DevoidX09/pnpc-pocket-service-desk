@@ -6,37 +6,39 @@
 
 	$(document).ready(function() {
 		var createFiles = [];
+		var responseFiles = [];
 
-		$('#ticket-attachments').on('change', function(e) {
-			createFiles = Array.prototype.slice.call(e.target.files || []);
-			renderCreateAttachmentsList();
-		});
-
-		function renderCreateAttachmentsList() {
-			var $list = $('#pnpc-psd-attachments-list');
+		function renderAttachmentList(files, $list, inputSelector) {
 			if (!$list.length) {
 				return;
 			}
 			$list.empty();
-			if (!createFiles.length) {
+			if (!files.length) {
 				return;
 			}
-			createFiles.forEach(function(file, idx) {
+			files.forEach(function(file) {
 				var $item = $('<div/>').addClass('pnpc-psd-attachment-item').css({marginBottom:'6px'});
-				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size/1024) + ' KB)'));
-				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove');
+				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size / 1024) + ' KB)'));
+				var $remove = $('<button/>').attr('type', 'button').addClass('pnpc-psd-button').css({marginLeft: '8px'}).text('Remove');
 				$remove.on('click', function() {
 					var toRemove = $(this).closest('.pnpc-psd-attachment-item').index();
-					createFiles = createFiles.filter(function(_, fileIdx) {
-						return fileIdx !== toRemove;
-					});
-					$('#ticket-attachments').val('');
-					renderCreateAttachmentsList();
+					if (toRemove > -1) {
+						files.splice(toRemove, 1);
+						if (inputSelector) {
+							$(inputSelector).val('');
+						}
+						renderAttachmentList(files, $list, inputSelector);
+					}
 				});
 				$item.append($remove);
 				$list.append($item);
 			});
 		}
+
+		$('#ticket-attachments').on('change', function(e) {
+			createFiles = Array.prototype.slice.call(e.target.files || []);
+			renderAttachmentList(createFiles, $('#pnpc-psd-attachments-list'), '#ticket-attachments');
+		});
 
 		$('#pnpc-psd-create-ticket-form').on('submit', function(e) {
 			e.preventDefault();
@@ -77,25 +79,9 @@
 					if (result && result.success) {
 						showCreateMessage('success', result.data.message || 'Ticket created successfully.');
 						createFiles = [];
-						renderCreateAttachmentsList();
+						renderAttachmentList(createFiles, $('#pnpc-psd-attachments-list'), '#ticket-attachments');
 						$('#pnpc-psd-create-ticket-form')[0].reset();
 
-						if (result.data && result.data.ticket_detail_url) {
-							try {
-								var detailUrl = new URL(result.data.ticket_detail_url, window.location.origin);
-								var decodedPath = decodeURIComponent(detailUrl.pathname || '');
-								if (detailUrl.origin === window.location.origin && decodedPath.indexOf('..') === -1 && decodedPath.charAt(0) === '/') {
-									var $messageDiv = $('#ticket-create-message');
-									if ($messageDiv.length) {
-										var $link = $('<a/>').attr('href', detailUrl.toString()).text('View ticket');
-										$messageDiv.append(' ');
-										$messageDiv.append($link);
-									}
-								}
-							} catch (err) {
-								console.warn('pnpc-psd-public.js invalid redirect url', err);
-							}
-						}
 					} else if (result && result.data && result.data.message) {
 						showCreateMessage('error', result.data.message);
 					} else {
@@ -121,36 +107,10 @@
 			setTimeout(function() { $messageDiv.fadeOut(); }, 5000);
 		}
 
-		// Response attachments preview support
-		var responseFiles = [];
-
 		$('#response-attachments').on('change', function(e) {
 			responseFiles = Array.prototype.slice.call(e.target.files || []);
-			renderResponseAttachmentsList();
+			renderAttachmentList(responseFiles, $('#pnpc-psd-response-attachments-list'), '#response-attachments');
 		});
-
-		function renderResponseAttachmentsList() {
-			var $list = $('#pnpc-psd-response-attachments-list');
-			$list.empty();
-			if (!responseFiles.length) {
-				return;
-			}
-			responseFiles.forEach(function(file, idx) {
-				var $item = $('<div/>').addClass('pnpc-psd-attachment-item').css({marginBottom:'6px'});
-				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size/1024) + ' KB)'));
-				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove');
-				$remove.on('click', function() {
-					var toRemove = $(this).closest('.pnpc-psd-attachment-item').index();
-					responseFiles = responseFiles.filter(function(_, fileIdx) {
-						return fileIdx !== toRemove;
-					});
-					$('#response-attachments').val('');
-					renderResponseAttachmentsList();
-				});
-				$item.append($remove);
-				$list.append($item);
-			});
-		}
 
 		// Handle ticket response form submission (now supports attachments)
 		$('#pnpc-psd-response-form').on('submit', function(e) {
@@ -187,7 +147,7 @@
 						showResponseMessage('success', result.data.message || 'Reply added');
 						$('#response-text').val('');
 						responseFiles = [];
-						renderResponseAttachmentsList();
+						renderAttachmentList(responseFiles, $('#pnpc-psd-response-attachments-list'), '#response-attachments');
 						setTimeout(function() {
 							location.reload();
 						}, 900);

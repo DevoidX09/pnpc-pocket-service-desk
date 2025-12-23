@@ -131,7 +131,7 @@
 
 		function showMessage(type, message, targetId) {
 			var allowedTargets = ['pnpc-psd-admin-action-message', 'response-message'];
-			var safeTarget = (targetId && allowedTargets.indexOf(targetId) !== -1) ? targetId : '';
+			var safeTarget = (targetId && allowedTargets.includes(targetId)) ? targetId : '';
 			var $messageDiv;
 			if (safeTarget) {
 				var targetEl = document.getElementById(safeTarget);
