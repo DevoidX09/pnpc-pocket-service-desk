@@ -9,11 +9,21 @@
 		var adminNonce = (typeof pnpcPsdAdmin !== 'undefined') ? pnpcPsdAdmin.nonce : '';
 		var MESSAGE_TARGETS = ['pnpc-psd-admin-action-message', 'response-message'];
 
+		if (!adminNonce) {
+			console.error('pnpc-psd-admin.js: missing admin nonce');
+			showMessage('error', 'Your admin session expired. Please reload the page.', 'pnpc-psd-admin-action-message');
+			return;
+		}
+
+		if (!ticketId) {
+			console.error('pnpc-psd-admin.js: missing ticket id on page');
+			showMessage('error', 'Ticket could not be identified. Reload and try again.', 'pnpc-psd-admin-action-message');
+			return;
+		}
+
 		$('#pnpc-psd-assign-button').on('click', function(e) {
 			e.preventDefault();
-			if (!ticketId || !adminNonce) {
-				return;
-			}
+			// ticketId/adminNonce already validated above
 			var assignedTo = $('#pnpc-psd-assign-agent').val() || 0;
 			$.ajax({
 				url: pnpcPsdAdmin.ajax_url,
@@ -45,9 +55,7 @@
 
 		$('#pnpc-psd-status-button').on('click', function(e) {
 			e.preventDefault();
-			if (!ticketId || !adminNonce) {
-				return;
-			}
+			// ticketId/adminNonce already validated above
 			var status = $('#pnpc-psd-status-select').val();
 			$.ajax({
 				url: pnpcPsdAdmin.ajax_url,
@@ -120,7 +128,8 @@
 							location.reload();
 						}, 900);
 					} else {
-						showMessage('error', result.data.message, 'response-message');
+						var msg = (result && result.data && result.data.message) ? result.data.message : 'Failed to add response.';
+						showMessage('error', msg, 'response-message');
 					}
 				},
 				error: function(jqXHR, textStatus, errorThrown) {

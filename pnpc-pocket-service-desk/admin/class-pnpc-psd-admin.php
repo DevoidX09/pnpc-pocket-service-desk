@@ -49,7 +49,9 @@ class PNPC_PSD_Admin
 
 	public function enqueue_scripts()
 	{
-		if ($this->is_plugin_page()) {
+		// Also load on any Service Desk admin page, including the ticket detail screen.
+		$force_load = (isset($_GET['page']) && 0 === strpos(sanitize_text_field(wp_unslash($_GET['page'])), 'pnpc-service-desk'));
+		if ($this->is_plugin_page() || $force_load) {
 			wp_enqueue_script(
 				$this->plugin_name,
 				PNPC_PSD_PLUGIN_URL . 'assets/js/pnpc-psd-admin.js',
