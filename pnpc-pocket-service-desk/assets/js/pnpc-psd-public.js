@@ -88,15 +88,16 @@
 
 					} else if (result && result.data && result.data.message) {
 						showCreateMessage('error', result.data.message);
+						$submitBtn.prop('disabled', false);
 					} else {
-						showCreateMessage('error', 'Failed to create ticket.');
+						var msg = (result && result.data && result.data.message) ? result.data.message : 'Failed to create ticket.';
+						showCreateMessage('error', msg);
+						$submitBtn.prop('disabled', false);
 					}
 				},
 				error: function(xhr, status, err) {
 					console.error('pnpc-psd-public.js create ticket error', status, err, xhr && xhr.responseText);
-					showCreateMessage('error', 'An error occurred. Please try again.');
-				},
-				complete: function() {
+					showCreateMessage('error', 'Request failed. Please reload and try again.');
 					$submitBtn.prop('disabled', false);
 				}
 			});

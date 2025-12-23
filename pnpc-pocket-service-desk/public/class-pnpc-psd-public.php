@@ -280,7 +280,10 @@ class PNPC_PSD_Public
 		));
 
 		if (! $ticket_id) {
-			wp_send_json_error(array('message' => __('Failed to create ticket.', 'pnpc-pocket-service-desk')));
+			global $wpdb;
+			$error_detail = $wpdb->last_error ? ' DB error: ' . $wpdb->last_error : '';
+			error_log('pnpc-psd: ajax_create_ticket failed to insert ticket.' . $error_detail);
+			wp_send_json_error(array('message' => __('Failed to create ticket. Please try again or contact support.', 'pnpc-pocket-service-desk')));
 		}
 
 		if (! empty($attachments)) {
