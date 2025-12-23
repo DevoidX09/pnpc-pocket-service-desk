@@ -1,9 +1,7 @@
 <?php
 
 /**
- * Admin ticket detail view (minimal, includes attachments list and response form with attachments)
- *
- * Place at admin/views/ticket-detail.php
+ * Admin ticket detail view (includes assignment, status updates, responses, and attachments)
  *
  * Expects $ticket, $responses, $agents variables populated by the controller.
  */
@@ -23,17 +21,81 @@ if ($all_response_atts) {
 		$response_attachments_map[intval($ra->response_id)][] = $ra;
 	}
 }
+
+$status_options = array(
+	'open'        => __('Open', 'pnpc-pocket-service-desk'),
+	'in-progress' => __('In Progress', 'pnpc-pocket-service-desk'),
+	'waiting'     => __('Waiting', 'pnpc-pocket-service-desk'),
+	'closed'      => __('Closed', 'pnpc-pocket-service-desk'),
+);
+
+if (! function_exists('pnpc_psd_admin_format_datetime')) {
+	function pnpc_psd_admin_format_datetime($datetime)
+	{
+		return function_exists('pnpc_psd_format_db_datetime_for_display')
+			? pnpc_psd_format_db_datetime_for_display($datetime)
+			: date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($datetime));
+	}
+}
+
+$ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 ?>
 
-<div class="wrap pnpc-psd-ticket-detail">
-	<h1><?php echo esc_html($ticket->subject); ?> <small>#<?php echo esc_html($ticket->ticket_number); ?></small></h1>
+<div class="wrap pnpc-psd-ticket-detail" id="pnpc-psd-ticket-detail" data-ticket-id="<?php echo esc_attr($ticket->id); ?>">
+	<div class="pnpc-psd-ticket-header">
+		<div>
+			<h1><?php echo esc_html($ticket->subject); ?> <small>#<?php echo esc_html($ticket->ticket_number); ?></small></h1>
+			<div class="pnpc-psd-ticket-meta">
+				<p>
+					<?php esc_html_e('Status:', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>"><?php echo esc_html(ucfirst($ticket->status)); ?></span>
+				</p>
+				<p>
+					<?php esc_html_e('Assigned to:', 'pnpc-pocket-service-desk'); ?>
+					<?php
+					$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
+					echo $assigned_user ? esc_html($assigned_user->display_name) : esc_html__('Unassigned', 'pnpc-pocket-service-desk');
+					?>
+				</p>
+				<p><?php esc_html_e('Created:', 'pnpc-pocket-service-desk'); ?>
+					<?php echo esc_html($ticket_created_display); ?>
+				</p>
+			</div>
+		</div>
 
-	<div class="pnpc-psd-ticket-meta">
-		<p><?php esc_html_e('Status:', 'pnpc-pocket-service-desk'); ?> <?php echo esc_html(ucfirst($ticket->status)); ?></p>
-		<p><?php esc_html_e('Created:', 'pnpc-pocket-service-desk'); ?>
-			<?php echo esc_html(function_exists('pnpc_psd_format_db_datetime_for_display') ? pnpc_psd_format_db_datetime_for_display($ticket->created_at) : date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($ticket->created_at))); ?>
-		</p>
+		<div class="pnpc-psd-ticket-actions">
+			<?php if (current_user_can('pnpc_psd_assign_tickets')) : ?>
+				<div class="pnpc-psd-field">
+					<label for="pnpc-psd-assign-agent"><?php esc_html_e('Assign Agent', 'pnpc-pocket-service-desk'); ?></label>
+					<select id="pnpc-psd-assign-agent" name="assigned_to">
+						<option value="0"><?php esc_html_e('Unassigned', 'pnpc-pocket-service-desk'); ?></option>
+						<?php foreach ($agents as $agent) : ?>
+							<option value="<?php echo esc_attr($agent->ID); ?>" <?php selected((int) $ticket->assigned_to, (int) $agent->ID); ?>>
+								<?php echo esc_html($agent->display_name); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<button type="button" class="button" id="pnpc-psd-assign-button"><?php esc_html_e('Assign', 'pnpc-pocket-service-desk'); ?></button>
+				</div>
+			<?php endif; ?>
+
+			<?php if (current_user_can('pnpc_psd_respond_to_tickets')) : ?>
+				<div class="pnpc-psd-field">
+					<label for="pnpc-psd-status-select"><?php esc_html_e('Ticket Status', 'pnpc-pocket-service-desk'); ?></label>
+					<select id="pnpc-psd-status-select" name="status">
+						<?php foreach ($status_options as $key => $label) : ?>
+							<option value="<?php echo esc_attr($key); ?>" <?php selected($ticket->status, $key); ?>>
+								<?php echo esc_html($label); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<button type="button" class="button" id="pnpc-psd-status-button"><?php esc_html_e('Update Status', 'pnpc-pocket-service-desk'); ?></button>
+				</div>
+			<?php endif; ?>
+		</div>
 	</div>
+
+	<div id="pnpc-psd-admin-action-message" class="pnpc-psd-message" style="display:none;"></div>
 
 	<?php if (! empty($ticket_attachments)) : ?>
 		<h3><?php esc_html_e('Attachments', 'pnpc-pocket-service-desk'); ?></h3>
@@ -42,7 +104,7 @@ if ($all_response_atts) {
 				<li>
 					<a href="<?php echo esc_url($att->file_path); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($att->file_name); ?></a>
 					<span style="color:#777;margin-left:8px;"><?php echo esc_html(pnpc_psd_format_filesize($att->file_size)); ?></span>
-					<span style="color:#777;margin-left:8px;"><?php echo esc_html(function_exists('pnpc_psd_format_db_datetime_for_display') ? pnpc_psd_format_db_datetime_for_display($att->created_at) : $att->created_at); ?></span>
+					<span style="color:#777;margin-left:8px;"><?php echo esc_html(pnpc_psd_admin_format_datetime($att->created_at)); ?></span>
 				</li>
 			<?php endforeach; ?>
 		</ul>
@@ -61,7 +123,7 @@ if ($all_response_atts) {
 				<div class="pnpc-psd-response-header">
 					<strong><?php echo $responder ? esc_html($responder->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></strong>
 					<span class="pnpc-psd-response-date">
-						<?php echo esc_html(function_exists('pnpc_psd_format_db_datetime_for_display') ? pnpc_psd_format_db_datetime_for_display($r->created_at) : date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($r->created_at))); ?>
+						<?php echo esc_html(pnpc_psd_admin_format_datetime($r->created_at)); ?>
 					</span>
 				</div>
 				<div class="pnpc-psd-response-content">
