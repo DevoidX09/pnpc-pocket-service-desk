@@ -22,13 +22,13 @@
 				return;
 			}
 			createFiles.forEach(function(file, idx) {
-				var removeIndex = idx;
 				var $item = $('<div/>').addClass('pnpc-psd-attachment-item').css({marginBottom:'6px'});
 				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size/1024) + ' KB)'));
-				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove');
+				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove').data('remove-index', idx);
 				$remove.on('click', function() {
+					var toRemove = $(this).data('remove-index');
 					createFiles = createFiles.filter(function(_, fileIdx) {
-						return fileIdx !== removeIndex;
+						return fileIdx !== toRemove;
 					});
 					$('#ticket-attachments').val('');
 					renderCreateAttachmentsList();
@@ -81,9 +81,16 @@
 						$('#pnpc-psd-create-ticket-form')[0].reset();
 
 						if (result.data && result.data.ticket_detail_url) {
-							setTimeout(function() {
-								window.location.href = result.data.ticket_detail_url;
-							}, 900);
+							try {
+								var detailUrl = new URL(result.data.ticket_detail_url, window.location.origin);
+								if (detailUrl.origin === window.location.origin) {
+									setTimeout(function() {
+										window.location.href = detailUrl.toString();
+									}, 900);
+								}
+							} catch (err) {
+								console.warn('pnpc-psd-public.js invalid redirect url', err);
+							}
 						}
 					} else if (result && result.data && result.data.message) {
 						showCreateMessage('error', result.data.message);
@@ -125,13 +132,13 @@
 				return;
 			}
 			responseFiles.forEach(function(file, idx) {
-				var removeIndex = idx;
 				var $item = $('<div/>').addClass('pnpc-psd-attachment-item').css({marginBottom:'6px'});
 				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size/1024) + ' KB)'));
-				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove');
+				var $remove = $('<button/>').attr('type','button').addClass('pnpc-psd-button').css({marginLeft:'8px'}).text('Remove').data('remove-index', idx);
 				$remove.on('click', function() {
+					var toRemove = $(this).data('remove-index');
 					responseFiles = responseFiles.filter(function(_, fileIdx) {
-						return fileIdx !== removeIndex;
+						return fileIdx !== toRemove;
 					});
 					$('#response-attachments').val('');
 					renderResponseAttachmentsList();

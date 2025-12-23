@@ -121,7 +121,13 @@
 
 		function showMessage(type, message, targetId) {
 			var safeTarget = targetId ? String(targetId).replace(/[^A-Za-z0-9_-]/g, '') : '';
-			var $messageDiv = safeTarget ? $('#' + safeTarget) : $('#response-message');
+			var $messageDiv;
+			if (safeTarget) {
+				var targetEl = document.getElementById(safeTarget);
+				$messageDiv = targetEl ? $(targetEl) : $();
+			} else {
+				$messageDiv = $('#response-message');
+			}
 			if (!$messageDiv.length) {
 				return;
 			}
