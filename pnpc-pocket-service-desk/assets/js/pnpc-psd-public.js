@@ -85,9 +85,12 @@
 								var detailUrl = new URL(result.data.ticket_detail_url, window.location.origin);
 								var decodedPath = decodeURIComponent(detailUrl.pathname || '');
 								if (detailUrl.origin === window.location.origin && decodedPath.indexOf('..') === -1 && decodedPath.charAt(0) === '/') {
-									setTimeout(function() {
-										window.location.href = detailUrl.toString();
-									}, 900);
+									var $messageDiv = $('#ticket-create-message');
+									if ($messageDiv.length) {
+										var $link = $('<a/>').attr('href', detailUrl.toString()).text('View ticket');
+										$messageDiv.append(' ');
+										$messageDiv.append($link);
+									}
 								}
 							} catch (err) {
 								console.warn('pnpc-psd-public.js invalid redirect url', err);

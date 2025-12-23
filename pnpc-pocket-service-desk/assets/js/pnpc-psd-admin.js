@@ -130,7 +130,8 @@
 		});
 
 		function showMessage(type, message, targetId) {
-			var safeTarget = targetId ? String(targetId).replace(/[^A-Za-z0-9_-]/g, '') : '';
+			var allowedTargets = ['pnpc-psd-admin-action-message', 'response-message'];
+			var safeTarget = (targetId && allowedTargets.indexOf(targetId) !== -1) ? targetId : '';
 			var $messageDiv;
 			if (safeTarget) {
 				var targetEl = document.getElementById(safeTarget);
