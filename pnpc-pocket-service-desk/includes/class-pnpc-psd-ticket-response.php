@@ -138,20 +138,40 @@ class PNPC_PSD_Ticket_Response
 		$ticket_id  = absint($ticket_id);
 
 		$defaults = array(
-			'orderby' => 'created_at',
-			'order'   => 'ASC',
+			'orderby'         => 'created_at',
+			'order'           => 'ASC',
+			'include_trashed' => false,
 		);
 
 		$args = wp_parse_args($args, $defaults);
 
+		$where = $wpdb->prepare('WHERE ticket_id = %d', $ticket_id);
+
+		// Exclude trashed responses by default.
+		if (! $args['include_trashed']) {
+			$where .= ' AND deleted_at IS NULL';
+		}
+
+		// Whitelist allowed orderby columns.
+		$allowed_orderby = array('id', 'created_at', 'user_id', 'is_staff_response');
+		if (! in_array($args['orderby'], $allowed_orderby, true)) {
+			$args['orderby'] = 'created_at';
+		}
+
+		// Validate order direction.
+		$args['order'] = strtoupper($args['order']);
+		if (! in_array($args['order'], array('ASC', 'DESC'), true)) {
+			$args['order'] = 'ASC';
+		}
+
 		$orderby = sanitize_sql_orderby("{$args['orderby']} {$args['order']}");
+		if (false === $orderby) {
+			$orderby = 'created_at ASC';
+		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$responses = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT * FROM {$table_name} WHERE ticket_id = %d ORDER BY {$orderby}",
-				$ticket_id
-			)
+			"SELECT * FROM {$table_name} {$where} ORDER BY {$orderby}"
 		);
 
 		return $responses;
