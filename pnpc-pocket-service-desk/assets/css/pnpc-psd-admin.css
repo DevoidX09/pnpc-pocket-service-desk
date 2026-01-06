@@ -282,6 +282,60 @@
 	padding-top: 8px;
 }
 
+/* Sortable table headers */
+.pnpc-psd-sortable {
+	cursor: pointer;
+	position: relative;
+	padding-right: 25px !important;
+	user-select: none;
+	transition: background-color 0.2s ease;
+}
+
+.pnpc-psd-sortable:hover {
+	background-color: #f0f0f1;
+}
+
+.pnpc-psd-sortable:focus {
+	outline: 2px solid #2271b1;
+	outline-offset: -2px;
+}
+
+.pnpc-psd-sortable[data-sort-order="asc"],
+.pnpc-psd-sortable[data-sort-order="desc"] {
+	background-color: #f0f0f1;
+	font-weight: 600;
+}
+
+.pnpc-psd-sort-arrow {
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 0;
+	height: 0;
+	border-left: 4px solid transparent;
+	border-right: 4px solid transparent;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+
+.pnpc-psd-sortable:hover .pnpc-psd-sort-arrow {
+	opacity: 0.3;
+	border-bottom: 5px solid #2c3338;
+}
+
+.pnpc-psd-sortable[data-sort-order="asc"] .pnpc-psd-sort-arrow {
+	opacity: 1;
+	border-bottom: 5px solid #2271b1;
+	border-top: none;
+}
+
+.pnpc-psd-sortable[data-sort-order="desc"] .pnpc-psd-sort-arrow {
+	opacity: 1;
+	border-top: 5px solid #2271b1;
+	border-bottom: none;
+}
+
 /* Responsive adjustments */
 @media screen and (max-width: 782px) {
 	.tablenav {
@@ -297,5 +351,13 @@
 		display: block;
 		margin-top: 10px;
 		margin-left: 0 !important;
+	}
+	
+	.pnpc-psd-sortable {
+		padding-right: 20px !important;
+	}
+	
+	.pnpc-psd-sort-arrow {
+		right: 5px;
 	}
 }

@@ -78,15 +78,39 @@ $is_trash_view = ('trash' === $current_view);
 					<input id="cb-select-all-1" type="checkbox">
 				</td>
 				<?php endif; ?>
-				<th><?php esc_html_e('Ticket #', 'pnpc-pocket-service-desk'); ?></th>
-				<th><?php esc_html_e('Subject', 'pnpc-pocket-service-desk'); ?></th>
-				<th><?php esc_html_e('Customer', 'pnpc-pocket-service-desk'); ?></th>
-				<th><?php esc_html_e('Status', 'pnpc-pocket-service-desk'); ?></th>
-				<th><?php esc_html_e('Priority', 'pnpc-pocket-service-desk'); ?></th>
-				<th><?php esc_html_e('Assigned To', 'pnpc-pocket-service-desk'); ?></th>
-				<th><?php esc_html_e('Created', 'pnpc-pocket-service-desk'); ?></th>
+				<th class="pnpc-psd-sortable" data-sort-type="ticket-number" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Ticket Number', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Ticket #', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="text" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Subject', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Subject', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="text" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Customer', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Customer', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="status" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Status', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Status', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="priority" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Priority', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Priority', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="text" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Assigned To', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Assigned To', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="date" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Created Date', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Created', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
 				<?php if (! $is_trash_view) : ?>
-				<th><?php esc_html_e('New', 'pnpc-pocket-service-desk'); ?></th>
+				<th class="pnpc-psd-sortable" data-sort-type="boolean" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by New Responses', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('New', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
 				<?php endif; ?>
 				<th><?php esc_html_e('Actions', 'pnpc-pocket-service-desk'); ?></th>
 			</tr>
@@ -97,6 +121,20 @@ $is_trash_view = ('trash' === $current_view);
 					<?php
 					$user          = get_userdata($ticket->user_id);
 					$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
+					
+					// Extract numeric part from ticket number for sorting (e.g., PNPC-1234 -> 1234)
+					$ticket_num_for_sort = (int) preg_replace('/[^0-9]/', '', $ticket->ticket_number);
+					
+					// Status sort order: open=1, in-progress=2, waiting=3, closed=4
+					$status_order = array('open' => 1, 'in-progress' => 2, 'waiting' => 3, 'closed' => 4);
+					$status_sort_value = isset($status_order[$ticket->status]) ? $status_order[$ticket->status] : 999;
+					
+					// Priority sort order: urgent=1, high=2, normal=3, low=4
+					$priority_order = array('urgent' => 1, 'high' => 2, 'normal' => 3, 'low' => 4);
+					$priority_sort_value = isset($priority_order[$ticket->priority]) ? $priority_order[$ticket->priority] : 999;
+					
+					// Get timestamp for date sorting
+					$created_timestamp = strtotime($ticket->created_at);
 					?>
 					<tr>
 						<?php if (current_user_can('pnpc_psd_delete_tickets')) : ?>
@@ -110,25 +148,25 @@ $is_trash_view = ('trash' === $current_view);
 							<input type="checkbox" name="ticket[]" id="cb-select-<?php echo absint($ticket->id); ?>" value="<?php echo absint($ticket->id); ?>">
 						</th>
 						<?php endif; ?>
-						<td><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
-						<td>
+						<td data-sort-value="<?php echo absint($ticket_num_for_sort); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
+						<td data-sort-value="<?php echo esc_attr(strtolower($ticket->subject)); ?>">
 							<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
 								<?php echo esc_html($ticket->subject); ?>
 							</a>
 						</td>
-						<td><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
-						<td>
+						<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
+						<td data-sort-value="<?php echo absint($status_sort_value); ?>">
 							<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>">
 								<?php echo esc_html(ucfirst($ticket->status)); ?>
 							</span>
 						</td>
-						<td>
+						<td data-sort-value="<?php echo absint($priority_sort_value); ?>">
 							<span class="pnpc-psd-priority pnpc-psd-priority-<?php echo esc_attr($ticket->priority); ?>">
 								<?php echo esc_html(ucfirst($ticket->priority)); ?>
 							</span>
 						</td>
-						<td><?php echo $assigned_user ? esc_html($assigned_user->display_name) : esc_html__('Unassigned', 'pnpc-pocket-service-desk'); ?></td>
-						<td>
+						<td data-sort-value="<?php echo esc_attr(strtolower($assigned_user ? $assigned_user->display_name : 'zzz_unassigned')); ?>"><?php echo $assigned_user ? esc_html($assigned_user->display_name) : esc_html__('Unassigned', 'pnpc-pocket-service-desk'); ?></td>
+						<td data-sort-value="<?php echo absint($created_timestamp); ?>">
 							<?php
 							// Use helper to format DB datetime into WP-localized string
 							if (function_exists('pnpc_psd_format_db_datetime_for_display')) {
@@ -139,8 +177,7 @@ $is_trash_view = ('trash' === $current_view);
 							?>
 						</td>
 						<?php if (! $is_trash_view) : ?>
-						<td>
-							<?php
+						<td data-sort-value="<?php
 							$new_responses = 0;
 							$current_admin_id = get_current_user_id();
 							if ($current_admin_id && $ticket->assigned_to && (int) $ticket->assigned_to === (int) $current_admin_id) {
@@ -161,7 +198,8 @@ $is_trash_view = ('trash' === $current_view);
 									}
 								}
 							}
-							?>
+							echo absint($new_responses);
+						?>">
 							<?php if ($new_responses > 0) : ?>
 								<span class="pnpc-psd-new-indicator-badge"><?php echo esc_html($new_responses); ?></span>
 							<?php endif; ?>
