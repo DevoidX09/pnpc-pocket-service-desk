@@ -161,7 +161,7 @@ $is_trash_view = ('trash' === $current_view);
 						}
 					}
 					?>
-					<tr>
+					<tr data-status="<?php echo esc_attr($ticket->status); ?>">
 						<?php if (current_user_can('pnpc_psd_delete_tickets')) : ?>
 						<th scope="row" class="check-column">
 							<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">

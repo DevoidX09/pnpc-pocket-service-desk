@@ -336,6 +336,26 @@
 	border-bottom: none;
 }
 
+/* Divider row for separating active and closed tickets */
+.pnpc-psd-divider-row {
+	background-color: #f6f7f7;
+	border-top: 2px solid #dcdcde;
+	border-bottom: 2px solid #dcdcde;
+}
+
+.pnpc-psd-divider-row td {
+	padding: 8px;
+	text-align: center;
+	font-weight: 600;
+	color: #646970;
+	font-size: 12px;
+	text-transform: uppercase;
+}
+
+.pnpc-psd-divider-row .check-column {
+	background-color: #f6f7f7;
+}
+
 /* Responsive adjustments */
 @media screen and (max-width: 782px) {
 	.tablenav {
