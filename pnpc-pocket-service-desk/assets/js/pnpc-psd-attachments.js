@@ -7,6 +7,13 @@
 (function($) {
 	'use strict';
 
+	// Configuration constants
+	var CONFIG = {
+		SWIPE_THRESHOLD: 50,           // Minimum pixels for swipe detection
+		PDF_LOAD_TIMEOUT: 1000,        // Timeout for PDF load detection (ms)
+		ANIMATION_DURATION: 300        // Fade animation duration (ms)
+	};
+
 	// Store attachment data
 	var attachmentGallery = [];
 	var currentIndex = 0;
@@ -162,10 +169,9 @@
 	 * Handle swipe gesture
 	 */
 	function handleSwipe() {
-		var swipeThreshold = 50;
 		var diff = touchStartX - touchEndX;
 
-		if (Math.abs(diff) > swipeThreshold) {
+		if (Math.abs(diff) > CONFIG.SWIPE_THRESHOLD) {
 			if (diff > 0) {
 				// Swiped left - next
 				navigateNext();
@@ -194,7 +200,7 @@
 		var attachment = attachmentGallery[currentIndex];
 
 		// Show lightbox
-		$lightbox.fadeIn(300);
+		$lightbox.fadeIn(CONFIG.ANIMATION_DURATION);
 		$('body').addClass('pnpc-psd-lightbox-open');
 
 		// Load content based on type
@@ -212,7 +218,7 @@
 		// Set focus to close button for accessibility
 		setTimeout(function() {
 			$lightbox.find('.pnpc-psd-lightbox-close').focus();
-		}, 350);
+		}, CONFIG.ANIMATION_DURATION + 50);
 	}
 
 	/**
@@ -223,14 +229,14 @@
 			return;
 		}
 
-		$lightbox.fadeOut(300);
+		$lightbox.fadeOut(CONFIG.ANIMATION_DURATION);
 		$('body').removeClass('pnpc-psd-lightbox-open');
 
 		// Clear content after animation
 		setTimeout(function() {
 			$lightbox.find('.pnpc-psd-lightbox-image').attr('src', '');
 			$lightbox.find('.pnpc-psd-lightbox-pdf').attr('src', '');
-		}, 300);
+		}, CONFIG.ANIMATION_DURATION);
 	}
 
 	/**
@@ -282,18 +288,23 @@
 		// Try to load PDF
 		$pdf.attr('src', attachment.url);
 
-		// Check if PDF loaded (basic check)
-		// Note: More sophisticated PDF support detection could be added
+		// Improved PDF support detection
+		// Check if the iframe/embed element can load PDFs
 		setTimeout(function() {
-			// If PDF element has zero height, browser doesn't support inline PDFs
-			if ($pdf.height() === 0) {
+			// Multiple checks for better reliability across browsers
+			var hasPdfPlugin = navigator.mimeTypes && navigator.mimeTypes['application/pdf'];
+			var pdfHeight = $pdf.height();
+			var pdfWidth = $pdf.width();
+			
+			// If element has no dimensions or no PDF plugin detected, show fallback
+			if ((pdfHeight === 0 && pdfWidth === 0) || !hasPdfPlugin) {
 				$pdf.hide();
 				if ($fallback.length) {
 					$fallback.show();
 					$fallback.find('a').attr('href', attachment.url);
 				}
 			}
-		}, 500);
+		}, CONFIG.PDF_LOAD_TIMEOUT);
 	}
 
 	/**

@@ -287,7 +287,7 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 		
 		<!-- PDF View -->
 		<div class="pnpc-psd-lightbox-pdf-container" style="display:none;">
-			<embed src="" type="application/pdf" class="pnpc-psd-lightbox-pdf">
+			<iframe src="" type="application/pdf" class="pnpc-psd-lightbox-pdf" title="<?php esc_attr_e('PDF Viewer', 'pnpc-pocket-service-desk'); ?>"></iframe>
 			<div class="pnpc-psd-pdf-fallback" style="display:none;">
 				<p><?php esc_html_e('Your browser cannot display this PDF.', 'pnpc-pocket-service-desk'); ?></p>
 				<a href="#" download class="button button-primary">
