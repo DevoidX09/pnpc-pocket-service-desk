@@ -131,7 +131,13 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 						
 						<?php if (! $can_preview) : ?>
 							<span class="pnpc-psd-attachment-warning">
-								⚠ <?php esc_html_e('Exceeds 5MB preview limit', 'pnpc-pocket-service-desk'); ?>
+								⚠ <?php
+								/* translators: %s: file size limit */
+								printf(
+									esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
+									esc_html(pnpc_psd_format_filesize(PNPC_PSD_FREE_PREVIEW_LIMIT))
+								);
+								?>
 							</span>
 						<?php endif; ?>
 					</div>
@@ -211,7 +217,13 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 									
 									<?php if (! $can_preview) : ?>
 										<span class="pnpc-psd-attachment-warning">
-											⚠ <?php esc_html_e('Exceeds 5MB preview limit', 'pnpc-pocket-service-desk'); ?>
+											⚠ <?php
+											/* translators: %s: file size limit */
+											printf(
+												esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
+												esc_html(pnpc_psd_format_filesize(PNPC_PSD_FREE_PREVIEW_LIMIT))
+											);
+											?>
 										</span>
 									<?php endif; ?>
 								</div>

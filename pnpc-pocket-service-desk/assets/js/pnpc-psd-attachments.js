@@ -242,8 +242,8 @@
 
 		// Clear content after animation
 		setTimeout(function() {
-			$lightbox.find('.pnpc-psd-lightbox-image').attr('src', '');
-			$lightbox.find('.pnpc-psd-lightbox-pdf').attr('src', '');
+			$lightbox.find('.pnpc-psd-lightbox-image').attr('src', 'about:blank');
+			$lightbox.find('.pnpc-psd-lightbox-pdf').attr('src', 'about:blank');
 		}, CONFIG.ANIMATION_DURATION);
 	}
 
