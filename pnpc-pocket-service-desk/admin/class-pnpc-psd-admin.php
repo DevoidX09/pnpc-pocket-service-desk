@@ -867,25 +867,43 @@ class PNPC_PSD_Admin
 			$created_timestamp = 0;
 		}
 		
-		// Calculate new responses
+		// Calculate new responses - simplified to avoid N+1 queries
+		// Only show for assigned tickets to current user
 		$new_responses = 0;
 		$current_admin_id = get_current_user_id();
 		if ($current_admin_id && $ticket->assigned_to && (int) $ticket->assigned_to === (int) $current_admin_id) {
-			$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
-			$last_view_raw  = get_user_meta($current_admin_id, $last_view_key, true);
-			$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
+			// Use a transient to cache the response count
+			$transient_key = 'pnpc_psd_new_resp_' . $ticket->id . '_' . $current_admin_id;
+			$cached_count = get_transient($transient_key);
+			
+			if (false === $cached_count) {
+				$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
+				$last_view_raw  = get_user_meta($current_admin_id, $last_view_key, true);
+				$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
 
-			$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
-			if (! empty($responses)) {
-				foreach ($responses as $response) {
-					if ((int) $response->user_id === (int) $current_admin_id) {
-						continue;
-					}
-					$resp_time = function_exists('pnpc_psd_mysql_to_wp_local_ts') ? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) : intval(strtotime($response->created_at));
-					if ($resp_time > $last_view_time) {
-						$new_responses++;
+				// Cache function_exists check
+				static $use_helper_func = null;
+				if (null === $use_helper_func) {
+					$use_helper_func = function_exists('pnpc_psd_mysql_to_wp_local_ts');
+				}
+
+				$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
+				if (! empty($responses)) {
+					foreach ($responses as $response) {
+						if ((int) $response->user_id === (int) $current_admin_id) {
+							continue;
+						}
+						$resp_time = $use_helper_func ? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) : intval(strtotime($response->created_at));
+						if ($resp_time > $last_view_time) {
+							$new_responses++;
+						}
 					}
 				}
+				
+				// Cache for 30 seconds
+				set_transient($transient_key, $new_responses, 30);
+			} else {
+				$new_responses = (int) $cached_count;
 			}
 		}
 		?>

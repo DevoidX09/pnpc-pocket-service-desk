@@ -13,7 +13,7 @@
 	};
 
 	// State
-	var autoRefreshEnabled = localStorage.getItem('pnpc_psd_auto_refresh') !== 'false';
+	var autoRefreshEnabled = localStorage.getItem('pnpc_psd_auto_refresh') === 'false' ? false : true;
 	var autoRefreshTimer = null;
 	var menuBadgeTimer = null;
 	var lastRefreshTime = Date.now();
@@ -166,7 +166,7 @@
 	 */
 	function toggleAutoRefresh() {
 		autoRefreshEnabled = !autoRefreshEnabled;
-		localStorage.setItem('pnpc_psd_auto_refresh', autoRefreshEnabled);
+		localStorage.setItem('pnpc_psd_auto_refresh', autoRefreshEnabled ? 'true' : 'false');
 
 		var $button = $('#pnpc-psd-toggle-auto-refresh');
 		
