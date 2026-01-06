@@ -124,50 +124,86 @@ class PNPC_PSD_Activator {
 
 		// Add deleted_at column to tickets table if not exists.
 		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
-		$column_exists = $wpdb->get_results(
+		
+		// Verify table exists before attempting to alter it.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
-				"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
-				'deleted_at'
+				'SHOW TABLES LIKE %s',
+				$tickets_table
 			)
 		);
 
-		if ( empty( $column_exists ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query(
-				"ALTER TABLE {$tickets_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER updated_at, ADD KEY deleted_at (deleted_at)"
+		if ($table_exists) {
+			$column_exists = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
+					'deleted_at'
+				)
 			);
+
+			if ( empty( $column_exists ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query(
+					"ALTER TABLE {$tickets_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER updated_at, ADD KEY deleted_at (deleted_at)"
+				);
+			}
 		}
 
 		// Add deleted_at column to responses table if not exists.
 		$responses_table = $wpdb->prefix . 'pnpc_psd_ticket_responses';
-		$column_exists = $wpdb->get_results(
+		
+		// Verify table exists before attempting to alter it.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
-				"SHOW COLUMNS FROM {$responses_table} LIKE %s",
-				'deleted_at'
+				'SHOW TABLES LIKE %s',
+				$responses_table
 			)
 		);
 
-		if ( empty( $column_exists ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query(
-				"ALTER TABLE {$responses_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
+		if ($table_exists) {
+			$column_exists = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW COLUMNS FROM {$responses_table} LIKE %s",
+					'deleted_at'
+				)
 			);
+
+			if ( empty( $column_exists ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query(
+					"ALTER TABLE {$responses_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
+				);
+			}
 		}
 
 		// Add deleted_at column to attachments table if not exists.
 		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
-		$column_exists = $wpdb->get_results(
+		
+		// Verify table exists before attempting to alter it.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
-				"SHOW COLUMNS FROM {$attachments_table} LIKE %s",
-				'deleted_at'
+				'SHOW TABLES LIKE %s',
+				$attachments_table
 			)
 		);
 
-		if ( empty( $column_exists ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query(
-				"ALTER TABLE {$attachments_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
+		if ($table_exists) {
+			$column_exists = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW COLUMNS FROM {$attachments_table} LIKE %s",
+					'deleted_at'
+				)
 			);
+
+			if ( empty( $column_exists ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query(
+					"ALTER TABLE {$attachments_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
+				);
+			}
 		}
 
 		// Update DB version.

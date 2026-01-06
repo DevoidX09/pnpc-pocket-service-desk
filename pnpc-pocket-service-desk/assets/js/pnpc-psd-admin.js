@@ -131,7 +131,7 @@
 					},
 					error: function(jqXHR, textStatus, errorThrown) {
 						console.error('pnpc-psd-admin.js assign AJAX error', textStatus, errorThrown);
-						showMessage('error', 'An error occurred.Please try again.', 'pnpc-psd-admin-action-message');
+						showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-admin-action-message');
 					}
 				});
 			});
@@ -167,7 +167,7 @@
 					},
 					error: function(jqXHR, textStatus, errorThrown) {
 						console.error('pnpc-psd-admin.js status AJAX error', textStatus, errorThrown);
-						showMessage('error', 'An error occurred.Please try again.', 'pnpc-psd-admin-action-message');
+						showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-admin-action-message');
 					}
 				});
 			});
@@ -225,7 +225,7 @@
 					},
 					error: function(jqXHR, textStatus, errorThrown) {
 						console.error('pnpc-psd-admin.js AJAX error', textStatus, errorThrown);
-						showMessage('error', 'An error occurred.Please try again.', 'response-message');
+						showMessage('error', 'An error occurred. Please try again.', 'response-message');
 					}
 				});
 			});

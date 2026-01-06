@@ -176,7 +176,7 @@ $is_trash_view = ('trash' === $current_view);
 				<?php endforeach; ?>
 			<?php else : ?>
 				<tr>
-					<td colspan="<?php echo current_user_can('pnpc_psd_delete_tickets') ? '10' : '9'; ?>">
+					<td colspan="<?php echo $is_trash_view ? (current_user_can('pnpc_psd_delete_tickets') ? '9' : '8') : (current_user_can('pnpc_psd_delete_tickets') ? '10' : '9'); ?>">
 						<?php
 						if ($is_trash_view) {
 							esc_html_e('No tickets in trash.', 'pnpc-pocket-service-desk');

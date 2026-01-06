@@ -165,7 +165,23 @@ class PNPC_PSD_Ticket
 			$where .= $wpdb->prepare(' AND status = %s', $args['status']);
 		}
 
+		// Whitelist allowed orderby columns.
+		$allowed_orderby = array('id', 'ticket_number', 'created_at', 'updated_at', 'status', 'priority');
+		if (! in_array($args['orderby'], $allowed_orderby, true)) {
+			$args['orderby'] = 'created_at';
+		}
+
+		// Validate order direction.
+		$args['order'] = strtoupper($args['order']);
+		if (! in_array($args['order'], array('ASC', 'DESC'), true)) {
+			$args['order'] = 'DESC';
+		}
+
 		$orderby = sanitize_sql_orderby("{$args['orderby']} {$args['order']}");
+		if (false === $orderby) {
+			$orderby = 'created_at DESC';
+		}
+
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
@@ -217,7 +233,23 @@ class PNPC_PSD_Ticket
 			$where .= $wpdb->prepare(' AND assigned_to = %d', absint($args['assigned_to']));
 		}
 
+		// Whitelist allowed orderby columns.
+		$allowed_orderby = array('id', 'ticket_number', 'created_at', 'updated_at', 'status', 'priority', 'assigned_to');
+		if (! in_array($args['orderby'], $allowed_orderby, true)) {
+			$args['orderby'] = 'created_at';
+		}
+
+		// Validate order direction.
+		$args['order'] = strtoupper($args['order']);
+		if (! in_array($args['order'], array('ASC', 'DESC'), true)) {
+			$args['order'] = 'DESC';
+		}
+
 		$orderby = sanitize_sql_orderby("{$args['orderby']} {$args['order']}");
+		if (false === $orderby) {
+			$orderby = 'created_at DESC';
+		}
+
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
@@ -450,7 +482,23 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 
 		$args = wp_parse_args($args, $defaults);
 
+		// Whitelist allowed orderby columns.
+		$allowed_orderby = array('id', 'ticket_number', 'created_at', 'updated_at', 'deleted_at', 'status', 'priority');
+		if (! in_array($args['orderby'], $allowed_orderby, true)) {
+			$args['orderby'] = 'deleted_at';
+		}
+
+		// Validate order direction.
+		$args['order'] = strtoupper($args['order']);
+		if (! in_array($args['order'], array('ASC', 'DESC'), true)) {
+			$args['order'] = 'DESC';
+		}
+
 		$orderby = sanitize_sql_orderby("{$args['orderby']} {$args['order']}");
+		if (false === $orderby) {
+			$orderby = 'deleted_at DESC';
+		}
+
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
