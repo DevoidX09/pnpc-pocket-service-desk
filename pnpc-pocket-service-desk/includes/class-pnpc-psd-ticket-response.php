@@ -138,20 +138,40 @@ class PNPC_PSD_Ticket_Response
 		$ticket_id  = absint($ticket_id);
 
 		$defaults = array(
-			'orderby' => 'created_at',
-			'order'   => 'ASC',
+			'orderby'         => 'created_at',
+			'order'           => 'ASC',
+			'include_trashed' => false,
 		);
 
 		$args = wp_parse_args($args, $defaults);
 
+		$where = $wpdb->prepare('WHERE ticket_id = %d', $ticket_id);
+
+		// Exclude trashed responses by default.
+		if (! $args['include_trashed']) {
+			$where .= ' AND deleted_at IS NULL';
+		}
+
+		// Whitelist allowed orderby columns.
+		$allowed_orderby = array('id', 'created_at', 'user_id', 'is_staff_response');
+		if (! in_array($args['orderby'], $allowed_orderby, true)) {
+			$args['orderby'] = 'created_at';
+		}
+
+		// Validate order direction.
+		$args['order'] = strtoupper($args['order']);
+		if (! in_array($args['order'], array('ASC', 'DESC'), true)) {
+			$args['order'] = 'ASC';
+		}
+
 		$orderby = sanitize_sql_orderby("{$args['orderby']} {$args['order']}");
+		if (false === $orderby) {
+			$orderby = 'created_at ASC';
+		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$responses = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT * FROM {$table_name} WHERE ticket_id = %d ORDER BY {$orderby}",
-				$ticket_id
-			)
+			"SELECT * FROM {$table_name} {$where} ORDER BY {$orderby}"
 		);
 
 		return $responses;
@@ -280,11 +300,65 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$count = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table_name} WHERE ticket_id = %d",
+				"SELECT COUNT(*) FROM {$table_name} WHERE ticket_id = %d AND deleted_at IS NULL",
 				$ticket_id
 			)
 		);
 
 		return absint($count);
+	}
+
+	/**
+	 * Trash responses by ticket ID.
+	 *
+	 * @since 1.1.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function trash_by_ticket($ticket_id)
+	{
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$ticket_id  = absint($ticket_id);
+
+		$deleted_at = function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$result = $wpdb->update(
+			$table_name,
+			array('deleted_at' => $deleted_at),
+			array('ticket_id' => $ticket_id),
+			array('%s'),
+			array('%d')
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Restore responses by ticket ID.
+	 *
+	 * @since 1.1.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function restore_by_ticket($ticket_id)
+	{
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$ticket_id  = absint($ticket_id);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$result = $wpdb->update(
+			$table_name,
+			array('deleted_at' => null),
+			array('ticket_id' => $ticket_id),
+			array('%s'),
+			array('%d')
+		);
+
+		return false !== $result;
 	}
 }

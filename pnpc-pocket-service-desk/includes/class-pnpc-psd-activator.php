@@ -43,11 +43,13 @@ class PNPC_PSD_Activator {
 			assigned_to bigint(20) UNSIGNED DEFAULT NULL,
 			created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
 			updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+			deleted_at datetime DEFAULT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY ticket_number (ticket_number),
 			KEY user_id (user_id),
 			KEY assigned_to (assigned_to),
-			KEY status (status)
+			KEY status (status),
+			KEY deleted_at (deleted_at)
 		) $charset_collate;";
 
 		// Create ticket responses table.
@@ -59,9 +61,11 @@ class PNPC_PSD_Activator {
 			response longtext NOT NULL,
 			is_staff_response tinyint(1) DEFAULT 0 NOT NULL,
 			created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+			deleted_at datetime DEFAULT NULL,
 			PRIMARY KEY  (id),
 			KEY ticket_id (ticket_id),
-			KEY user_id (user_id)
+			KEY user_id (user_id),
+			KEY deleted_at (deleted_at)
 		) $charset_collate;";
 
 		// Create ticket attachments table.
@@ -76,9 +80,11 @@ class PNPC_PSD_Activator {
 			file_size bigint(20) UNSIGNED NOT NULL,
 			uploaded_by bigint(20) UNSIGNED NOT NULL,
 			created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+			deleted_at datetime DEFAULT NULL,
 			PRIMARY KEY  (id),
 			KEY ticket_id (ticket_id),
-			KEY response_id (response_id)
+			KEY response_id (response_id),
+			KEY deleted_at (deleted_at)
 		) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -91,11 +97,117 @@ class PNPC_PSD_Activator {
 
 		// Set default options.
 		add_option( 'pnpc_psd_version', PNPC_PSD_VERSION );
-		add_option( 'pnpc_psd_db_version', '1.0.0' );
+		add_option( 'pnpc_psd_db_version', '1.1.0' );
 		add_option( 'pnpc_psd_ticket_counter', 1000 );
+
+		// Run database migration for existing installations.
+		self::maybe_upgrade_database();
 
 		// Flush rewrite rules.
 		flush_rewrite_rules();
+	}
+
+	/**
+	 * Upgrade database schema for existing installations.
+	 *
+	 * @since 1.1.0
+	 */
+	public static function maybe_upgrade_database() {
+		$current_db_version = get_option( 'pnpc_psd_db_version', '1.0.0' );
+
+		// If already at latest version, skip.
+		if ( version_compare( $current_db_version, '1.1.0', '>=' ) ) {
+			return;
+		}
+
+		global $wpdb;
+
+		// Add deleted_at column to tickets table if not exists.
+		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+		
+		// Verify table exists before attempting to alter it.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$table_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$tickets_table
+			)
+		);
+
+		if ($table_exists) {
+			$column_exists = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
+					'deleted_at'
+				)
+			);
+
+			if ( empty( $column_exists ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query(
+					"ALTER TABLE {$tickets_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER updated_at, ADD KEY deleted_at (deleted_at)"
+				);
+			}
+		}
+
+		// Add deleted_at column to responses table if not exists.
+		$responses_table = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		
+		// Verify table exists before attempting to alter it.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$table_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$responses_table
+			)
+		);
+
+		if ($table_exists) {
+			$column_exists = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW COLUMNS FROM {$responses_table} LIKE %s",
+					'deleted_at'
+				)
+			);
+
+			if ( empty( $column_exists ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query(
+					"ALTER TABLE {$responses_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
+				);
+			}
+		}
+
+		// Add deleted_at column to attachments table if not exists.
+		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		
+		// Verify table exists before attempting to alter it.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$table_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$attachments_table
+			)
+		);
+
+		if ($table_exists) {
+			$column_exists = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW COLUMNS FROM {$attachments_table} LIKE %s",
+					'deleted_at'
+				)
+			);
+
+			if ( empty( $column_exists ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query(
+					"ALTER TABLE {$attachments_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
+				);
+			}
+		}
+
+		// Update DB version.
+		update_option( 'pnpc_psd_db_version', '1.1.0' );
 	}
 
 	/**
