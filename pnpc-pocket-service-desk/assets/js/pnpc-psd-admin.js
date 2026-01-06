@@ -20,6 +20,7 @@
 
 		if ($ticketsTable.length) {
 			// Apply default sort on page load (Created date, newest first)
+			// Delay ensures DOM is fully ready and prevents race conditions
 			var $createdHeader = $ticketsTable.find('th[data-sort-type="date"]');
 			if ($createdHeader.length) {
 				setTimeout(function() {
@@ -45,7 +46,10 @@
 				} else if (currentOrder === 'asc') {
 					newOrder = 'desc';
 				} else {
-					newOrder = '';
+					// Reset to default sort (Created date, newest first)
+					var $defaultHeader = $ticketsTable.find('th[data-sort-type="date"]');
+					sortTable($defaultHeader, 'desc');
+					return;
 				}
 
 				sortTable($header, newOrder);
@@ -53,7 +57,7 @@
 
 			// Keyboard support (Enter key)
 			$ticketsTable.on('keydown', '.pnpc-psd-sortable', function(e) {
-				if (e.key === 'Enter' || e.keyCode === 13) {
+				if (e.key === 'Enter') {
 					$(this).trigger('click');
 				}
 			});
@@ -77,13 +81,6 @@
 
 			// Clear all sort indicators
 			$ticketsTable.find('.pnpc-psd-sortable').attr('data-sort-order', '');
-			
-			// If order is empty, reset to default (no sorting applied)
-			if (order === '') {
-				$header.attr('data-sort-order', '');
-				// No need to sort, just return to prevent sorting
-				return;
-			}
 
 			// Set current sort indicator
 			$header.attr('data-sort-order', order);

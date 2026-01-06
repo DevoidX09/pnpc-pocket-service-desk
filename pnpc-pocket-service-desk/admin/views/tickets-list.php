@@ -135,6 +135,28 @@ $is_trash_view = ('trash' === $current_view);
 					
 					// Get timestamp for date sorting
 					$created_timestamp = strtotime($ticket->created_at);
+					
+					// Calculate new responses for this ticket
+					$new_responses = 0;
+					$current_admin_id = get_current_user_id();
+					if ($current_admin_id && $ticket->assigned_to && (int) $ticket->assigned_to === (int) $current_admin_id) {
+						$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
+						$last_view_raw  = get_user_meta($current_admin_id, $last_view_key, true);
+						$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
+
+						$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
+						if (! empty($responses)) {
+							foreach ($responses as $response) {
+								if ((int) $response->user_id === (int) $current_admin_id) {
+									continue;
+								}
+								$resp_time = function_exists('pnpc_psd_mysql_to_wp_local_ts') ? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) : intval(strtotime($response->created_at));
+								if ($resp_time > $last_view_time) {
+									$new_responses++;
+								}
+							}
+						}
+					}
 					?>
 					<tr>
 						<?php if (current_user_can('pnpc_psd_delete_tickets')) : ?>
@@ -177,29 +199,7 @@ $is_trash_view = ('trash' === $current_view);
 							?>
 						</td>
 						<?php if (! $is_trash_view) : ?>
-						<td data-sort-value="<?php
-							$new_responses = 0;
-							$current_admin_id = get_current_user_id();
-							if ($current_admin_id && $ticket->assigned_to && (int) $ticket->assigned_to === (int) $current_admin_id) {
-								$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
-								$last_view_raw  = get_user_meta($current_admin_id, $last_view_key, true);
-								$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
-
-								$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
-								if (! empty($responses)) {
-									foreach ($responses as $response) {
-										if ((int) $response->user_id === (int) $current_admin_id) {
-											continue;
-										}
-										$resp_time = function_exists('pnpc_psd_mysql_to_wp_local_ts') ? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) : intval(strtotime($response->created_at));
-										if ($resp_time > $last_view_time) {
-											$new_responses++;
-										}
-									}
-								}
-							}
-							echo absint($new_responses);
-						?>">
+						<td data-sort-value="<?php echo absint($new_responses); ?>">
 							<?php if ($new_responses > 0) : ?>
 								<span class="pnpc-psd-new-indicator-badge"><?php echo esc_html($new_responses); ?></span>
 							<?php endif; ?>
