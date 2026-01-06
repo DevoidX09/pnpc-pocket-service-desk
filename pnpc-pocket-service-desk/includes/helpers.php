@@ -397,3 +397,78 @@ if (! function_exists('pnpc_psd_format_filesize')) {
         return $bytes . ' B';
     }
 }
+
+/**
+ * Define preview file size limit for free version (5MB in bytes).
+ */
+if (! defined('PNPC_PSD_FREE_PREVIEW_LIMIT')) {
+    define('PNPC_PSD_FREE_PREVIEW_LIMIT', 5 * 1024 * 1024);
+}
+
+/**
+ * Get attachment type based on file extension.
+ *
+ * @param string $extension File extension (without dot).
+ * @return string 'image', 'pdf', or 'other'.
+ */
+if (! function_exists('pnpc_psd_get_attachment_type')) {
+    function pnpc_psd_get_attachment_type($extension)
+    {
+        $extension = strtolower(trim($extension));
+        $image_types = array('jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp');
+        
+        if (in_array($extension, $image_types, true)) {
+            return 'image';
+        }
+        
+        if ('pdf' === $extension) {
+            return 'pdf';
+        }
+        
+        return 'other';
+    }
+}
+
+/**
+ * Get file icon emoji based on file extension.
+ *
+ * @param string $extension File extension (without dot).
+ * @return string Emoji icon.
+ */
+if (! function_exists('pnpc_psd_get_file_icon')) {
+    function pnpc_psd_get_file_icon($extension)
+    {
+        $extension = strtolower(trim($extension));
+        $icons = array(
+            'pdf'  => '📄',
+            'doc'  => '📝',
+            'docx' => '📝',
+            'xls'  => '📊',
+            'xlsx' => '📊',
+            'zip'  => '🗜',
+            'rar'  => '🗜',
+            'mp4'  => '🎬',
+            'avi'  => '🎬',
+            'mp3'  => '🎵',
+            'jpg'  => '🖼',
+            'jpeg' => '🖼',
+            'png'  => '🖼',
+            'gif'  => '🖼',
+        );
+        
+        return isset($icons[$extension]) ? $icons[$extension] : '📎';
+    }
+}
+
+/**
+ * Check if attachment can be previewed based on file size.
+ *
+ * @param int $file_size File size in bytes.
+ * @return bool True if can preview, false otherwise.
+ */
+if (! function_exists('pnpc_psd_can_preview_attachment')) {
+    function pnpc_psd_can_preview_attachment($file_size)
+    {
+        return intval($file_size) <= PNPC_PSD_FREE_PREVIEW_LIMIT;
+    }
+}
