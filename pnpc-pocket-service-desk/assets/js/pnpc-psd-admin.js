@@ -20,12 +20,13 @@
 
 		if ($ticketsTable.length) {
 			// Apply default sort on page load (Created date, newest first)
-			// Delay ensures DOM is fully ready and prevents race conditions
+			// Use requestAnimationFrame to ensure DOM is fully rendered
 			var $createdHeader = $ticketsTable.find('th[data-sort-type="date"]');
 			if ($createdHeader.length) {
-				setTimeout(function() {
+				// Wait for next paint cycle to ensure table is rendered
+				requestAnimationFrame(function() {
 					sortTable($createdHeader, 'desc');
-				}, 100);
+				});
 			}
 
 			// Click handler for sortable headers
