@@ -22,7 +22,12 @@
 	var touchEndX = 0;
 
 	$(document).ready(function() {
-		initLightbox();
+		var initialized = initLightbox();
+		if (!initialized) {
+			// Lightbox not available, disable attachment viewer
+			return;
+		}
+		
 		bindEvents();
 		buildAttachmentGallery();
 	});
@@ -37,7 +42,20 @@
 		// This is just a safety check
 		if (!$lightbox.length) {
 			console.warn('PNPC PSD: Lightbox element not found in DOM');
+			return false;
 		}
+
+		// Add touch/swipe support after lightbox is confirmed to exist
+		$lightbox.on('touchstart', function(e) {
+			touchStartX = e.changedTouches[0].screenX;
+		});
+
+		$lightbox.on('touchend', function(e) {
+			touchEndX = e.changedTouches[0].screenX;
+			handleSwipe();
+		});
+
+		return true;
 	}
 
 	/**
@@ -151,18 +169,6 @@
 					break;
 			}
 		});
-
-		// Touch/swipe support for mobile
-		if ($lightbox && $lightbox.length) {
-			$lightbox.on('touchstart', function(e) {
-				touchStartX = e.changedTouches[0].screenX;
-			});
-
-			$lightbox.on('touchend', function(e) {
-				touchEndX = e.changedTouches[0].screenX;
-				handleSwipe();
-			});
-		}
 	}
 
 	/**
@@ -201,6 +207,7 @@
 
 		// Show lightbox
 		$lightbox.fadeIn(CONFIG.ANIMATION_DURATION);
+		$lightbox.attr('aria-hidden', 'false');
 		$('body').addClass('pnpc-psd-lightbox-open');
 
 		// Load content based on type
@@ -230,6 +237,7 @@
 		}
 
 		$lightbox.fadeOut(CONFIG.ANIMATION_DURATION);
+		$lightbox.attr('aria-hidden', 'true');
 		$('body').removeClass('pnpc-psd-lightbox-open');
 
 		// Clear content after animation
@@ -285,19 +293,18 @@
 		$pdfContainer.show();
 		$imageContainer.hide();
 
-		// Try to load PDF
+		// Try to load PDF in iframe
 		$pdf.attr('src', attachment.url);
 
-		// Improved PDF support detection
-		// Check if the iframe/embed element can load PDFs
-		setTimeout(function() {
-			// Multiple checks for better reliability across browsers
-			var hasPdfPlugin = navigator.mimeTypes && navigator.mimeTypes['application/pdf'];
+		// Check if PDF loaded successfully
+		// Most modern browsers support inline PDFs, but we provide fallback
+		var pdfLoadTimeout = setTimeout(function() {
+			// Check iframe dimensions and load state
 			var pdfHeight = $pdf.height();
 			var pdfWidth = $pdf.width();
 			
-			// If element has no dimensions or no PDF plugin detected, show fallback
-			if ((pdfHeight === 0 && pdfWidth === 0) || !hasPdfPlugin) {
+			// If iframe has no dimensions, assume load failed
+			if (pdfHeight === 0 && pdfWidth === 0) {
 				$pdf.hide();
 				if ($fallback.length) {
 					$fallback.show();
@@ -305,6 +312,23 @@
 				}
 			}
 		}, CONFIG.PDF_LOAD_TIMEOUT);
+
+		// Listen for successful iframe load
+		$pdf.on('load', function() {
+			clearTimeout(pdfLoadTimeout);
+			$pdf.show();
+			$fallback.hide();
+		});
+
+		// Handle load errors
+		$pdf.on('error', function() {
+			clearTimeout(pdfLoadTimeout);
+			$pdf.hide();
+			if ($fallback.length) {
+				$fallback.show();
+				$fallback.find('a').attr('href', attachment.url);
+			}
+		});
 	}
 
 	/**

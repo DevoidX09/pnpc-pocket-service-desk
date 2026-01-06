@@ -265,7 +265,7 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 </div>
 
 <!-- Lightbox Modal for Attachments -->
-<div id="pnpc-psd-lightbox" class="pnpc-psd-lightbox" style="display:none;" role="dialog" aria-modal="true" aria-label="<?php esc_attr_e('Attachment Viewer', 'pnpc-pocket-service-desk'); ?>">
+<div id="pnpc-psd-lightbox" class="pnpc-psd-lightbox" style="display:none;" role="dialog" aria-modal="true" aria-hidden="true" aria-label="<?php esc_attr_e('Attachment Viewer', 'pnpc-pocket-service-desk'); ?>">
 	<div class="pnpc-psd-lightbox-backdrop"></div>
 	<div class="pnpc-psd-lightbox-content">
 		<!-- Close Button -->
