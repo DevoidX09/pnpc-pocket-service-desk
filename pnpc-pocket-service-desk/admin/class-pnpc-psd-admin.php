@@ -66,6 +66,34 @@ class PNPC_PSD_Admin
 					'nonce'    => wp_create_nonce('pnpc_psd_admin_nonce'),
 				)
 			);
+
+			// Enqueue real-time updates script
+			wp_enqueue_script(
+				$this->plugin_name . '-realtime',
+				PNPC_PSD_PLUGIN_URL . 'assets/js/pnpc-psd-realtime.js',
+				array('jquery'),
+				$this->version,
+				true
+			);
+
+			// Get settings with defaults
+			$enable_menu_badge = get_option('pnpc_psd_enable_menu_badge', '1');
+			$enable_auto_refresh = get_option('pnpc_psd_enable_auto_refresh', '1');
+			$menu_badge_interval = get_option('pnpc_psd_menu_badge_interval', '30');
+			$auto_refresh_interval = get_option('pnpc_psd_auto_refresh_interval', '30');
+
+			wp_localize_script(
+				$this->plugin_name . '-realtime',
+				'pnpcPsdRealtime',
+				array(
+					'ajaxUrl'              => admin_url('admin-ajax.php'),
+					'nonce'                => wp_create_nonce('pnpc_psd_admin_nonce'),
+					'enableMenuBadge'      => '1' === $enable_menu_badge,
+					'enableAutoRefresh'    => '1' === $enable_auto_refresh,
+					'menuBadgeInterval'    => absint($menu_badge_interval),
+					'autoRefreshInterval'  => absint($auto_refresh_interval),
+				)
+			);
 		}
 	}
 
@@ -251,6 +279,44 @@ class PNPC_PSD_Admin
 				'type'              => 'boolean',
 				'sanitize_callback' => 'absint',
 				'default'           => 0,
+			)
+		);
+
+		// Real-time updates settings
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_enable_menu_badge',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'absint',
+				'default'           => 1,
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_menu_badge_interval',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 30,
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_enable_auto_refresh',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'absint',
+				'default'           => 1,
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_auto_refresh_interval',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 30,
 			)
 		);
 
@@ -650,6 +716,233 @@ class PNPC_PSD_Admin
 		} else {
 			wp_send_json_error(array('message' => __('Failed to delete tickets permanently.', 'pnpc-pocket-service-desk')));
 		}
+	}
+
+	/**
+	 * AJAX handler: Get new ticket count for menu badge
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_get_new_ticket_count()
+	{
+		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
+
+		if (! current_user_can('pnpc_psd_view_tickets')) {
+			wp_send_json_error(array('message' => __('Insufficient permissions', 'pnpc-pocket-service-desk')));
+		}
+
+		$count = $this->get_new_ticket_count_for_user();
+
+		wp_send_json_success(array('count' => $count));
+	}
+
+	/**
+	 * Get new ticket count for current user (with caching)
+	 *
+	 * @since 1.0.0
+	 * @return int Number of new tickets
+	 */
+	private function get_new_ticket_count_for_user()
+	{
+		$user_id = get_current_user_id();
+		$transient_key = 'pnpc_psd_new_count_' . $user_id;
+		
+		// Try to get cached count
+		$count = get_transient($transient_key);
+		
+		if (false === $count) {
+			// Query database for count
+			$count = $this->query_new_ticket_count($user_id);
+			
+			// Cache for 10 seconds
+			set_transient($transient_key, $count, 10);
+		}
+		
+		return intval($count);
+	}
+
+	/**
+	 * Query database for new ticket count
+	 *
+	 * @since 1.0.0
+	 * @param int $user_id User ID
+	 * @return int Number of new tickets
+	 */
+	private function query_new_ticket_count($user_id)
+	{
+		// Count open and in-progress tickets (not closed or trashed)
+		// This matches the existing badge logic in add_plugin_admin_menu()
+		$open_count = 0;
+		if (class_exists('PNPC_PSD_Ticket')) {
+			$open_count  = (int) PNPC_PSD_Ticket::get_count('open');
+			$open_count += (int) PNPC_PSD_Ticket::get_count('in-progress');
+		}
+		
+		return $open_count;
+	}
+
+	/**
+	 * AJAX handler: Refresh ticket list
+	 *
+	 * @since 1.0.0
+	 */
+	public function ajax_refresh_ticket_list()
+	{
+		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
+
+		if (! current_user_can('pnpc_psd_view_tickets')) {
+			wp_send_json_error(array('message' => __('Insufficient permissions', 'pnpc-pocket-service-desk')));
+		}
+
+		$status = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : '';
+		$view   = isset($_POST['view']) ? sanitize_text_field(wp_unslash($_POST['view'])) : '';
+
+		$args = array(
+			'limit'  => 20,
+		);
+
+		// Check if viewing trash
+		if ('trash' === $view) {
+			$tickets = PNPC_PSD_Ticket::get_trashed($args);
+			$is_trash_view = true;
+		} else {
+			$args['status'] = $status;
+			$tickets = PNPC_PSD_Ticket::get_all($args);
+			$is_trash_view = false;
+		}
+
+		// Generate HTML for ticket rows
+		ob_start();
+		if (! empty($tickets)) {
+			foreach ($tickets as $ticket) {
+				$this->render_ticket_row($ticket, $is_trash_view);
+			}
+		} else {
+			$colspan = $is_trash_view ? (current_user_can('pnpc_psd_delete_tickets') ? '9' : '8') : (current_user_can('pnpc_psd_delete_tickets') ? '10' : '9');
+			?>
+			<tr>
+				<td colspan="<?php echo esc_attr($colspan); ?>">
+					<?php
+					if ($is_trash_view) {
+						esc_html_e('No tickets in trash.', 'pnpc-pocket-service-desk');
+					} else {
+						esc_html_e('No tickets found.', 'pnpc-pocket-service-desk');
+					}
+					?>
+				</td>
+			</tr>
+			<?php
+		}
+		$html = ob_get_clean();
+
+		wp_send_json_success(array('html' => $html));
+	}
+
+	/**
+	 * Render a single ticket row (extracted from tickets-list.php for reuse)
+	 *
+	 * @since 1.0.0
+	 * @param object $ticket Ticket object
+	 * @param bool $is_trash_view Whether viewing trash
+	 */
+	private function render_ticket_row($ticket, $is_trash_view = false)
+	{
+		$user          = get_userdata($ticket->user_id);
+		$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
+		
+		// Extract numeric part from ticket number for sorting
+		$ticket_num_for_sort = (int) preg_replace('/[^0-9]/', '', $ticket->ticket_number);
+		
+		// Status sort order
+		$status_order = array('open' => 1, 'in-progress' => 2, 'waiting' => 3, 'closed' => 4);
+		$status_sort_value = isset($status_order[$ticket->status]) ? $status_order[$ticket->status] : 999;
+		
+		// Priority sort order
+		$priority_order = array('urgent' => 1, 'high' => 2, 'normal' => 3, 'low' => 4);
+		$priority_sort_value = isset($priority_order[$ticket->priority]) ? $priority_order[$ticket->priority] : 999;
+		
+		// Get timestamp for date sorting
+		$created_timestamp = strtotime($ticket->created_at);
+		if (false === $created_timestamp) {
+			$created_timestamp = 0;
+		}
+		
+		// Calculate new responses
+		$new_responses = 0;
+		$current_admin_id = get_current_user_id();
+		if ($current_admin_id && $ticket->assigned_to && (int) $ticket->assigned_to === (int) $current_admin_id) {
+			$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
+			$last_view_raw  = get_user_meta($current_admin_id, $last_view_key, true);
+			$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
+
+			$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
+			if (! empty($responses)) {
+				foreach ($responses as $response) {
+					if ((int) $response->user_id === (int) $current_admin_id) {
+						continue;
+					}
+					$resp_time = function_exists('pnpc_psd_mysql_to_wp_local_ts') ? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) : intval(strtotime($response->created_at));
+					if ($resp_time > $last_view_time) {
+						$new_responses++;
+					}
+				}
+			}
+		}
+		?>
+		<tr>
+			<?php if (current_user_can('pnpc_psd_delete_tickets')) : ?>
+			<th scope="row" class="check-column">
+				<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">
+					<?php
+					/* translators: %s: ticket number */
+					printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number));
+					?>
+				</label>
+				<input type="checkbox" name="ticket[]" id="cb-select-<?php echo absint($ticket->id); ?>" value="<?php echo absint($ticket->id); ?>">
+			</th>
+			<?php endif; ?>
+			<td data-sort-value="<?php echo absint($ticket_num_for_sort); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
+			<td data-sort-value="<?php echo esc_attr(strtolower($ticket->subject)); ?>">
+				<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
+					<?php echo esc_html($ticket->subject); ?>
+				</a>
+			</td>
+			<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
+			<td data-sort-value="<?php echo absint($status_sort_value); ?>">
+				<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>">
+					<?php echo esc_html(ucfirst($ticket->status)); ?>
+				</span>
+			</td>
+			<td data-sort-value="<?php echo absint($priority_sort_value); ?>">
+				<span class="pnpc-psd-priority pnpc-psd-priority-<?php echo esc_attr($ticket->priority); ?>">
+					<?php echo esc_html(ucfirst($ticket->priority)); ?>
+				</span>
+			</td>
+			<td data-sort-value="<?php echo esc_attr(strtolower($assigned_user ? $assigned_user->display_name : 'zzz_unassigned')); ?>"><?php echo $assigned_user ? esc_html($assigned_user->display_name) : esc_html__('Unassigned', 'pnpc-pocket-service-desk'); ?></td>
+			<td data-sort-value="<?php echo absint($created_timestamp); ?>">
+				<?php
+				// Use helper to format DB datetime into WP-localized string
+				if (function_exists('pnpc_psd_format_db_datetime_for_display')) {
+					echo esc_html(pnpc_psd_format_db_datetime_for_display($ticket->created_at));
+				} else {
+					echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($ticket->created_at)));
+				}
+				?>
+			</td>
+			<?php if (! $is_trash_view) : ?>
+			<td data-sort-value="<?php echo absint($new_responses); ?>">
+				<?php if ($new_responses > 0) : ?>
+					<span class="pnpc-psd-new-indicator-badge"><?php echo esc_html($new_responses); ?></span>
+				<?php endif; ?>
+			</td>
+			<?php endif; ?>
+			<td>
+				<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>" class="button button-small">
+					<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
+				</a>
+			</td>
+		</tr>
+		<?php
 	}
 
 	private function is_plugin_page()

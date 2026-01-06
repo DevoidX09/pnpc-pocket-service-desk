@@ -59,6 +59,10 @@ class PNPC_PSD
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_trash_tickets', $plugin_admin, 'ajax_bulk_trash_tickets');
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_restore_tickets', $plugin_admin, 'ajax_bulk_restore_tickets');
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_delete_permanently_tickets', $plugin_admin, 'ajax_bulk_delete_permanently_tickets');
+		
+		// Real-time update AJAX handlers
+		$this->loader->add_action('wp_ajax_pnpc_psd_get_new_ticket_count', $plugin_admin, 'ajax_get_new_ticket_count');
+		$this->loader->add_action('wp_ajax_pnpc_psd_refresh_ticket_list', $plugin_admin, 'ajax_refresh_ticket_list');
 	}
 
 	private function define_public_hooks()
