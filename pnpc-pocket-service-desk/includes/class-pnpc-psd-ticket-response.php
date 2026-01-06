@@ -300,7 +300,7 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$count = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table_name} WHERE ticket_id = %d",
+				"SELECT COUNT(*) FROM {$table_name} WHERE ticket_id = %d AND deleted_at IS NULL",
 				$ticket_id
 			)
 		);
