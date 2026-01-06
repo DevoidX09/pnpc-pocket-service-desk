@@ -1,9 +1,7 @@
 <?php
 
 /**
- * Admin ticket detail view (minimal, includes attachments list and response form with attachments)
- *
- * Place at admin/views/ticket-detail.php
+ * Admin ticket detail view (includes assignment/status controls and response form)
  *
  * Expects $ticket, $responses, $agents variables populated by the controller.
  */
@@ -15,9 +13,20 @@ if (! defined('ABSPATH')) {
 global $wpdb;
 $att_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 
-$ticket_attachments = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$att_table} WHERE ticket_id = %d AND (response_id IS NULL OR response_id = '') ORDER BY id ASC", $ticket->id));
+$ticket_attachments = $wpdb->get_results(
+	$wpdb->prepare(
+		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND (response_id IS NULL OR response_id = '') ORDER BY id ASC",
+		$ticket->id
+	)
+);
+
 $response_attachments_map = array();
-$all_response_atts = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$att_table} WHERE ticket_id = %d AND response_id IS NOT NULL ORDER BY id ASC", $ticket->id));
+$all_response_atts       = $wpdb->get_results(
+	$wpdb->prepare(
+		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND response_id IS NOT NULL ORDER BY id ASC",
+		$ticket->id
+	)
+);
 if ($all_response_atts) {
 	foreach ($all_response_atts as $ra) {
 		$response_attachments_map[intval($ra->response_id)][] = $ra;
@@ -25,8 +34,40 @@ if ($all_response_atts) {
 }
 ?>
 
-<div class="wrap pnpc-psd-ticket-detail">
+<div class="wrap pnpc-psd-ticket-detail" id="pnpc-psd-ticket-detail" data-ticket-id="<?php echo esc_attr($ticket->id); ?>">
 	<h1><?php echo esc_html($ticket->subject); ?> <small>#<?php echo esc_html($ticket->ticket_number); ?></small></h1>
+
+	<div id="pnpc-psd-admin-action-message" class="pnpc-psd-message" style="margin:8px 0;"></div>
+
+	<div class="pnpc-psd-ticket-actions" style="display:flex;gap:12px;align-items:center;margin:12px 0;">
+		<div>
+			<label for="pnpc-psd-assign-agent"><?php esc_html_e('Assign to', 'pnpc-pocket-service-desk'); ?></label><br />
+			<select id="pnpc-psd-assign-agent">
+				<option value="0"><?php esc_html_e('Unassigned', 'pnpc-pocket-service-desk'); ?></option>
+				<?php foreach ($agents as $agent) : ?>
+					<option value="<?php echo esc_attr($agent->ID); ?>" <?php selected(intval($ticket->assigned_to), intval($agent->ID)); ?>>
+						<?php echo esc_html($agent->display_name . ' (' . $agent->user_email . ')'); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+			<button id="pnpc-psd-assign-button" class="button"><?php esc_html_e('Assign', 'pnpc-pocket-service-desk'); ?></button>
+		</div>
+
+		<div>
+			<label for="pnpc-psd-status-select"><?php esc_html_e('Status', 'pnpc-pocket-service-desk'); ?></label><br />
+			<select id="pnpc-psd-status-select">
+				<?php
+				$statuses = array('open', 'in-progress', 'closed');
+				foreach ($statuses as $s) :
+				?>
+					<option value="<?php echo esc_attr($s); ?>" <?php selected($ticket->status, $s); ?>>
+						<?php echo esc_html(ucfirst($s)); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+			<button id="pnpc-psd-status-button" class="button"><?php esc_html_e('Update Status', 'pnpc-pocket-service-desk'); ?></button>
+		</div>
+	</div>
 
 	<div class="pnpc-psd-ticket-meta">
 		<p><?php esc_html_e('Status:', 'pnpc-pocket-service-desk'); ?> <?php echo esc_html(ucfirst($ticket->status)); ?></p>
@@ -53,9 +94,9 @@ if ($all_response_atts) {
 	<?php if (! empty($responses)) : ?>
 		<?php foreach ($responses as $r) : ?>
 			<?php
-			$responder = get_userdata($r->user_id);
-			$is_staff = intval($r->is_staff_response) === 1;
-			$atts_for_response = isset($response_attachments_map[intval($r->id)]) ? $response_attachments_map[intval($r->id)] : array();
+			$responder           = get_userdata($r->user_id);
+			$is_staff            = intval($r->is_staff_response) === 1;
+			$atts_for_response   = isset($response_attachments_map[intval($r->id)]) ? $response_attachments_map[intval($r->id)] : array();
 			?>
 			<div class="pnpc-psd-response <?php echo $is_staff ? 'pnpc-psd-response-staff' : 'pnpc-psd-response-customer'; ?>">
 				<div class="pnpc-psd-response-header">

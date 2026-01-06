@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Public create ticket view (includes nonce and attachments)
+ * Public create ticket view (patched to include attachments field and preview/remove UI)
  */
 if (! defined('ABSPATH')) {
 	exit;
@@ -12,8 +12,6 @@ if (! defined('ABSPATH')) {
 	<h2><?php esc_html_e('Create New Support Ticket', 'pnpc-pocket-service-desk'); ?></h2>
 
 	<form id="pnpc-psd-create-ticket-form" enctype="multipart/form-data">
-		<input type="hidden" name="nonce" value="<?php echo esc_attr(wp_create_nonce('pnpc_psd_public_nonce')); ?>" />
-
 		<div class="pnpc-psd-form-group">
 			<label for="ticket-subject"><?php esc_html_e('Subject', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span></label>
 			<input type="text" id="ticket-subject" name="subject" required placeholder="<?php esc_attr_e('Brief description of your issue', 'pnpc-pocket-service-desk'); ?>" />

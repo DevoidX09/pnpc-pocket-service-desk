@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<ruleset name="PNPC Pocket Service Desk">
+	<description>WordPress Coding Standards for PNPC Pocket Service Desk</description>
+
+	<!-- What to scan -->
+	<file>.</file>
+
+	<!-- Exclude patterns -->
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/.git/*</exclude-pattern>
+
+	<!-- How to scan -->
+	<arg value="sp"/> <!-- Show sniff and progress -->
+	<arg name="basepath" value="."/>
+	<arg name="colors"/>
+	<arg name="extensions" value="php"/>
+	<arg name="parallel" value="8"/>
+
+	<!-- Rules: Check PHP version compatibility -->
+	<config name="testVersion" value="7.4-"/>
+
+	<!-- Rules: WordPress Coding Standards -->
+	<rule ref="WordPress-Core">
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+	</rule>
+	<rule ref="WordPress-Docs"/>
+	<rule ref="WordPress.WP.I18n"/>
+	<config name="text_domain" value="pnpc-pocket-service-desk"/>
+
+	<!-- Rules: WordPress VIP Coding Standards -->
+	<rule ref="WordPress-Extra">
+		<exclude name="WordPress.Files.FileName"/>
+	</rule>
+
+	<!-- Additional rules -->
+	<rule ref="WordPress.WP.DeprecatedFunctions"/>
+	<rule ref="WordPress.WP.DeprecatedClasses"/>
+	<rule ref="WordPress.WP.DeprecatedParameters"/>
+	<rule ref="WordPress.WP.AlternativeFunctions"/>
+
+	<!-- Allow short array syntax -->
+	<rule ref="Generic.Arrays.DisallowShortArraySyntax.Found">
+		<severity>0</severity>
+	</rule>
+</ruleset>
