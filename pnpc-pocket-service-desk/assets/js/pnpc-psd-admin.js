@@ -80,11 +80,9 @@
 					var $aCells = $(a).find('td');
 					var $bCells = $(b).find('td');
 					
-					// Find the date column (adjust index if checkbox column exists)
-					var dateColumnIndex = 6; // Default position
-					if ($('#cb-select-all-1').length) {
-						dateColumnIndex = 6; // Still 6 because we count from td, not including th
-					}
+					// Find the date column - it's always at index 6 in td elements
+					// (0-indexed: ticket#=0, subject=1, customer=2, status=3, priority=4, assigned=5, created=6)
+					var dateColumnIndex = 6;
 					
 					var aDate = parseInt($aCells.eq(dateColumnIndex).attr('data-sort-value')) || 0;
 					var bDate = parseInt($bCells.eq(dateColumnIndex).attr('data-sort-value')) || 0;
@@ -97,18 +95,22 @@
 			closedRows = sortByCreatedDate(closedRows);
 
 			// Create divider row
-			var colCount = $ticketsTable.find('thead tr th').length;
 			var $dividerRow = $('<tr>', {
 				'class': 'pnpc-psd-divider-row',
 				'data-divider': 'true'
 			});
 			
-			// Add checkbox column if present (empty cell)
-			if ($('#cb-select-all-1').length) {
+			// Calculate proper colspan based on table structure
+			var hasCheckbox = $('#cb-select-all-1').length > 0;
+			var colCount = $ticketsTable.find('thead tr th').length;
+			
+			// If checkbox column exists, add empty cell and adjust colspan
+			if (hasCheckbox) {
 				$dividerRow.append($('<td>', {
 					'class': 'check-column'
 				}));
-				colCount--; // Reduce colspan count
+				// Colspan should cover remaining columns (total - 1 for checkbox)
+				colCount = colCount - 1;
 			}
 			
 			$dividerRow.append($('<td>', {
