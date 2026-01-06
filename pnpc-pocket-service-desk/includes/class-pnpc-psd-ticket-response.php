@@ -287,4 +287,58 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 
 		return absint($count);
 	}
+
+	/**
+	 * Trash responses by ticket ID.
+	 *
+	 * @since 1.1.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function trash_by_ticket($ticket_id)
+	{
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$ticket_id  = absint($ticket_id);
+
+		$deleted_at = function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$result = $wpdb->update(
+			$table_name,
+			array('deleted_at' => $deleted_at),
+			array('ticket_id' => $ticket_id),
+			array('%s'),
+			array('%d')
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Restore responses by ticket ID.
+	 *
+	 * @since 1.1.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function restore_by_ticket($ticket_id)
+	{
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$ticket_id  = absint($ticket_id);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$result = $wpdb->update(
+			$table_name,
+			array('deleted_at' => null),
+			array('ticket_id' => $ticket_id),
+			array('%s'),
+			array('%d')
+		);
+
+		return false !== $result;
+	}
 }

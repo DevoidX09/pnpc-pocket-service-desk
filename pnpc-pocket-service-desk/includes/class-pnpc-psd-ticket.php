@@ -144,16 +144,22 @@ class PNPC_PSD_Ticket
 		$user_id    = absint($user_id);
 
 		$defaults = array(
-			'status'  => '',
-			'orderby' => 'created_at',
-			'order'   => 'DESC',
-			'limit'   => 50,
-			'offset'  => 0,
+			'status'          => '',
+			'orderby'         => 'created_at',
+			'order'           => 'DESC',
+			'limit'           => 50,
+			'offset'          => 0,
+			'include_trashed' => false,
 		);
 
 		$args = wp_parse_args($args, $defaults);
 
 		$where = $wpdb->prepare('WHERE user_id = %d', $user_id);
+
+		// Exclude trashed tickets by default.
+		if (! $args['include_trashed']) {
+			$where .= ' AND deleted_at IS NULL';
+		}
 
 		if (! empty($args['status'])) {
 			$where .= $wpdb->prepare(' AND status = %s', $args['status']);
@@ -185,17 +191,23 @@ class PNPC_PSD_Ticket
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 
 		$defaults = array(
-			'status'      => '',
-			'assigned_to' => '',
-			'orderby'     => 'created_at',
-			'order'       => 'DESC',
-			'limit'       => 50,
-			'offset'      => 0,
+			'status'          => '',
+			'assigned_to'     => '',
+			'orderby'         => 'created_at',
+			'order'           => 'DESC',
+			'limit'           => 50,
+			'offset'          => 0,
+			'include_trashed' => false,
 		);
 
 		$args = wp_parse_args($args, $defaults);
 
 		$where = '1=1';
+
+		// Exclude trashed tickets by default.
+		if (! $args['include_trashed']) {
+			$where .= ' AND deleted_at IS NULL';
+		}
 
 		if (! empty($args['status'])) {
 			$where .= $wpdb->prepare(' AND status = %s', $args['status']);
@@ -404,15 +416,333 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$count = $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$table_name} WHERE status = %s",
+					"SELECT COUNT(*) FROM {$table_name} WHERE status = %s AND deleted_at IS NULL",
 					$status
 				)
 			);
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
+			$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NULL");
 		}
 
 		return absint($count);
+	}
+
+	/**
+	 * Get trashed tickets.
+	 *
+	 * @since 1.1.0
+	 * @param array $args Query arguments.
+	 * @return array Array of ticket objects.
+	 */
+	public static function get_trashed($args = array())
+	{
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		$defaults = array(
+			'orderby' => 'deleted_at',
+			'order'   => 'DESC',
+			'limit'   => 50,
+			'offset'  => 0,
+		);
+
+		$args = wp_parse_args($args, $defaults);
+
+		$orderby = sanitize_sql_orderby("{$args['orderby']} {$args['order']}");
+		$limit   = absint($args['limit']);
+		$offset  = absint($args['offset']);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$tickets = $wpdb->get_results(
+			"SELECT * FROM {$table_name} WHERE deleted_at IS NOT NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
+		);
+
+		return $tickets;
+	}
+
+	/**
+	 * Get count of trashed tickets.
+	 *
+	 * @since 1.1.0
+	 * @return int Trashed ticket count.
+	 */
+	public static function get_trashed_count()
+	{
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NOT NULL");
+
+		return absint($count);
+	}
+
+	/**
+	 * Move a ticket to trash (soft delete).
+	 *
+	 * @since 1.1.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function trash($ticket_id)
+	{
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		$ticket_id  = absint($ticket_id);
+
+		if (! $ticket_id) {
+			return false;
+		}
+
+		$deleted_at = function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true);
+
+		// Soft delete the ticket.
+		$result = $wpdb->update(
+			$table_name,
+			array('deleted_at' => $deleted_at),
+			array('id' => $ticket_id),
+			array('%s'),
+			array('%d')
+		);
+
+		if (false === $result) {
+			return false;
+		}
+
+		// Soft delete associated responses.
+		PNPC_PSD_Ticket_Response::trash_by_ticket($ticket_id);
+
+		// Soft delete associated attachments.
+		self::trash_attachments_by_ticket($ticket_id);
+
+		return true;
+	}
+
+	/**
+	 * Move multiple tickets to trash.
+	 *
+	 * @since 1.1.0
+	 * @param array $ticket_ids Array of ticket IDs.
+	 * @return int Number of tickets trashed.
+	 */
+	public static function bulk_trash($ticket_ids)
+	{
+		if (! is_array($ticket_ids) || empty($ticket_ids)) {
+			return 0;
+		}
+
+		$count = 0;
+		foreach ($ticket_ids as $ticket_id) {
+			if (self::trash($ticket_id)) {
+				$count++;
+			}
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Restore a ticket from trash.
+	 *
+	 * @since 1.1.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function restore($ticket_id)
+	{
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		$ticket_id  = absint($ticket_id);
+
+		if (! $ticket_id) {
+			return false;
+		}
+
+		// Restore the ticket.
+		$result = $wpdb->update(
+			$table_name,
+			array('deleted_at' => null),
+			array('id' => $ticket_id),
+			array('%s'),
+			array('%d')
+		);
+
+		if (false === $result) {
+			return false;
+		}
+
+		// Restore associated responses.
+		PNPC_PSD_Ticket_Response::restore_by_ticket($ticket_id);
+
+		// Restore associated attachments.
+		self::restore_attachments_by_ticket($ticket_id);
+
+		return true;
+	}
+
+	/**
+	 * Restore multiple tickets from trash.
+	 *
+	 * @since 1.1.0
+	 * @param array $ticket_ids Array of ticket IDs.
+	 * @return int Number of tickets restored.
+	 */
+	public static function bulk_restore($ticket_ids)
+	{
+		if (! is_array($ticket_ids) || empty($ticket_ids)) {
+			return 0;
+		}
+
+		$count = 0;
+		foreach ($ticket_ids as $ticket_id) {
+			if (self::restore($ticket_id)) {
+				$count++;
+			}
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Permanently delete a ticket and all related data.
+	 *
+	 * @since 1.1.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function delete_permanently($ticket_id)
+	{
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		$ticket_id  = absint($ticket_id);
+
+		if (! $ticket_id) {
+			return false;
+		}
+
+		// Delete associated responses.
+		PNPC_PSD_Ticket_Response::delete_by_ticket($ticket_id);
+
+		// Delete associated attachments.
+		self::delete_attachments_by_ticket($ticket_id);
+
+		// Delete user meta related to this ticket.
+		delete_metadata('user', 0, 'pnpc_psd_ticket_last_view_' . $ticket_id, '', true);
+
+		// Delete the ticket.
+		$result = $wpdb->delete(
+			$table_name,
+			array('id' => $ticket_id),
+			array('%d')
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Permanently delete multiple tickets.
+	 *
+	 * @since 1.1.0
+	 * @param array $ticket_ids Array of ticket IDs.
+	 * @return int Number of tickets deleted.
+	 */
+	public static function bulk_delete_permanently($ticket_ids)
+	{
+		if (! is_array($ticket_ids) || empty($ticket_ids)) {
+			return 0;
+		}
+
+		$count = 0;
+		foreach ($ticket_ids as $ticket_id) {
+			if (self::delete_permanently($ticket_id)) {
+				$count++;
+			}
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Trash attachments by ticket ID.
+	 *
+	 * @since 1.1.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool True on success, false on failure.
+	 */
+	private static function trash_attachments_by_ticket($ticket_id)
+	{
+		global $wpdb;
+
+		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$ticket_id         = absint($ticket_id);
+
+		$deleted_at = function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$result = $wpdb->update(
+			$attachments_table,
+			array('deleted_at' => $deleted_at),
+			array('ticket_id' => $ticket_id),
+			array('%s'),
+			array('%d')
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Restore attachments by ticket ID.
+	 *
+	 * @since 1.1.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool True on success, false on failure.
+	 */
+	private static function restore_attachments_by_ticket($ticket_id)
+	{
+		global $wpdb;
+
+		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$ticket_id         = absint($ticket_id);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$result = $wpdb->update(
+			$attachments_table,
+			array('deleted_at' => null),
+			array('ticket_id' => $ticket_id),
+			array('%s'),
+			array('%d')
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Delete attachments by ticket ID.
+	 *
+	 * @since 1.1.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool True on success, false on failure.
+	 */
+	private static function delete_attachments_by_ticket($ticket_id)
+	{
+		global $wpdb;
+
+		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$ticket_id         = absint($ticket_id);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$result = $wpdb->delete(
+			$attachments_table,
+			array('ticket_id' => $ticket_id),
+			array('%d')
+		);
+
+		return false !== $result;
 	}
 }

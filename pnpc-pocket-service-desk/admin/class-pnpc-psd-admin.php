@@ -134,15 +134,23 @@ class PNPC_PSD_Admin
 		}
 
 		$status = isset($_GET['status']) ? sanitize_text_field(wp_unslash($_GET['status'])) : '';
+		$view   = isset($_GET['view']) ? sanitize_text_field(wp_unslash($_GET['view'])) : '';
 
 		$args = array(
-			'status' => $status,
 			'limit'  => 20,
 		);
 
-		$tickets      = PNPC_PSD_Ticket::get_all($args);
+		// Check if viewing trash.
+		if ('trash' === $view) {
+			$tickets = PNPC_PSD_Ticket::get_trashed($args);
+		} else {
+			$args['status'] = $status;
+			$tickets = PNPC_PSD_Ticket::get_all($args);
+		}
+
 		$open_count   = PNPC_PSD_Ticket::get_count('open');
 		$closed_count = PNPC_PSD_Ticket::get_count('closed');
+		$trash_count  = PNPC_PSD_Ticket::get_trashed_count();
 
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/tickets-list.php';
 	}
@@ -566,6 +574,81 @@ class PNPC_PSD_Admin
 			wp_send_json_success(array('message' => __('Ticket deleted. ', 'pnpc-pocket-service-desk')));
 		} else {
 			wp_send_json_error(array('message' => __('Failed to delete ticket.', 'pnpc-pocket-service-desk')));
+		}
+	}
+
+	public function ajax_bulk_trash_tickets()
+	{
+		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
+
+		if (! current_user_can('pnpc_psd_delete_tickets')) {
+			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
+		}
+
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+
+		if (empty($ticket_ids)) {
+			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
+		}
+
+		$count = PNPC_PSD_Ticket::bulk_trash($ticket_ids);
+
+		if ($count > 0) {
+			/* translators: %d: number of tickets */
+			$message = sprintf(_n('%d ticket moved to trash.', '%d tickets moved to trash.', $count, 'pnpc-pocket-service-desk'), $count);
+			wp_send_json_success(array('message' => $message, 'count' => $count));
+		} else {
+			wp_send_json_error(array('message' => __('Failed to move tickets to trash.', 'pnpc-pocket-service-desk')));
+		}
+	}
+
+	public function ajax_bulk_restore_tickets()
+	{
+		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
+
+		if (! current_user_can('pnpc_psd_delete_tickets')) {
+			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
+		}
+
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+
+		if (empty($ticket_ids)) {
+			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
+		}
+
+		$count = PNPC_PSD_Ticket::bulk_restore($ticket_ids);
+
+		if ($count > 0) {
+			/* translators: %d: number of tickets */
+			$message = sprintf(_n('%d ticket restored.', '%d tickets restored.', $count, 'pnpc-pocket-service-desk'), $count);
+			wp_send_json_success(array('message' => $message, 'count' => $count));
+		} else {
+			wp_send_json_error(array('message' => __('Failed to restore tickets.', 'pnpc-pocket-service-desk')));
+		}
+	}
+
+	public function ajax_bulk_delete_permanently_tickets()
+	{
+		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
+
+		if (! current_user_can('pnpc_psd_delete_tickets')) {
+			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
+		}
+
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+
+		if (empty($ticket_ids)) {
+			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
+		}
+
+		$count = PNPC_PSD_Ticket::bulk_delete_permanently($ticket_ids);
+
+		if ($count > 0) {
+			/* translators: %d: number of tickets */
+			$message = sprintf(_n('%d ticket permanently deleted.', '%d tickets permanently deleted.', $count, 'pnpc-pocket-service-desk'), $count);
+			wp_send_json_success(array('message' => $message, 'count' => $count));
+		} else {
+			wp_send_json_error(array('message' => __('Failed to delete tickets permanently.', 'pnpc-pocket-service-desk')));
 		}
 	}
 
