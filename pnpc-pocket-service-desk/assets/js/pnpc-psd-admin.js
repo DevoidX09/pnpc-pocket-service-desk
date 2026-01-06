@@ -98,11 +98,17 @@
 				var bVal = $bCell.attr('data-sort-value');
 
 				// Handle empty or undefined values
-				if (aVal === undefined || aVal === '' || aVal === null) {
-					return 1; // Sort to bottom
+				var aEmpty = (aVal === undefined || aVal === '' || aVal === null);
+				var bEmpty = (bVal === undefined || bVal === '' || bVal === null);
+				
+				if (aEmpty && bEmpty) {
+					return 0; // Both empty, equal
 				}
-				if (bVal === undefined || bVal === '' || bVal === null) {
-					return -1; // Sort to bottom
+				if (aEmpty) {
+					return 1; // Empty values sort to bottom
+				}
+				if (bEmpty) {
+					return -1; // Empty values sort to bottom
 				}
 
 				var result = 0;

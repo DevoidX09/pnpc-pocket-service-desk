@@ -135,6 +135,9 @@ $is_trash_view = ('trash' === $current_view);
 					
 					// Get timestamp for date sorting
 					$created_timestamp = strtotime($ticket->created_at);
+					if (false === $created_timestamp) {
+						$created_timestamp = 0; // Fallback for invalid dates
+					}
 					
 					// Calculate new responses for this ticket
 					$new_responses = 0;
