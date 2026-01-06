@@ -19,6 +19,119 @@
 		var $ticketsTable = $('#pnpc-psd-tickets-table');
 		var lastSortClick = 0;
 
+		/**
+		 * Check if we're on the "All" tab
+		 */
+		function isAllTab() {
+			var urlParams = new URLSearchParams(window.location.search);
+			var status = urlParams.get('status');
+			var view = urlParams.get('view');
+			
+			// "All" tab = no status parameter and not trash view
+			return !status && view !== 'trash';
+		}
+
+		/**
+		 * Remove divider row from table
+		 */
+		function removeDivider() {
+			$ticketsTable.find('tr[data-divider="true"]').remove();
+			autoSortApplied = false;
+		}
+
+		/**
+		 * Apply auto-sort for "All" tab: group active tickets above closed tickets with divider
+		 */
+		function applyAllTabAutoSort() {
+			if (!isAllTab() || autoSortApplied) {
+				return;
+			}
+
+			var $tbody = $ticketsTable.find('tbody');
+			var $rows = $tbody.find('tr[data-status]');
+
+			if ($rows.length === 0) {
+				return;
+			}
+
+			// Separate rows into active and closed groups
+			var activeRows = [];
+			var closedRows = [];
+
+			$rows.each(function() {
+				var $row = $(this);
+				var status = $row.attr('data-status');
+				
+				if (status === 'closed') {
+					closedRows.push($row);
+				} else {
+					activeRows.push($row);
+				}
+			});
+
+			// Don't show divider if one group is empty
+			if (activeRows.length === 0 || closedRows.length === 0) {
+				return;
+			}
+
+			// Sort each group by created date descending (newest first)
+			function sortByCreatedDate(rows) {
+				return rows.sort(function(a, b) {
+					var $aCells = $(a).find('td');
+					var $bCells = $(b).find('td');
+					
+					// Find the date column (adjust index if checkbox column exists)
+					var dateColumnIndex = 6; // Default position
+					if ($('#cb-select-all-1').length) {
+						dateColumnIndex = 6; // Still 6 because we count from td, not including th
+					}
+					
+					var aDate = parseInt($aCells.eq(dateColumnIndex).attr('data-sort-value')) || 0;
+					var bDate = parseInt($bCells.eq(dateColumnIndex).attr('data-sort-value')) || 0;
+					
+					return bDate - aDate; // Descending order (newest first)
+				});
+			}
+
+			activeRows = sortByCreatedDate(activeRows);
+			closedRows = sortByCreatedDate(closedRows);
+
+			// Create divider row
+			var colCount = $ticketsTable.find('thead tr th').length;
+			var $dividerRow = $('<tr>', {
+				'class': 'pnpc-psd-divider-row',
+				'data-divider': 'true'
+			});
+			
+			// Add checkbox column if present (empty cell)
+			if ($('#cb-select-all-1').length) {
+				$dividerRow.append($('<td>', {
+					'class': 'check-column'
+				}));
+				colCount--; // Reduce colspan count
+			}
+			
+			$dividerRow.append($('<td>', {
+				'colspan': colCount,
+				'text': 'Closed Tickets'
+			}));
+
+			// Clear tbody and append sorted groups with divider
+			$tbody.empty();
+			
+			$.each(activeRows, function(i, row) {
+				$tbody.append(row);
+			});
+			
+			$tbody.append($dividerRow);
+			
+			$.each(closedRows, function(i, row) {
+				$tbody.append(row);
+			});
+
+			autoSortApplied = true;
+		}
+
 		if ($ticketsTable.length) {
 			// Apply auto-sort for "All" tab on page load
 			applyAllTabAutoSort();
@@ -199,119 +312,6 @@
 				}).appendTo('body');
 			}
 			$announcement.text(message);
-		}
-
-		/**
-		 * Check if we're on the "All" tab
-		 */
-		function isAllTab() {
-			var urlParams = new URLSearchParams(window.location.search);
-			var status = urlParams.get('status');
-			var view = urlParams.get('view');
-			
-			// "All" tab = no status parameter and not trash view
-			return !status && view !== 'trash';
-		}
-
-		/**
-		 * Apply auto-sort for "All" tab: group active tickets above closed tickets with divider
-		 */
-		function applyAllTabAutoSort() {
-			if (!isAllTab() || autoSortApplied) {
-				return;
-			}
-
-			var $tbody = $ticketsTable.find('tbody');
-			var $rows = $tbody.find('tr[data-status]');
-
-			if ($rows.length === 0) {
-				return;
-			}
-
-			// Separate rows into active and closed groups
-			var activeRows = [];
-			var closedRows = [];
-
-			$rows.each(function() {
-				var $row = $(this);
-				var status = $row.attr('data-status');
-				
-				if (status === 'closed') {
-					closedRows.push($row);
-				} else {
-					activeRows.push($row);
-				}
-			});
-
-			// Don't show divider if one group is empty
-			if (activeRows.length === 0 || closedRows.length === 0) {
-				return;
-			}
-
-			// Sort each group by created date descending (newest first)
-			function sortByCreatedDate(rows) {
-				return rows.sort(function(a, b) {
-					var $aCells = $(a).find('td');
-					var $bCells = $(b).find('td');
-					
-					// Find the date column (adjust index if checkbox column exists)
-					var dateColumnIndex = 6; // Default position
-					if ($('#cb-select-all-1').length) {
-						dateColumnIndex = 6; // Still 6 because we count from td, not including th
-					}
-					
-					var aDate = parseInt($aCells.eq(dateColumnIndex).attr('data-sort-value')) || 0;
-					var bDate = parseInt($bCells.eq(dateColumnIndex).attr('data-sort-value')) || 0;
-					
-					return bDate - aDate; // Descending order (newest first)
-				});
-			}
-
-			activeRows = sortByCreatedDate(activeRows);
-			closedRows = sortByCreatedDate(closedRows);
-
-			// Create divider row
-			var colCount = $ticketsTable.find('thead tr th').length;
-			var $dividerRow = $('<tr>', {
-				'class': 'pnpc-psd-divider-row',
-				'data-divider': 'true'
-			});
-			
-			// Add checkbox column if present (empty cell)
-			if ($('#cb-select-all-1').length) {
-				$dividerRow.append($('<td>', {
-					'class': 'check-column'
-				}));
-				colCount--; // Reduce colspan count
-			}
-			
-			$dividerRow.append($('<td>', {
-				'colspan': colCount,
-				'text': 'Closed Tickets'
-			}));
-
-			// Clear tbody and append sorted groups with divider
-			$tbody.empty();
-			
-			$.each(activeRows, function(i, row) {
-				$tbody.append(row);
-			});
-			
-			$tbody.append($dividerRow);
-			
-			$.each(closedRows, function(i, row) {
-				$tbody.append(row);
-			});
-
-			autoSortApplied = true;
-		}
-
-		/**
-		 * Remove divider row from table
-		 */
-		function removeDivider() {
-			$ticketsTable.find('tr[data-divider="true"]').remove();
-			autoSortApplied = false;
 		}
 
 		// Bulk actions functionality
