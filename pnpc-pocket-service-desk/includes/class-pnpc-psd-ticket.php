@@ -44,39 +44,47 @@ class PNPC_PSD_Ticket
 		}
 
 		// Generate unique ticket number.
-		$ticket_number = self::generate_ticket_number();
+		$ticket_number = '';
+		$attempts = 0;
 
 		// Use helper to store UTC datetime explicitly
 		$created_at_utc = function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true);
 
-		$insert_data = array(
-			'ticket_number' => $ticket_number,
-			'user_id'       => absint($data['user_id']),
-			'subject'       => sanitize_text_field($data['subject']),
-			'description'   => wp_kses_post($data['description']),
-			'status'        => sanitize_text_field($data['status']),
-			'priority'      => sanitize_text_field($data['priority']),
-			'assigned_to'   => ! empty($data['assigned_to']) ? absint($data['assigned_to']) : null,
-			'created_at'    => $created_at_utc,
-		);
+		// Generate a unique ticket number and insert. If a collision occurs, retry a few times.
+		$max_attempts = 3;
+		do {
+			$attempts++;
+			$ticket_number = self::generate_ticket_number();
 
-		// Format array must match the insert order above
-		$format = array('%s', '%d', '%s', '%s', '%s', '%s', '%d', '%s');
+			$insert_data = array(
+				'ticket_number' => $ticket_number,
+				'user_id'       => absint($data['user_id']),
+				'subject'       => sanitize_text_field($data['subject']),
+				'description'   => wp_kses_post($data['description']),
+				'status'        => sanitize_text_field($data['status']),
+				'priority'      => sanitize_text_field($data['priority']),
+				'assigned_to'   => ! empty($data['assigned_to']) ? absint($data['assigned_to']) : null,
+				'created_at'    => $created_at_utc,
+			);
 
-		$result = $wpdb->insert(
-			$table_name,
-			$insert_data,
-			$format
-		);
+			// Format array must match the insert order above.
+			$format = array('%s', '%d', '%s', '%s', '%s', '%s', '%d', '%s');
 
-		if ($result) {
-			$ticket_id = $wpdb->insert_id;
+			$result = $wpdb->insert(
+				$table_name,
+				$insert_data,
+				$format
+			);
 
-			// Send notification email.
-			self::send_ticket_created_notification($ticket_id);
+			if (false !== $result) {
+				$ticket_id = (int) $wpdb->insert_id;
+				self::send_ticket_created_notification($ticket_id);
+				return $ticket_id;
+			}
 
-			return $ticket_id;
-		}
+			$last_error = isset($wpdb->last_error) ? (string) $wpdb->last_error : '';
+			$is_duplicate = (false !== stripos($last_error, 'Duplicate entry')) && (false !== stripos($last_error, 'ticket_number'));
+		} while ($attempts < $max_attempts && $is_duplicate);
 
 		// Diagnostic logging for failures (only when debug enabled)
 		if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -289,7 +297,22 @@ class PNPC_PSD_Ticket
 	 */
 	private static function generate_ticket_number()
 	{
-		$counter = get_option('pnpc_psd_ticket_counter', 1000);
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		// Start with the stored counter.
+		$counter = (int) get_option('pnpc_psd_ticket_counter', 0);
+
+		// If the DB already contains higher numbers (e.g., option reset or migrated DB), sync to DB.
+		$db_max = 0;
+		if (! empty($table_name)) {
+			$db_max_raw = $wpdb->get_var(
+				"SELECT MAX(CAST(SUBSTRING(ticket_number, 6) AS UNSIGNED)) FROM {$table_name} WHERE ticket_number LIKE 'PNPC-%'"
+			);
+			$db_max = (int) $db_max_raw;
+		}
+
+		$counter = max($counter, $db_max, 1000);
 		$counter++;
 		update_option('pnpc_psd_ticket_counter', $counter);
 

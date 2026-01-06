@@ -3,9 +3,6 @@
 /**
  * The public-facing functionality of the plugin
  *
- * Full patched version with robust render_ticket_detail, attachment handling,
- * UTC timestamp handling expectations, and AJAX handlers for create/respond/upload.
- *
  * @package    PNPC_Pocket_Service_Desk
  * @subpackage PNPC_Pocket_Service_Desk/public
  */
@@ -23,16 +20,6 @@ class PNPC_PSD_Public
 	{
 		$this->plugin_name = $plugin_name;
 		$this->version     = $version;
-
-		add_action('wp_enqueue_scripts', array($this, 'enqueue_styles'));
-		add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
-		add_action('init', array($this, 'register_shortcodes'));
-
-		// Public AJAX handlers (logged-in)
-		add_action('wp_ajax_pnpc_psd_get_ticket_detail', array($this, 'ajax_get_ticket_detail'));
-		add_action('wp_ajax_pnpc_psd_respond_to_ticket', array($this, 'ajax_respond_to_ticket'));
-		add_action('wp_ajax_pnpc_psd_create_ticket', array($this, 'ajax_create_ticket'));
-		add_action('wp_ajax_pnpc_psd_upload_profile_image', array($this, 'ajax_upload_profile_image'));
 	}
 
 	public function enqueue_styles()
@@ -44,7 +31,6 @@ class PNPC_PSD_Public
 			$this->version,
 			'all'
 		);
-		// Inline CSS omitted here for brevity (unchanged from prior)
 	}
 
 	public function enqueue_scripts()
@@ -98,7 +84,7 @@ class PNPC_PSD_Public
 	public function render_create_ticket($atts)
 	{
 		if (! is_user_logged_in()) {
-			return '<p>' . esc_html__('Please log in to create a ticket.', 'pnpc-pocket-service-desk') . '</p>';
+			return '<p>' . esc_html__('Please log in to create a ticket. ', 'pnpc-pocket-service-desk') . '</p>';
 		}
 		ob_start();
 		include PNPC_PSD_PLUGIN_DIR . 'public/views/create-ticket.php';
@@ -118,16 +104,12 @@ class PNPC_PSD_Public
 		return ob_get_clean();
 	}
 
-	/**
-	 * Robust render_ticket_detail implementation.
-	 */
 	public function render_ticket_detail($atts)
 	{
 		if (! is_user_logged_in()) {
 			return '<p>' . esc_html__('Please log in to view ticket details.', 'pnpc-pocket-service-desk') . '</p>';
 		}
 
-		// Use numeric ticket id from query
 		$ticket_id = isset($_GET['ticket_id']) ? absint($_GET['ticket_id']) : 0;
 		if (! $ticket_id) {
 			return '<p>' . esc_html__('Invalid ticket ID.', 'pnpc-pocket-service-desk') . '</p>';
@@ -135,15 +117,13 @@ class PNPC_PSD_Public
 
 		$ticket = PNPC_PSD_Ticket::get($ticket_id);
 		if (! $ticket) {
-			return '<p>' . esc_html__('Ticket not found.', 'pnpc-pocket-service-desk') . '</p>';
+			return '<p>' .  esc_html__('Ticket not found.', 'pnpc-pocket-service-desk') . '</p>';
 		}
 
-		// Ownership check: cast to int to avoid type issues
 		$current_user = wp_get_current_user();
 		$viewer_id = is_user_logged_in() ? intval($current_user->ID) : 0;
 		$ticket_owner_id = isset($ticket->user_id) ? intval($ticket->user_id) : 0;
 
-		// Debug logging when WP_DEBUG
 		if (defined('WP_DEBUG') && WP_DEBUG) {
 			$log_data = array(
 				'action'          => 'render_ticket_detail',
@@ -159,15 +139,12 @@ class PNPC_PSD_Public
 			}
 		}
 
-		// Deny if not owner and does not have the view capability
 		if ($ticket_owner_id !== $viewer_id && ! current_user_can('pnpc_psd_view_tickets')) {
 			return '<p>' . esc_html__('You do not have permission to view this ticket.', 'pnpc-pocket-service-desk') . '</p>';
 		}
 
-		// Get responses
 		$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket_id);
 
-		// Update last view meta only when owner views
 		if ($viewer_id && $ticket_owner_id === $viewer_id) {
 			update_user_meta($viewer_id, 'pnpc_psd_ticket_last_view_' . intval($ticket_id), intval(current_time('timestamp')));
 		}
@@ -180,7 +157,7 @@ class PNPC_PSD_Public
 	public function render_profile_settings($atts)
 	{
 		if (! is_user_logged_in()) {
-			return '<p>' . esc_html__('Please log in to access profile settings.', 'pnpc-pocket-service-desk') . '</p>';
+			return '<p>' .  esc_html__('Please log in to access profile settings.', 'pnpc-pocket-service-desk') . '</p>';
 		}
 		ob_start();
 		include PNPC_PSD_PLUGIN_DIR . 'public/views/profile-settings.php';
@@ -195,9 +172,6 @@ class PNPC_PSD_Public
 		return ob_get_clean();
 	}
 
-	/**
-	 * Normalize uploaded files array (compat fallback).
-	 */
 	private function normalize_files_array($file_post)
 	{
 		if (function_exists('pnpc_psd_rearrange_files')) {
@@ -218,7 +192,7 @@ class PNPC_PSD_Public
 		for ($i = 0; $i < $count; $i++) {
 			$item = array();
 			foreach ($keys as $k) {
-				$item[$k] = isset($file_post[$k][$i]) ? $file_post[$k][$i] : null;
+				$item[$k] = isset($file_post[$k][$i]) ? $file_post[$k][$i] :  null;
 			}
 			$files[] = $item;
 		}
@@ -229,11 +203,11 @@ class PNPC_PSD_Public
 	{
 		$nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
 		if (! wp_verify_nonce($nonce, 'pnpc_psd_public_nonce') && ! wp_verify_nonce($nonce, 'pnpc_psd_admin_nonce')) {
-			wp_send_json_error(array('message' => __('Security check failed. Please refresh and try again.', 'pnpc-pocket-service-desk')));
+			wp_send_json_error(array('message' => __('Security check failed.  Please refresh and try again.', 'pnpc-pocket-service-desk')));
 		}
 
 		if (! is_user_logged_in()) {
-			wp_send_json_error(array('message' => __('You must be logged in.', 'pnpc-pocket-service-desk')));
+			wp_send_json_error(array('message' => __('You must be logged in. ', 'pnpc-pocket-service-desk')));
 		}
 
 		$current_user = wp_get_current_user();
@@ -265,7 +239,7 @@ class PNPC_PSD_Public
 				$attachments[] = array(
 					'file_name' => sanitize_file_name($file['name']),
 					'file_path' => $move['url'],
-					'file_type' => isset($file['type']) ? $file['type'] : '',
+					'file_type' => isset($file['type']) ? $file['type'] :  '',
 					'file_size' => isset($file['size']) ? intval($file['size']) : 0,
 					'uploaded_by' => $current_user->ID,
 				);
@@ -281,9 +255,9 @@ class PNPC_PSD_Public
 
 		if (! $ticket_id) {
 			global $wpdb;
-			$error_detail = $wpdb->last_error ? ' DB error: ' . $wpdb->last_error : '';
-			error_log('pnpc-psd: ajax_create_ticket failed to insert ticket.' . $error_detail);
-			wp_send_json_error(array('message' => __('Failed to create ticket. Please try again or contact support.', 'pnpc-pocket-service-desk')));
+			$error_detail = $wpdb->last_error ?  ' DB error: ' . $wpdb->last_error : '';
+			error_log('pnpc-psd:  ajax_create_ticket failed to insert ticket.' . $error_detail);
+			wp_send_json_error(array('message' => __('Failed to create ticket.  Please try again or contact support.', 'pnpc-pocket-service-desk')));
 		}
 
 		if (! empty($attachments)) {
@@ -308,7 +282,7 @@ class PNPC_PSD_Public
 		$detail_url = function_exists('pnpc_psd_get_ticket_detail_url') ? pnpc_psd_get_ticket_detail_url($ticket_id) : '';
 
 		wp_send_json_success(array(
-			'message' => __('Ticket created successfully.', 'pnpc-pocket-service-desk'),
+			'message' => __('Ticket created successfully. ', 'pnpc-pocket-service-desk'),
 			'ticket_number' => $ticket->ticket_number,
 			'ticket_id' => $ticket_id,
 			'ticket_detail_url' => $detail_url,
@@ -319,11 +293,11 @@ class PNPC_PSD_Public
 	{
 		$nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
 		if (! wp_verify_nonce($nonce, 'pnpc_psd_public_nonce') && ! wp_verify_nonce($nonce, 'pnpc_psd_admin_nonce')) {
-			wp_send_json_error(array('message' => __('Security check failed. Please refresh and try again.', 'pnpc-pocket-service-desk')));
+			wp_send_json_error(array('message' => __('Security check failed.  Please refresh and try again.', 'pnpc-pocket-service-desk')));
 		}
 
 		if (! is_user_logged_in()) {
-			wp_send_json_error(array('message' => __('You must be logged in.', 'pnpc-pocket-service-desk')));
+			wp_send_json_error(array('message' => __('You must be logged in. ', 'pnpc-pocket-service-desk')));
 		}
 
 		$ticket_id = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
@@ -338,7 +312,6 @@ class PNPC_PSD_Public
 			wp_send_json_error(array('message' => __('Ticket not found.', 'pnpc-pocket-service-desk')));
 		}
 
-		// Robust permission check: ticket owner or capability to respond
 		$current_user = wp_get_current_user();
 		$viewer_id = is_user_logged_in() ? intval($current_user->ID) : 0;
 		$ticket_owner_id = isset($ticket->user_id) ? intval($ticket->user_id) : 0;
@@ -347,7 +320,6 @@ class PNPC_PSD_Public
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		// Handle attachments same as create
 		$attachments = array();
 		if (! empty($_FILES) && isset($_FILES['attachments'])) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -385,7 +357,7 @@ class PNPC_PSD_Public
 		if ($response_id) {
 			wp_send_json_success(array('message' => __('Response added successfully.', 'pnpc-pocket-service-desk')));
 		}
-		wp_send_json_error(array('message' => __('Failed to add response.', 'pnpc-pocket-service-desk')));
+		wp_send_json_error(array('message' => __('Failed to add response. ', 'pnpc-pocket-service-desk')));
 	}
 
 	public function ajax_upload_profile_image()
@@ -408,7 +380,7 @@ class PNPC_PSD_Public
 
 		$allowed_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/gif');
 		if (! in_array($file['type'], $allowed_types, true)) {
-			wp_send_json_error(array('message' => __('Invalid file type. Only JPEG, PNG, and GIF are allowed.', 'pnpc-pocket-service-desk')));
+			wp_send_json_error(array('message' => __('Invalid file type.  Only JPEG, PNG, and GIF are allowed.', 'pnpc-pocket-service-desk')));
 		}
 
 		if ($file['size'] > 2097152) {
@@ -425,5 +397,42 @@ class PNPC_PSD_Public
 		update_user_meta($current_user->ID, 'pnpc_psd_profile_image', $upload['url']);
 
 		wp_send_json_success(array('message' => __('Profile image uploaded successfully.', 'pnpc-pocket-service-desk'), 'url' => $upload['url']));
+	}
+
+	public function ajax_get_ticket_detail()
+	{
+		$nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
+		if (! wp_verify_nonce($nonce, 'pnpc_psd_public_nonce')) {
+			wp_send_json_error(array('message' => __('Security check failed. ', 'pnpc-pocket-service-desk')));
+		}
+
+		if (! is_user_logged_in()) {
+			wp_send_json_error(array('message' => __('You must be logged in.', 'pnpc-pocket-service-desk')));
+		}
+
+		$ticket_id = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
+		if (! $ticket_id) {
+			wp_send_json_error(array('message' => __('Invalid ticket ID.', 'pnpc-pocket-service-desk')));
+		}
+
+		$ticket = PNPC_PSD_Ticket::get($ticket_id);
+		if (! $ticket) {
+			wp_send_json_error(array('message' => __('Ticket not found.', 'pnpc-pocket-service-desk')));
+		}
+
+		$current_user = wp_get_current_user();
+		$viewer_id = intval($current_user->ID);
+		$ticket_owner_id = intval($ticket->user_id);
+
+		if ($ticket_owner_id !== $viewer_id && ! current_user_can('pnpc_psd_view_tickets')) {
+			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
+		}
+
+		$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket_id);
+
+		wp_send_json_success(array(
+			'ticket' => $ticket,
+			'responses' => $responses,
+		));
 	}
 }

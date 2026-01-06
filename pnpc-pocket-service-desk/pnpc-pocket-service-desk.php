@@ -105,6 +105,7 @@ register_deactivation_hook(__FILE__, 'deactivate_pnpc_pocket_service_desk');
 // Core files that should exist (excluding ticket model which we handle separately)
 $pnpc_core_files = array(
 	PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd.php',
+	PNPC_PSD_PLUGIN_DIR . 'includes/helpers.php',
 	PNPC_PSD_PLUGIN_DIR . 'public/class-pnpc-psd-public.php',
 );
 
