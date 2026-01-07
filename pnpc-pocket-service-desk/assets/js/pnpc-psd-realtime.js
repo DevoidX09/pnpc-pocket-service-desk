@@ -9,7 +9,10 @@
 	var config = {
 		menuBadgeInterval: 30000, // 30 seconds
 		autoRefreshInterval: 30000, // 30 seconds
-		cacheTimeout: 10000 // 10 seconds for preventing rapid requests
+		cacheTimeout: 10000, // 10 seconds for preventing rapid requests
+		sortRestoreDelay: 50, // Delay for sort restoration check
+		scrollRestoreDelay: 100, // Delay for scroll position restoration
+		newTicketAnimationDuration: 3000 // Duration of new ticket animation (must match CSS)
 	};
 
 	// State
@@ -18,6 +21,11 @@
 	var menuBadgeTimer = null;
 	var lastRefreshTime = Date.now();
 	var isRefreshing = false;
+	var previousTicketIds = [];
+	var currentSortColumn = '';
+	var currentSortOrder = '';
+	var selectedTicketIds = [];
+	var currentScrollPosition = 0;
 
 	$(document).ready(function() {
 		// Only proceed if we have the required data
@@ -223,6 +231,127 @@
 	}
 
 	/**
+	 * Save current state before refresh
+	 */
+	function saveCurrentState() {
+		// Store current ticket IDs
+		previousTicketIds = [];
+		$('input[name="ticket[]"]').each(function() {
+			previousTicketIds.push(parseInt($(this).val(), 10));
+		});
+
+		// Store sort state - find column with non-empty data-sort-order
+		var $sortedColumn = $('.pnpc-psd-sortable').filter(function() {
+			return $(this).attr('data-sort-order') !== '';
+		}).first();
+		
+		if ($sortedColumn.length) {
+			currentSortColumn = $sortedColumn.attr('data-sort-type');
+			currentSortOrder = $sortedColumn.attr('data-sort-order');
+		}
+
+		// Store selected checkboxes
+		selectedTicketIds = [];
+		$('input[name="ticket[]"]:checked').each(function() {
+			selectedTicketIds.push(parseInt($(this).val(), 10));
+		});
+
+		// Store scroll position
+		currentScrollPosition = $(window).scrollTop();
+	}
+
+	/**
+	 * Restore state after refresh
+	 */
+	function restoreCurrentState() {
+		// Restore checkbox selections
+		if (selectedTicketIds.length > 0) {
+			selectedTicketIds.forEach(function(ticketId) {
+				$('input[name="ticket[]"][value="' + ticketId + '"]').prop('checked', true);
+			});
+
+			// Update "select all" checkbox state
+			updateSelectAllCheckbox();
+		}
+
+		// Restore sort order by triggering the sort event
+		// Note: This relies on the existing sortTable function in pnpc-psd-admin.js
+		// which is triggered by click events on sortable column headers
+		if (currentSortColumn && currentSortOrder) {
+			var $columnToSort = $('.pnpc-psd-sortable[data-sort-type="' + currentSortColumn + '"]');
+			if ($columnToSort.length) {
+				// Check current state
+				var currentAttrOrder = $columnToSort.attr('data-sort-order');
+				
+				// Only trigger click if the order needs to change
+				if (currentAttrOrder !== currentSortOrder) {
+					// Trigger click to cycle through sort states
+					// The sortTable function in pnpc-psd-admin.js handles the logic
+					$columnToSort.trigger('click');
+					
+					// If still not matching after one click, click again
+					// This handles cycling from empty -> asc -> desc -> empty
+					setTimeout(function() {
+						if ($columnToSort.attr('data-sort-order') !== currentSortOrder) {
+							$columnToSort.trigger('click');
+						}
+					}, config.sortRestoreDelay);
+				}
+			}
+		}
+
+		// Restore scroll position (with small delay for DOM update)
+		setTimeout(function() {
+			$(window).scrollTop(currentScrollPosition);
+		}, config.scrollRestoreDelay);
+	}
+
+	/**
+	 * Detect and highlight new tickets
+	 */
+	function detectAndHighlightNewTickets() {
+		var newTicketIds = [];
+
+		// Find tickets that weren't in previous list
+		$('input[name="ticket[]"]').each(function() {
+			var ticketId = parseInt($(this).val(), 10);
+			if (previousTicketIds.indexOf(ticketId) === -1) {
+				newTicketIds.push(ticketId);
+			}
+		});
+
+		// Apply highlight animation to new tickets
+		if (newTicketIds.length > 0) {
+			newTicketIds.forEach(function(ticketId) {
+				var $row = $('input[name="ticket[]"][value="' + ticketId + '"]').closest('tr');
+
+				// Add animation class
+				$row.addClass('pnpc-psd-ticket-row-new');
+
+				// Remove class after animation completes
+				setTimeout(function() {
+					$row.removeClass('pnpc-psd-ticket-row-new');
+				}, config.newTicketAnimationDuration);
+			});
+		}
+	}
+
+	/**
+	 * Update "select all" checkbox state
+	 */
+	function updateSelectAllCheckbox() {
+		var $checkboxes = $('input[name="ticket[]"]');
+		var $checkedBoxes = $('input[name="ticket[]"]:checked');
+		var $selectAll = $('#cb-select-all-1');
+
+		if ($checkboxes.length === $checkedBoxes.length && $checkboxes.length > 0) {
+			$selectAll.prop('checked', true);
+		} else {
+			$selectAll.prop('checked', false);
+		}
+	}
+
+	/**
 	 * Refresh the ticket list via AJAX
 	 */
 	function refreshTicketList() {
@@ -238,6 +367,9 @@
 		}
 
 		isRefreshing = true;
+
+		// Save current state before refresh
+		saveCurrentState();
 
 		// Get current filter/tab from URL
 		var urlParams = new URLSearchParams(window.location.search);
@@ -260,11 +392,23 @@
 				if (response.success && response.data.html) {
 					var $tbody = $('#pnpc-psd-tickets-table tbody');
 					$tbody.fadeOut(200, function() {
-						$tbody.html(response.data.html).fadeIn(200);
-						updateLastRefreshTime();
-						
-						// Trigger custom event for other scripts
-						$(document).trigger('pnpc_psd_tickets_refreshed');
+						$tbody.html(response.data.html).fadeIn(200, function() {
+							// Detect and highlight new tickets
+							detectAndHighlightNewTickets();
+
+							// Restore previous state
+							restoreCurrentState();
+
+							// Update tab counts if provided
+							if (response.data.counts) {
+								updateTabCounts(response.data.counts);
+							}
+
+							updateLastRefreshTime();
+
+							// Trigger custom event for other scripts
+							$(document).trigger('pnpc_psd_tickets_refreshed');
+						});
 					});
 				}
 			},
@@ -277,6 +421,34 @@
 				lastRefreshTime = Date.now();
 			}
 		});
+	}
+
+	/**
+	 * Update tab counts in navigation
+	 */
+	function updateTabCounts(counts) {
+		// Sanitize counts to ensure they are safe integers within valid range
+		if (counts.open !== undefined) {
+			var openCount = parseInt(counts.open, 10);
+			// Validate as safe integer, non-negative, and within safe range
+			if (!isNaN(openCount) && isFinite(openCount) && openCount >= 0 && openCount <= Number.MAX_SAFE_INTEGER) {
+				$('.subsubsub a[href*="status=open"]').text('Open (' + openCount + ')');
+			}
+		}
+		if (counts.closed !== undefined) {
+			var closedCount = parseInt(counts.closed, 10);
+			// Validate as safe integer, non-negative, and within safe range
+			if (!isNaN(closedCount) && isFinite(closedCount) && closedCount >= 0 && closedCount <= Number.MAX_SAFE_INTEGER) {
+				$('.subsubsub a[href*="status=closed"]').text('Closed (' + closedCount + ')');
+			}
+		}
+		if (counts.trash !== undefined) {
+			var trashCount = parseInt(counts.trash, 10);
+			// Validate as safe integer, non-negative, and within safe range
+			if (!isNaN(trashCount) && isFinite(trashCount) && trashCount >= 0 && trashCount <= Number.MAX_SAFE_INTEGER) {
+				$('.subsubsub a[href*="view=trash"]').text('Trash (' + trashCount + ')');
+			}
+		}
 	}
 
 	/**

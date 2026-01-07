@@ -942,7 +942,19 @@ class PNPC_PSD_Admin
 		}
 		$html = ob_get_clean();
 
-		wp_send_json_success(array('html' => $html));
+		// Get counts for tabs
+		$open_count   = PNPC_PSD_Ticket::get_count('open');
+		$closed_count = PNPC_PSD_Ticket::get_count('closed');
+		$trash_count  = PNPC_PSD_Ticket::get_trashed_count();
+
+		wp_send_json_success(array(
+			'html' => $html,
+			'counts' => array(
+				'open'   => $open_count,
+				'closed' => $closed_count,
+				'trash'  => $trash_count,
+			),
+		));
 	}
 
 	/**
