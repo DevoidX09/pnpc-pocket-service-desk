@@ -237,7 +237,7 @@
 		// Store current ticket IDs
 		previousTicketIds = [];
 		$('input[name="ticket[]"]').each(function() {
-			previousTicketIds.push(parseInt($(this).val()));
+			previousTicketIds.push(parseInt($(this).val(), 10));
 		});
 
 		// Store sort state - find column with non-empty data-sort-order
@@ -253,7 +253,7 @@
 		// Store selected checkboxes
 		selectedTicketIds = [];
 		$('input[name="ticket[]"]:checked').each(function() {
-			selectedTicketIds.push(parseInt($(this).val()));
+			selectedTicketIds.push(parseInt($(this).val(), 10));
 		});
 
 		// Store scroll position
@@ -312,7 +312,7 @@
 
 		// Find tickets that weren't in previous list
 		$('input[name="ticket[]"]').each(function() {
-			var ticketId = parseInt($(this).val());
+			var ticketId = parseInt($(this).val(), 10);
 			if (previousTicketIds.indexOf(ticketId) === -1) {
 				newTicketIds.push(ticketId);
 			}
@@ -425,18 +425,27 @@
 	 * Update tab counts in navigation
 	 */
 	function updateTabCounts(counts) {
-		// Sanitize counts to ensure they are integers
+		// Sanitize counts to ensure they are safe integers
 		if (counts.open !== undefined) {
-			var openCount = parseInt(counts.open, 10) || 0;
-			$('.subsubsub a[href*="status=open"]').text('Open (' + openCount + ')');
+			var openCount = parseInt(counts.open, 10);
+			// Validate as safe integer and non-negative
+			if (!isNaN(openCount) && isFinite(openCount) && openCount >= 0) {
+				$('.subsubsub a[href*="status=open"]').text('Open (' + openCount + ')');
+			}
 		}
 		if (counts.closed !== undefined) {
-			var closedCount = parseInt(counts.closed, 10) || 0;
-			$('.subsubsub a[href*="status=closed"]').text('Closed (' + closedCount + ')');
+			var closedCount = parseInt(counts.closed, 10);
+			// Validate as safe integer and non-negative
+			if (!isNaN(closedCount) && isFinite(closedCount) && closedCount >= 0) {
+				$('.subsubsub a[href*="status=closed"]').text('Closed (' + closedCount + ')');
+			}
 		}
 		if (counts.trash !== undefined) {
-			var trashCount = parseInt(counts.trash, 10) || 0;
-			$('.subsubsub a[href*="view=trash"]').text('Trash (' + trashCount + ')');
+			var trashCount = parseInt(counts.trash, 10);
+			// Validate as safe integer and non-negative
+			if (!isNaN(trashCount) && isFinite(trashCount) && trashCount >= 0) {
+				$('.subsubsub a[href*="view=trash"]').text('Trash (' + trashCount + ')');
+			}
 		}
 	}
 
