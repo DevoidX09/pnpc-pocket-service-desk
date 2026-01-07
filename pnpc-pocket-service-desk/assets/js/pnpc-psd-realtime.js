@@ -307,6 +307,48 @@
 	}
 
 	/**
+	 * Flash screen border when new tickets arrive
+	 */
+	function flashScreenBorder(count) {
+		// Prevent multiple simultaneous flashes
+		if ($('body').hasClass('pnpc-psd-flash-active')) {
+			return;
+		}
+		
+		// Add body class to prevent scroll shift
+		$('body').addClass('pnpc-psd-flash-active');
+		
+		// Create full-screen border overlay
+		var $overlay = $('<div class="pnpc-psd-screen-flash-overlay"></div>');
+		
+		// Add notification text
+		var ticketText = count === 1 
+			? '1 new ticket arrived'
+			: count + ' new tickets arrived';
+		
+		var $notification = $('<div class="pnpc-psd-screen-flash-notification">' + 
+			'<span class="dashicons dashicons-yes-alt" style="margin-right: 8px; font-size: 18px; vertical-align: middle;"></span>' + 
+			ticketText + 
+			'</div>');
+		
+		// Append to body (not inside any scrollable container)
+		$('body').append($overlay).append($notification);
+		
+		// Remove after animation completes
+		setTimeout(function() {
+			$overlay.fadeOut(400, function() {
+				$(this).remove();
+			});
+			$notification.fadeOut(400, function() {
+				$(this).remove();
+			});
+			
+			// Remove body class
+			$('body').removeClass('pnpc-psd-flash-active');
+		}, 3000);
+	}
+
+	/**
 	 * Detect and highlight new tickets
 	 */
 	function detectAndHighlightNewTickets() {
@@ -322,6 +364,9 @@
 
 		// Apply highlight animation to new tickets
 		if (newTicketIds.length > 0) {
+			// Trigger screen border flash
+			flashScreenBorder(newTicketIds.length);
+
 			newTicketIds.forEach(function(ticketId) {
 				var $row = $('input[name="ticket[]"][value="' + ticketId + '"]').closest('tr');
 

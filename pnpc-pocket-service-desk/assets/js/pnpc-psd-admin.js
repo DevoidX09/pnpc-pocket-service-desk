@@ -71,7 +71,6 @@
 
 		function sortTable($header, order) {
 			var $tbody = $ticketsTable.find('tbody');
-			var rows = $tbody.find('tr').get();
 			var sortType = $header.attr('data-sort-type');
 			var columnIndex = $header.index();
 
@@ -86,75 +85,52 @@
 			// Set current sort indicator
 			$header.attr('data-sort-order', order);
 
-			// Don't sort if only one or zero rows
-			if (rows.length <= 1) {
+			// Separate active, closed, and divider rows
+			var $activeRows = $tbody.find('tr').not('.pnpc-psd-ticket-closed').not('.pnpc-psd-closed-divider').toArray();
+			var $closedRows = $tbody.find('tr.pnpc-psd-ticket-closed').toArray();
+			var $divider = $tbody.find('tr.pnpc-psd-closed-divider');
+
+			// Don't sort if only one or zero rows (excluding divider)
+			if ($activeRows.length + $closedRows.length <= 1) {
 				return;
 			}
 
-			// Sort rows
-			rows.sort(function(a, b) {
-				var $aCell = $(a).find('td').eq(columnIndex);
-				var $bCell = $(b).find('td').eq(columnIndex);
-				var aVal = $aCell.attr('data-sort-value');
-				var bVal = $bCell.attr('data-sort-value');
+			// Sort active rows
+			if ($activeRows.length > 0) {
+				$activeRows.sort(function(a, b) {
+					return compareRows(a, b, sortType, columnIndex);
+				});
 
-				// Handle empty or undefined values
-				var aEmpty = (aVal === undefined || aVal === '' || aVal === null);
-				var bEmpty = (bVal === undefined || bVal === '' || bVal === null);
-				
-				if (aEmpty && bEmpty) {
-					return 0; // Both empty, equal
+				if (order === 'desc') {
+					$activeRows.reverse();
 				}
-				if (aEmpty) {
-					return 1; // Empty values sort to bottom
-				}
-				if (bEmpty) {
-					return -1; // Empty values sort to bottom
-				}
-
-				var result = 0;
-
-				switch (sortType) {
-					case 'ticket-number':
-					case 'date':
-					case 'status':
-					case 'priority':
-					case 'boolean':
-						// Numeric comparison
-						var aNum = parseFloat(aVal);
-						var bNum = parseFloat(bVal);
-						result = aNum - bNum;
-						break;
-
-					case 'text':
-					default:
-						// Text comparison (case-insensitive)
-						var aText = String(aVal).toLowerCase();
-						var bText = String(bVal).toLowerCase();
-						if (aText < bText) {
-							result = -1;
-						} else if (aText > bText) {
-							result = 1;
-						} else {
-							result = 0;
-						}
-						break;
-				}
-
-				return result;
-			});
-
-			// Reverse if descending
-			if (order === 'desc') {
-				rows.reverse();
 			}
 
-			// Re-append rows to tbody
-			var fragment = document.createDocumentFragment();
-			$.each(rows, function(index, row) {
-				fragment.appendChild(row);
+			// Sort closed rows
+			if ($closedRows.length > 0) {
+				$closedRows.sort(function(a, b) {
+					return compareRows(a, b, sortType, columnIndex);
+				});
+
+				if (order === 'desc') {
+					$closedRows.reverse();
+				}
+			}
+
+			// Re-append rows to tbody: active, divider, closed
+			$tbody.empty();
+
+			$.each($activeRows, function(index, row) {
+				$tbody.append(row);
 			});
-			$tbody.empty().append(fragment);
+
+			if ($divider.length && $closedRows.length > 0) {
+				$tbody.append($divider);
+			}
+
+			$.each($closedRows, function(index, row) {
+				$tbody.append(row);
+			});
 
 			// Trigger custom event
 			$ticketsTable.trigger('sortcomplete');
@@ -163,6 +139,58 @@
 			var sortTypeText = $header.text().trim();
 			var orderText = (order === 'asc') ? 'ascending' : 'descending';
 			announceToScreenReader('Table sorted by ' + sortTypeText + ' in ' + orderText + ' order');
+		}
+
+		function compareRows(a, b, sortType, columnIndex) {
+			var $aCell = $(a).find('td').eq(columnIndex);
+			var $bCell = $(b).find('td').eq(columnIndex);
+			var aVal = $aCell.attr('data-sort-value');
+			var bVal = $bCell.attr('data-sort-value');
+
+			// Handle empty or undefined values
+			var aEmpty = (aVal === undefined || aVal === '' || aVal === null);
+			var bEmpty = (bVal === undefined || bVal === '' || bVal === null);
+			
+			if (aEmpty && bEmpty) {
+				return 0; // Both empty, equal
+			}
+			if (aEmpty) {
+				return 1; // Empty values sort to bottom
+			}
+			if (bEmpty) {
+				return -1; // Empty values sort to bottom
+			}
+
+			var result = 0;
+
+			switch (sortType) {
+				case 'ticket-number':
+				case 'date':
+				case 'status':
+				case 'priority':
+				case 'boolean':
+					// Numeric comparison
+					var aNum = parseFloat(aVal);
+					var bNum = parseFloat(bVal);
+					result = aNum - bNum;
+					break;
+
+				case 'text':
+				default:
+					// Text comparison (case-insensitive)
+					var aText = String(aVal).toLowerCase();
+					var bText = String(bVal).toLowerCase();
+					if (aText < bText) {
+						result = -1;
+					} else if (aText > bText) {
+						result = 1;
+					} else {
+						result = 0;
+					}
+					break;
+			}
+
+			return result;
 		}
 
 		function updateSelectAllState() {
@@ -196,19 +224,35 @@
 		// Bulk actions functionality
 		var $bulkActionSelector = $('#bulk-action-selector-top');
 		var $applyButton = $('#doaction');
-		var $selectAllCheckbox = $('#cb-select-all-1');
-		var $ticketCheckboxes = $('input[name="ticket[]"]');
 
-		// Select all functionality
-		$selectAllCheckbox.on('change', function() {
-			var isChecked = $(this).prop('checked');
-			$ticketCheckboxes.prop('checked', isChecked);
-		});
+		// Function to bind/rebind checkbox handlers
+		function rebindCheckboxHandlers() {
+			var $selectAllCheckbox = $('#cb-select-all-1');
+			var $ticketCheckboxes = $('input[name="ticket[]"]');
 
-		// Update select all checkbox when individual checkboxes change
-		$ticketCheckboxes.on('change', function() {
-			var allChecked = $ticketCheckboxes.length === $ticketCheckboxes.filter(':checked').length;
-			$selectAllCheckbox.prop('checked', allChecked);
+			// Unbind previous handlers to prevent duplicates
+			$selectAllCheckbox.off('change.bulkactions');
+			$ticketCheckboxes.off('change.bulkactions');
+
+			// Select all functionality
+			$selectAllCheckbox.on('change.bulkactions', function() {
+				var isChecked = $(this).prop('checked');
+				$ticketCheckboxes.prop('checked', isChecked);
+			});
+
+			// Update select all checkbox when individual checkboxes change
+			$ticketCheckboxes.on('change.bulkactions', function() {
+				var allChecked = $ticketCheckboxes.length === $ticketCheckboxes.filter(':checked').length;
+				$selectAllCheckbox.prop('checked', allChecked);
+			});
+		}
+
+		// Initial binding
+		rebindCheckboxHandlers();
+
+		// Re-bind after AJAX refresh
+		$(document).on('pnpc_psd_tickets_refreshed', function() {
+			rebindCheckboxHandlers();
 		});
 
 		// Handle bulk action apply button
@@ -220,8 +264,9 @@
 				return;
 			}
 
+			// Get fresh checkboxes to account for any DOM updates
 			var selectedTickets = [];
-			$ticketCheckboxes.filter(':checked').each(function() {
+			$('input[name="ticket[]"]:checked').each(function() {
 				selectedTickets.push($(this).val());
 			});
 

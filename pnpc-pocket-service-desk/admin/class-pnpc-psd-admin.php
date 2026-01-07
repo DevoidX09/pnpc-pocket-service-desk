@@ -921,8 +921,54 @@ class PNPC_PSD_Admin
 		// Generate HTML for ticket rows
 		ob_start();
 		if (! empty($tickets)) {
-			foreach ($tickets as $ticket) {
-				$this->render_ticket_row($ticket, $is_trash_view);
+			// For trash view, don't separate by status
+			if ($is_trash_view) {
+				foreach ($tickets as $ticket) {
+					$this->render_ticket_row($ticket, $is_trash_view);
+				}
+			} else {
+				// Separate active and closed tickets
+				$separated = $this->separate_active_and_closed_tickets($tickets);
+				$active_tickets = $separated['active'];
+				$closed_tickets = $separated['closed'];
+				$has_active = !empty($active_tickets);
+				$has_closed = !empty($closed_tickets);
+
+				// Render active tickets
+				if ($has_active) {
+					foreach ($active_tickets as $ticket) {
+						$this->render_ticket_row($ticket, false);
+					}
+				}
+
+				// Render divider if both sections exist
+				if ($has_active && $has_closed) {
+					?>
+					<tr class="pnpc-psd-closed-divider">
+						<td colspan="<?php echo current_user_can('pnpc_psd_delete_tickets') ? '10' : '9'; ?>">
+							<div class="pnpc-psd-divider-content">
+								<span class="pnpc-psd-divider-line"></span>
+								<span class="pnpc-psd-divider-text">
+									<?php 
+									printf(
+										esc_html__('Closed Tickets (%d)', 'pnpc-pocket-service-desk'),
+										count($closed_tickets)
+									); 
+									?>
+								</span>
+								<span class="pnpc-psd-divider-line"></span>
+							</div>
+						</td>
+					</tr>
+					<?php
+				}
+
+				// Render closed tickets with special class
+				if ($has_closed) {
+					foreach ($closed_tickets as $ticket) {
+						$this->render_ticket_row($ticket, false, true);
+					}
+				}
 			}
 		} else {
 			$colspan = $is_trash_view ? (current_user_can('pnpc_psd_delete_tickets') ? '9' : '8') : (current_user_can('pnpc_psd_delete_tickets') ? '10' : '9');
@@ -958,13 +1004,42 @@ class PNPC_PSD_Admin
 	}
 
 	/**
+	 * Separate tickets into active and closed
+	 * Active = open, in-progress, waiting, pending, etc.
+	 * Closed = closed, resolved
+	 *
+	 * @param array $tickets All tickets
+	 * @return array ['active' => [], 'closed' => []]
+	 */
+	private function separate_active_and_closed_tickets($tickets)
+	{
+		$active = array();
+		$closed = array();
+		
+		foreach ($tickets as $ticket) {
+			$status_lower = strtolower($ticket->status);
+			if ($status_lower === 'closed' || $status_lower === 'resolved') {
+				$closed[] = $ticket;
+			} else {
+				$active[] = $ticket;
+			}
+		}
+		
+		return array(
+			'active' => $active,
+			'closed' => $closed,
+		);
+	}
+
+	/**
 	 * Render a single ticket row (extracted from tickets-list.php for reuse)
 	 *
 	 * @since 1.0.0
 	 * @param object $ticket Ticket object
 	 * @param bool $is_trash_view Whether viewing trash
+	 * @param bool $is_closed Whether this is a closed ticket (for styling)
 	 */
-	private function render_ticket_row($ticket, $is_trash_view = false)
+	private function render_ticket_row($ticket, $is_trash_view = false, $is_closed = false)
 	{
 		$user          = get_userdata($ticket->user_id);
 		$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
@@ -1026,7 +1101,7 @@ class PNPC_PSD_Admin
 			}
 		}
 		?>
-		<tr>
+		<tr<?php echo $is_closed ? ' class="pnpc-psd-ticket-closed"' : ''; ?>>
 			<?php if (current_user_can('pnpc_psd_delete_tickets')) : ?>
 			<th scope="row" class="check-column">
 				<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">
