@@ -685,7 +685,7 @@
 	}
 }
 
-/* Full-screen border flash overlay */
+/* Full-screen border flash overlay - IMPROVED */
 .pnpc-psd-screen-flash-overlay {
 	position: fixed;
 	top: 0;
@@ -693,55 +693,85 @@
 	right: 0;
 	bottom: 0;
 	pointer-events: none;
-	z-index: 9999;
-	border: 6px solid #48bb78;
-	box-shadow: inset 0 0 30px rgba(72, 187, 120, 0.3);
+	z-index: 999999;
+	border: 8px solid #48bb78;
+	box-shadow: 
+		inset 0 0 30px rgba(72, 187, 120, 0.4),
+		0 0 40px rgba(72, 187, 120, 0.3);
 	animation: pnpc-psd-screen-border-flash 3s ease-in-out;
+	/* Prevent layout shift */
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+/* Prevent body scroll during animation to avoid shift */
+body.pnpc-psd-flash-active {
+	overflow: hidden;
 }
 
 @keyframes pnpc-psd-screen-border-flash {
 	0% {
 		opacity: 0;
-		border-width: 6px;
-	}
-	15% {
-		opacity: 1;
 		border-width: 8px;
+		box-shadow: 
+			inset 0 0 30px rgba(72, 187, 120, 0),
+			0 0 40px rgba(72, 187, 120, 0);
+	}
+	10% {
+		opacity: 1;
+		border-width: 10px;
+		box-shadow: 
+			inset 0 0 40px rgba(72, 187, 120, 0.5),
+			0 0 50px rgba(72, 187, 120, 0.4);
 	}
 	50% {
 		opacity: 1;
-		border-width: 6px;
+		border-width: 8px;
+		box-shadow: 
+			inset 0 0 30px rgba(72, 187, 120, 0.4),
+			0 0 40px rgba(72, 187, 120, 0.3);
+	}
+	90% {
+		opacity: 1;
+		border-width: 8px;
 	}
 	100% {
 		opacity: 0;
-		border-width: 6px;
+		border-width: 8px;
+		box-shadow: 
+			inset 0 0 30px rgba(72, 187, 120, 0),
+			0 0 40px rgba(72, 187, 120, 0);
 	}
 }
 
-/* Notification text during flash */
+/* Notification text during flash - IMPROVED */
 .pnpc-psd-screen-flash-notification {
 	position: fixed;
-	top: 50px;
+	top: 60px;
 	left: 50%;
 	transform: translateX(-50%);
-	z-index: 10000;
-	background: #48bb78;
+	z-index: 9999999;
+	background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
 	color: #fff;
-	padding: 15px 30px;
-	border-radius: 6px;
-	font-size: 16px;
+	padding: 16px 32px;
+	border-radius: 8px;
+	font-size: 15px;
 	font-weight: 600;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	animation: pnpc-psd-notification-bounce 3s ease-in-out;
+	box-shadow: 
+		0 4px 12px rgba(0, 0, 0, 0.15),
+		0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+	animation: pnpc-psd-notification-slide 3s ease-in-out;
 	pointer-events: none;
+	white-space: nowrap;
 }
 
-@keyframes pnpc-psd-notification-bounce {
+@keyframes pnpc-psd-notification-slide {
 	0% {
 		opacity: 0;
-		transform: translateX(-50%) translateY(-20px);
+		transform: translateX(-50%) translateY(-30px);
 	}
-	15% {
+	10% {
 		opacity: 1;
 		transform: translateX(-50%) translateY(0);
 	}
@@ -751,59 +781,58 @@
 	}
 	100% {
 		opacity: 0;
-		transform: translateX(-50%) translateY(-20px);
+		transform: translateX(-50%) translateY(-30px);
 	}
 }
 
-/* Pagination */
-.pnpc-psd-pagination {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-top: 20px;
-	padding: 15px 0;
-	border-top: 1px solid #dcdcde;
-}
-
-.pnpc-psd-pagination-info {
-	color: #50575e;
-	font-size: 14px;
-}
-
-.pnpc-psd-pagination-links {
-	display: flex;
-	gap: 5px;
-	align-items: center;
-}
-
-.pnpc-psd-page-number {
-	display: inline-block;
-	min-width: 32px;
-	padding: 6px 10px;
-	text-align: center;
-	border: 1px solid #c3c4c7;
-	border-radius: 3px;
-	background: #fff;
-	color: #2271b1;
-	text-decoration: none;
-	font-size: 14px;
-	transition: all 0.2s;
-}
-
-.pnpc-psd-page-number:hover {
+/* Closed tickets divider */
+.pnpc-psd-closed-divider {
 	background: #f6f7f7;
-	border-color: #2271b1;
+	border-top: 2px solid #c3c4c7;
+	border-bottom: 2px solid #c3c4c7;
 }
 
-.pnpc-psd-page-number.current {
-	background: #2271b1;
-	color: #fff;
-	border-color: #2271b1;
+.pnpc-psd-closed-divider td {
+	padding: 12px 10px !important;
+}
+
+.pnpc-psd-divider-content {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 15px;
+}
+
+.pnpc-psd-divider-line {
+	flex: 1;
+	height: 1px;
+	background: linear-gradient(to right, transparent, #a7aaad, transparent);
+}
+
+.pnpc-psd-divider-text {
+	font-size: 13px;
 	font-weight: 600;
-	pointer-events: none;
+	color: #50575e;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	white-space: nowrap;
 }
 
-.pnpc-psd-page-dots {
-	padding: 0 5px;
-	color: #a7aaad;
+/* Closed ticket rows - slightly muted */
+.pnpc-psd-ticket-closed {
+	background: #fafafa;
+	opacity: 0.85;
+}
+
+.pnpc-psd-ticket-closed:hover {
+	background: #f6f7f7;
+	opacity: 1;
+}
+
+.pnpc-psd-ticket-closed td a {
+	color: #646970;
+}
+
+.pnpc-psd-ticket-closed td {
+	color: #646970;
 }

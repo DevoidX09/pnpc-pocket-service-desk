@@ -153,8 +153,119 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 			</tr>
 		</thead>
 		<tbody>
-			<?php if (! empty($tickets_paginated)) : ?>
-				<?php foreach ($tickets_paginated as $ticket) : ?>
+			<?php 
+			// Separate active and closed tickets (only for non-trash views)
+			if (! empty($tickets) && ! $is_trash_view) {
+				$active_tickets = array();
+				$closed_tickets = array();
+				
+				foreach ($tickets as $ticket) {
+					$status_lower = strtolower($ticket->status);
+					if ($status_lower === 'closed' || $status_lower === 'resolved') {
+						$closed_tickets[] = $ticket;
+					} else {
+						$active_tickets[] = $ticket;
+					}
+				}
+				
+				$has_active = !empty($active_tickets);
+				$has_closed = !empty($closed_tickets);
+			} else {
+				$active_tickets = array();
+				$closed_tickets = array();
+				$has_active = false;
+				$has_closed = false;
+			}
+			?>
+			
+			<?php if (! empty($tickets)) : ?>
+				<?php if ($is_trash_view) : ?>
+					<?php // Trash view: render all tickets normally ?>
+					<?php foreach ($tickets as $ticket) : ?>
+						<?php
+						$user          = get_userdata($ticket->user_id);
+						$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
+						
+						// Extract numeric part from ticket number for sorting (e.g., PNPC-1234 -> 1234)
+						$ticket_num_for_sort = (int) preg_replace('/[^0-9]/', '', $ticket->ticket_number);
+						
+						// Status sort order: open=1, in-progress=2, waiting=3, closed=4
+						$status_order = array('open' => 1, 'in-progress' => 2, 'waiting' => 3, 'closed' => 4);
+						$status_sort_value = isset($status_order[$ticket->status]) ? $status_order[$ticket->status] : 999;
+						
+						// Priority sort order: urgent=1, high=2, normal=3, low=4
+						$priority_order = array('urgent' => 1, 'high' => 2, 'normal' => 3, 'low' => 4);
+						$priority_sort_value = isset($priority_order[$ticket->priority]) ? $priority_order[$ticket->priority] : 999;
+						
+						// Get timestamp for date sorting
+						$created_timestamp = strtotime($ticket->created_at);
+						if (false === $created_timestamp) {
+							$created_timestamp = 0; // Fallback for invalid dates
+						}
+						
+						// Trash view: show delete reason, deleted by, deleted at
+						$delete_reason       = ! empty($ticket->delete_reason) ? $ticket->delete_reason : '';
+						$delete_reason_other = ! empty($ticket->delete_reason_other) ? $ticket->delete_reason_other : '';
+						$deleted_by_id       = ! empty($ticket->deleted_by) ? absint($ticket->deleted_by) : 0;
+						$deleted_by_user     = $deleted_by_id ? get_userdata($deleted_by_id) : null;
+						$deleted_at          = ! empty($ticket->deleted_at) ? $ticket->deleted_at : '';
+
+						// Get timestamp for deleted at sorting
+						$deleted_timestamp = $deleted_at ? strtotime($deleted_at) : 0;
+						?>
+						<tr>
+							<?php if (current_user_can('pnpc_psd_delete_tickets')) : ?>
+							<th scope="row" class="check-column">
+								<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">
+									<?php
+									/* translators: %s: ticket number */
+									printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number));
+									?>
+								</label>
+								<input type="checkbox" name="ticket[]" id="cb-select-<?php echo absint($ticket->id); ?>" value="<?php echo absint($ticket->id); ?>">
+							</th>
+							<?php endif; ?>
+							<td data-sort-value="<?php echo absint($ticket_num_for_sort); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
+							<td data-sort-value="<?php echo esc_attr(strtolower($ticket->subject)); ?>">
+								<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
+									<?php echo esc_html($ticket->subject); ?>
+								</a>
+								<?php if (! empty($ticket->created_by_staff)) : ?>
+									<span class="pnpc-psd-badge pnpc-psd-badge-staff-created" title="<?php esc_attr_e('Created by staff', 'pnpc-pocket-service-desk'); ?>">
+										<span class="dashicons dashicons-admin-users"></span>
+									</span>
+								<?php endif; ?>
+							</td>
+							<td data-sort-value="<?php echo esc_attr(strtolower($delete_reason)); ?>">
+								<?php echo esc_html(pnpc_psd_format_delete_reason($delete_reason, $delete_reason_other)); ?>
+							</td>
+							<td data-sort-value="<?php echo esc_attr(strtolower($deleted_by_user ? $deleted_by_user->display_name : 'zzz_unknown')); ?>">
+								<?php echo $deleted_by_user ? esc_html($deleted_by_user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?>
+							</td>
+							<td data-sort-value="<?php echo absint($deleted_timestamp); ?>">
+								<?php
+								if ($deleted_at) {
+									if (function_exists('pnpc_psd_format_db_datetime_for_display')) {
+										echo esc_html(pnpc_psd_format_db_datetime_for_display($deleted_at));
+									} else {
+										echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($deleted_at)));
+									}
+								} else {
+									esc_html_e('Unknown', 'pnpc-pocket-service-desk');
+								}
+								?>
+							</td>
+							<td>
+								<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>" class="button button-small">
+									<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
+								</a>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				<?php else : ?>
+					<?php // ACTIVE TICKETS SECTION ?>
+					<?php if ($has_active) : ?>
+						<?php foreach ($active_tickets as $ticket) : ?>
 					<?php
 					$user          = get_userdata($ticket->user_id);
 					$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
@@ -248,7 +359,6 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 								</span>
 							<?php endif; ?>
 						</td>
-						<?php if (! $is_trash_view) : ?>
 						<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
 						<td data-sort-value="<?php echo absint($status_sort_value); ?>">
 							<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>">
@@ -276,38 +386,6 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 								<span class="pnpc-psd-new-indicator-badge"><?php echo esc_html($new_responses); ?></span>
 							<?php endif; ?>
 						</td>
-						<?php else : ?>
-						<?php
-						// Trash view: show delete reason, deleted by, deleted at
-						$delete_reason       = ! empty($ticket->delete_reason) ? $ticket->delete_reason : '';
-						$delete_reason_other = ! empty($ticket->delete_reason_other) ? $ticket->delete_reason_other : '';
-						$deleted_by_id       = ! empty($ticket->deleted_by) ? absint($ticket->deleted_by) : 0;
-						$deleted_by_user     = $deleted_by_id ? get_userdata($deleted_by_id) : null;
-						$deleted_at          = ! empty($ticket->deleted_at) ? $ticket->deleted_at : '';
-
-						// Get timestamp for deleted at sorting
-						$deleted_timestamp = $deleted_at ? strtotime($deleted_at) : 0;
-						?>
-						<td data-sort-value="<?php echo esc_attr(strtolower($delete_reason)); ?>">
-							<?php echo esc_html(pnpc_psd_format_delete_reason($delete_reason, $delete_reason_other)); ?>
-						</td>
-						<td data-sort-value="<?php echo esc_attr(strtolower($deleted_by_user ? $deleted_by_user->display_name : 'zzz_unknown')); ?>">
-							<?php echo $deleted_by_user ? esc_html($deleted_by_user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?>
-						</td>
-						<td data-sort-value="<?php echo absint($deleted_timestamp); ?>">
-							<?php
-							if ($deleted_at) {
-								if (function_exists('pnpc_psd_format_db_datetime_for_display')) {
-									echo esc_html(pnpc_psd_format_db_datetime_for_display($deleted_at));
-								} else {
-									echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($deleted_at)));
-								}
-							} else {
-								esc_html_e('Unknown', 'pnpc-pocket-service-desk');
-							}
-							?>
-						</td>
-						<?php endif; ?>
 						<td>
 							<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>" class="button button-small">
 								<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
@@ -315,6 +393,109 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 						</td>
 					</tr>
 				<?php endforeach; ?>
+			<?php endif; ?>
+			
+			<?php // DIVIDER ROW - Only show if both active and closed exist ?>
+			<?php if ($has_active && $has_closed) : ?>
+				<tr class="pnpc-psd-closed-divider">
+					<td colspan="<?php echo current_user_can('pnpc_psd_delete_tickets') ? '10' : '9'; ?>">
+						<div class="pnpc-psd-divider-content">
+							<span class="pnpc-psd-divider-line"></span>
+							<span class="pnpc-psd-divider-text">
+								<?php 
+								printf(
+									esc_html__('Closed Tickets (%d)', 'pnpc-pocket-service-desk'),
+									count($closed_tickets)
+								); 
+								?>
+							</span>
+							<span class="pnpc-psd-divider-line"></span>
+						</div>
+					</td>
+				</tr>
+			<?php endif; ?>
+			
+			<?php // CLOSED TICKETS SECTION ?>
+			<?php if ($has_closed) : ?>
+				<?php foreach ($closed_tickets as $ticket) : ?>
+					<?php
+					$user          = get_userdata($ticket->user_id);
+					$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
+					
+					// Extract numeric part from ticket number for sorting (e.g., PNPC-1234 -> 1234)
+					$ticket_num_for_sort = (int) preg_replace('/[^0-9]/', '', $ticket->ticket_number);
+					
+					// Status sort order: open=1, in-progress=2, waiting=3, closed=4
+					$status_order = array('open' => 1, 'in-progress' => 2, 'waiting' => 3, 'closed' => 4);
+					$status_sort_value = isset($status_order[$ticket->status]) ? $status_order[$ticket->status] : 999;
+					
+					// Priority sort order: urgent=1, high=2, normal=3, low=4
+					$priority_order = array('urgent' => 1, 'high' => 2, 'normal' => 3, 'low' => 4);
+					$priority_sort_value = isset($priority_order[$ticket->priority]) ? $priority_order[$ticket->priority] : 999;
+					
+					// Get timestamp for date sorting
+					$created_timestamp = strtotime($ticket->created_at);
+					if (false === $created_timestamp) {
+						$created_timestamp = 0; // Fallback for invalid dates
+					}
+					?>
+					<tr class="pnpc-psd-ticket-closed">
+						<?php if (current_user_can('pnpc_psd_delete_tickets')) : ?>
+						<th scope="row" class="check-column">
+							<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">
+								<?php
+								/* translators: %s: ticket number */
+								printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number));
+								?>
+							</label>
+							<input type="checkbox" name="ticket[]" id="cb-select-<?php echo absint($ticket->id); ?>" value="<?php echo absint($ticket->id); ?>">
+						</th>
+						<?php endif; ?>
+						<td data-sort-value="<?php echo absint($ticket_num_for_sort); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
+						<td data-sort-value="<?php echo esc_attr(strtolower($ticket->subject)); ?>">
+							<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
+								<?php echo esc_html($ticket->subject); ?>
+							</a>
+							<?php if (! empty($ticket->created_by_staff)) : ?>
+								<span class="pnpc-psd-badge pnpc-psd-badge-staff-created" title="<?php esc_attr_e('Created by staff', 'pnpc-pocket-service-desk'); ?>">
+									<span class="dashicons dashicons-admin-users"></span>
+								</span>
+							<?php endif; ?>
+						</td>
+						<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
+						<td data-sort-value="<?php echo absint($status_sort_value); ?>">
+							<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>">
+								<?php echo esc_html(ucfirst($ticket->status)); ?>
+							</span>
+						</td>
+						<td data-sort-value="<?php echo absint($priority_sort_value); ?>">
+							<span class="pnpc-psd-priority pnpc-psd-priority-<?php echo esc_attr($ticket->priority); ?>">
+								<?php echo esc_html(ucfirst($ticket->priority)); ?>
+							</span>
+						</td>
+						<td data-sort-value="<?php echo esc_attr(strtolower($assigned_user ? $assigned_user->display_name : 'zzz_unassigned')); ?>"><?php echo $assigned_user ? esc_html($assigned_user->display_name) : esc_html__('Unassigned', 'pnpc-pocket-service-desk'); ?></td>
+						<td data-sort-value="<?php echo absint($created_timestamp); ?>">
+							<?php
+							// Use helper to format DB datetime into WP-localized string
+							if (function_exists('pnpc_psd_format_db_datetime_for_display')) {
+								echo esc_html(pnpc_psd_format_db_datetime_for_display($ticket->created_at));
+							} else {
+								echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($ticket->created_at)));
+							}
+							?>
+						</td>
+						<td data-sort-value="0">
+							<?php // Closed tickets have no new responses ?>
+						</td>
+						<td>
+							<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>" class="button button-small">
+								<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
+							</a>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			<?php endif; ?>
+		<?php endif; ?>
 			<?php else : ?>
 				<tr>
 					<td colspan="<?php echo $is_trash_view ? (current_user_can('pnpc_psd_delete_tickets') ? '6' : '5') : (current_user_can('pnpc_psd_delete_tickets') ? '10' : '9'); ?>">
