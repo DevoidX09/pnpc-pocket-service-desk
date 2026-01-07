@@ -275,6 +275,8 @@
 		}
 
 		// Restore sort order by triggering the sort event
+		// Note: This relies on the existing sortTable function in pnpc-psd-admin.js
+		// which is triggered by click events on sortable column headers
 		if (currentSortColumn && currentSortOrder) {
 			var $columnToSort = $('.pnpc-psd-sortable[data-sort-type="' + currentSortColumn + '"]');
 			if ($columnToSort.length) {
@@ -425,25 +427,25 @@
 	 * Update tab counts in navigation
 	 */
 	function updateTabCounts(counts) {
-		// Sanitize counts to ensure they are safe integers
+		// Sanitize counts to ensure they are safe integers within valid range
 		if (counts.open !== undefined) {
 			var openCount = parseInt(counts.open, 10);
-			// Validate as safe integer and non-negative
-			if (!isNaN(openCount) && isFinite(openCount) && openCount >= 0) {
+			// Validate as safe integer, non-negative, and within safe range
+			if (!isNaN(openCount) && isFinite(openCount) && openCount >= 0 && openCount <= Number.MAX_SAFE_INTEGER) {
 				$('.subsubsub a[href*="status=open"]').text('Open (' + openCount + ')');
 			}
 		}
 		if (counts.closed !== undefined) {
 			var closedCount = parseInt(counts.closed, 10);
-			// Validate as safe integer and non-negative
-			if (!isNaN(closedCount) && isFinite(closedCount) && closedCount >= 0) {
+			// Validate as safe integer, non-negative, and within safe range
+			if (!isNaN(closedCount) && isFinite(closedCount) && closedCount >= 0 && closedCount <= Number.MAX_SAFE_INTEGER) {
 				$('.subsubsub a[href*="status=closed"]').text('Closed (' + closedCount + ')');
 			}
 		}
 		if (counts.trash !== undefined) {
 			var trashCount = parseInt(counts.trash, 10);
-			// Validate as safe integer and non-negative
-			if (!isNaN(trashCount) && isFinite(trashCount) && trashCount >= 0) {
+			// Validate as safe integer, non-negative, and within safe range
+			if (!isNaN(trashCount) && isFinite(trashCount) && trashCount >= 0 && trashCount <= Number.MAX_SAFE_INTEGER) {
 				$('.subsubsub a[href*="view=trash"]').text('Trash (' + trashCount + ')');
 			}
 		}
