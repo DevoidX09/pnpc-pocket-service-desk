@@ -377,6 +377,11 @@
 							// Restore previous state
 							restoreCurrentState();
 
+							// Update tab counts if provided
+							if (response.data.counts) {
+								updateTabCounts(response.data.counts);
+							}
+
 							updateLastRefreshTime();
 
 							// Trigger custom event for other scripts
@@ -394,6 +399,21 @@
 				lastRefreshTime = Date.now();
 			}
 		});
+	}
+
+	/**
+	 * Update tab counts in navigation
+	 */
+	function updateTabCounts(counts) {
+		if (counts.open !== undefined) {
+			$('.subsubsub a[href*="status=open"]').html('Open (' + counts.open + ')');
+		}
+		if (counts.closed !== undefined) {
+			$('.subsubsub a[href*="status=closed"]').html('Closed (' + counts.closed + ')');
+		}
+		if (counts.trash !== undefined) {
+			$('.subsubsub a[href*="view=trash"]').html('Trash (' + counts.trash + ')');
+		}
 	}
 
 	/**
