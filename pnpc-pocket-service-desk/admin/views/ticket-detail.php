@@ -42,6 +42,28 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 ?>
 
 <div class="wrap pnpc-psd-ticket-detail" id="pnpc-psd-ticket-detail" data-ticket-id="<?php echo esc_attr($ticket->id); ?>">
+	<?php
+	// Check if staff-created
+	if (! empty($ticket->created_by_staff)) {
+		$staff_user = get_userdata($ticket->created_by_staff);
+		$customer_user = get_userdata($ticket->user_id);
+		$staff_name = $staff_user ? esc_html($staff_user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk');
+		$customer_name = $customer_user ? esc_html($customer_user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk');
+		?>
+		<div class="pnpc-psd-staff-created-badge">
+			<span class="dashicons dashicons-admin-users"></span>
+			<?php
+			/* translators: 1: staff member name, 2: customer name */
+			printf(
+				esc_html__('Staff-Created Ticket: Created by %1$s on behalf of %2$s', 'pnpc-pocket-service-desk'),
+				'<strong>' . $staff_name . '</strong>',
+				'<strong>' . $customer_name . '</strong>'
+			);
+			?>
+		</div>
+		<?php
+	}
+	?>
 	<div class="pnpc-psd-ticket-header">
 		<div>
 			<h1><?php echo esc_html($ticket->subject); ?> <small>#<?php echo esc_html($ticket->ticket_number); ?></small></h1>
