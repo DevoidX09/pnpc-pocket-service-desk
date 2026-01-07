@@ -9,7 +9,10 @@
 	var config = {
 		menuBadgeInterval: 30000, // 30 seconds
 		autoRefreshInterval: 30000, // 30 seconds
-		cacheTimeout: 10000 // 10 seconds for preventing rapid requests
+		cacheTimeout: 10000, // 10 seconds for preventing rapid requests
+		sortRestoreDelay: 50, // Delay for sort restoration check
+		scrollRestoreDelay: 100, // Delay for scroll position restoration
+		newTicketAnimationDuration: 3000 // Duration of new ticket animation (must match CSS)
 	};
 
 	// State
@@ -290,7 +293,7 @@
 						if ($columnToSort.attr('data-sort-order') !== currentSortOrder) {
 							$columnToSort.trigger('click');
 						}
-					}, 50);
+					}, config.sortRestoreDelay);
 				}
 			}
 		}
@@ -298,7 +301,7 @@
 		// Restore scroll position (with small delay for DOM update)
 		setTimeout(function() {
 			$(window).scrollTop(currentScrollPosition);
-		}, 100);
+		}, config.scrollRestoreDelay);
 	}
 
 	/**
@@ -323,10 +326,10 @@
 				// Add animation class
 				$row.addClass('pnpc-psd-ticket-row-new');
 
-				// Remove class after animation (3 seconds)
+				// Remove class after animation completes
 				setTimeout(function() {
 					$row.removeClass('pnpc-psd-ticket-row-new');
-				}, 3000);
+				}, config.newTicketAnimationDuration);
 			});
 		}
 	}
