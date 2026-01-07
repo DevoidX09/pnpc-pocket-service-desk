@@ -21,26 +21,37 @@ if (! defined('ABSPATH')) {
 				<?php
 				$response_count = PNPC_PSD_Ticket_Response::get_count($ticket->id);
 
-				// Compute new_responses for the current user (staff responses since last view)
-				$current_user = wp_get_current_user();
-				$last_view_meta = $current_user ? get_user_meta($current_user->ID, 'pnpc_psd_ticket_last_view_' . intval($ticket->id), true) : '';
-				if (is_numeric($last_view_meta)) {
-					$last_view_time = intval($last_view_meta);
-				} else {
-					$last_view_time = $last_view_meta ? intval(function_exists('pnpc_psd_mysql_to_wp_local_ts') ? pnpc_psd_mysql_to_wp_local_ts($last_view_meta) : strtotime($last_view_meta)) : 0;
-				}
+				// For customers viewing their own tickets
+				$viewer_id = get_current_user_id();
 
-				$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
-				$new_responses = 0;
-				if (! empty($responses)) {
-					foreach ($responses as $r) {
-						// Only staff responses count for customers
-						if (empty($r->is_staff_response)) {
-							continue;
-						}
-						$r_time = function_exists('pnpc_psd_mysql_to_wp_local_ts') ? intval(pnpc_psd_mysql_to_wp_local_ts($r->created_at)) : intval(strtotime($r->created_at));
-						if ($r_time > $last_view_time && intval($r->user_id) !== intval($current_user->ID)) {
-							$new_responses++;
+				// Get last view timestamp
+				$last_view_meta = get_user_meta($viewer_id, 'pnpc_psd_ticket_last_view_' . intval($ticket->id), true);
+
+				if (empty($last_view_meta)) {
+					// Never viewed
+					$new_responses = 1;
+				} else {
+					$last_view_time = is_numeric($last_view_meta) 
+						? intval($last_view_meta) 
+						: strtotime($last_view_meta);
+					
+					$new_responses = 0;
+					$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
+					
+					if (! empty($responses)) {
+						foreach ($responses as $response) {
+							// Count staff responses only (not customer's own)
+							if (intval($response->user_id) === $viewer_id) {
+								continue;
+							}
+							
+							$response_time = function_exists('pnpc_psd_mysql_to_wp_local_ts') 
+								? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) 
+								: intval(strtotime($response->created_at));
+							
+							if ($response_time > $last_view_time) {
+								$new_responses++;
+							}
 						}
 					}
 				}

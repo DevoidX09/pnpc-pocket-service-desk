@@ -10,6 +10,24 @@ if (! defined('ABSPATH')) {
 	exit;
 }
 
+/**
+ * Mark ticket as viewed by current agent
+ * This clears the "New" badge in the ticket list
+ */
+if (isset($_GET['ticket_id']) && is_user_logged_in() && current_user_can('pnpc_psd_view_tickets')) {
+	$current_user_id = get_current_user_id();
+	$ticket_id = absint($_GET['ticket_id']);
+	
+	if ($ticket_id > 0) {
+		// Store current timestamp as "last viewed" for this agent
+		update_user_meta(
+			$current_user_id,
+			'pnpc_psd_ticket_last_view_' . $ticket_id,
+			current_time('timestamp') // WordPress local timestamp (integer)
+		);
+	}
+}
+
 global $wpdb;
 $att_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 

@@ -28,7 +28,7 @@ $customers = get_users(array(
 <div class="wrap">
 	<h1><?php esc_html_e('Create Ticket for Customer', 'pnpc-pocket-service-desk'); ?></h1>
 
-	<form id="pnpc-psd-admin-create-ticket-form" method="post" action="">
+	<form id="pnpc-psd-admin-create-ticket-form" method="post" action="" enctype="multipart/form-data">
 		<?php wp_nonce_field('pnpc_psd_create_ticket_admin', 'pnpc_psd_create_ticket_nonce'); ?>
 
 		<table class="form-table">
@@ -85,6 +85,19 @@ $customers = get_users(array(
 				<td>
 					<textarea id="description" name="description" rows="10" class="large-text" required></textarea>
 					<p class="description"><?php esc_html_e('Detailed description of the issue.', 'pnpc-pocket-service-desk'); ?></p>
+				</td>
+			</tr>
+
+			<tr>
+				<th scope="row">
+					<label for="attachments"><?php esc_html_e('Attachments', 'pnpc-pocket-service-desk'); ?></label>
+				</th>
+				<td>
+					<input type="file" id="attachments" name="attachments[]" multiple />
+					<p class="description">
+						<?php esc_html_e('Maximum 5MB per file. Multiple files allowed.', 'pnpc-pocket-service-desk'); ?>
+					</p>
+					<div id="pnpc-psd-admin-attachments-preview" style="margin-top: 10px;"></div>
 				</td>
 			</tr>
 

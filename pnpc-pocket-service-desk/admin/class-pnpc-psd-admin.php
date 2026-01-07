@@ -1158,6 +1158,77 @@ class PNPC_PSD_Admin
 		));
 
 		if ($ticket_id) {
+			// Handle file attachments
+			if (!empty($_FILES['attachments']['name'][0])) {
+				global $wpdb;
+				$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+				
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+				require_once ABSPATH . 'wp-admin/includes/image.php';
+				require_once ABSPATH . 'wp-admin/includes/media.php';
+				
+				$files = $_FILES['attachments'];
+				$file_count = count($files['name']);
+				
+				for ($i = 0; $i < $file_count; $i++) {
+					// Skip if no file
+					if (empty($files['name'][$i])) {
+						continue;
+					}
+					
+					// Check file size (5MB limit)
+					if ($files['size'][$i] > 5 * 1024 * 1024) {
+						add_settings_error(
+							'pnpc_psd_messages',
+							'pnpc_psd_message',
+							sprintf(
+								__('File "%s" exceeds 5MB limit and was skipped.', 'pnpc-pocket-service-desk'),
+								$files['name'][$i]
+							),
+							'warning'
+						);
+						continue;
+					}
+					
+					// Prepare file array for wp_handle_upload
+					$file_array = array(
+						'name'     => $files['name'][$i],
+						'type'     => $files['type'][$i],
+						'tmp_name' => $files['tmp_name'][$i],
+						'error'    => $files['error'][$i],
+						'size'     => $files['size'][$i],
+					);
+					
+					// Upload file
+					$upload = wp_handle_upload($file_array, array('test_form' => false));
+					
+					if (isset($upload['file']) && !isset($upload['error'])) {
+						// Insert attachment record into database
+						$created_at_utc = function_exists('pnpc_psd_get_utc_mysql_datetime') 
+							? pnpc_psd_get_utc_mysql_datetime() 
+							: current_time('mysql', true);
+						
+						$att_data = array(
+							'ticket_id'   => absint($ticket_id),
+							'response_id' => null,
+							'file_name'   => sanitize_file_name($files['name'][$i]),
+							'file_path'   => esc_url_raw($upload['url']),
+							'file_type'   => sanitize_text_field($upload['type']),
+							'file_size'   => intval($files['size'][$i]),
+							'uploaded_by' => get_current_user_id(),
+							'created_at'  => $created_at_utc,
+						);
+						
+						// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+						$wpdb->insert(
+							$attachments_table,
+							$att_data,
+							array('%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s')
+						);
+					}
+				}
+			}
+			
 			// Send notification if requested
 			if ($notify_customer) {
 				$this->send_staff_created_ticket_notification($ticket_id, $customer_id);
