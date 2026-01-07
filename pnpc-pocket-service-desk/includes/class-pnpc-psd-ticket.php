@@ -841,15 +841,15 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 
 			// Store reason in tickets table columns.
 			$update_data = array(
-				'delete_reason' => sanitize_text_field($reason),
-				'deleted_by'    => get_current_user_id(),
+				'delete_reason'       => sanitize_text_field($reason),
+				'delete_reason_other' => null, // Clear by default
+				'deleted_by'          => get_current_user_id(),
 			);
 
-			$format = array('%s', '%d');
+			$format = array('%s', '%s', '%d');
 
 			if ('other' === $reason && ! empty($reason_other)) {
 				$update_data['delete_reason_other'] = sanitize_textarea_field($reason_other);
-				$format[] = '%s';
 			}
 
 			$wpdb->update(

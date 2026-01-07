@@ -444,12 +444,12 @@
 
 				// Validation
 				if (!reason) {
-					alert('Please select a reason');
+					showMessage('error', 'Please select a reason before deleting.', 'pnpc-psd-bulk-message');
 					return;
 				}
 
 				if (reason === 'other' && reasonOther.length < 10) {
-					alert('Please provide more details (at least 10 characters)');
+					showMessage('error', 'Please provide more details (at least 10 characters).', 'pnpc-psd-bulk-message');
 					return;
 				}
 
@@ -475,13 +475,13 @@
 								location.reload();
 							}, 1000);
 						} else {
-							alert('Error: ' + response.data.message);
+							showMessage('error', 'Error: ' + response.data.message, 'pnpc-psd-bulk-message');
 							$('.pnpc-psd-delete-submit').prop('disabled', false).text('Move to Trash');
 						}
 					},
 					error: function(jqXHR, textStatus, errorThrown) {
 						console.error('pnpc-psd-admin.js delete reason AJAX error', textStatus, errorThrown);
-						alert('An error occurred. Please try again.');
+						showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-bulk-message');
 						$('.pnpc-psd-delete-submit').prop('disabled', false).text('Move to Trash');
 					}
 				});
