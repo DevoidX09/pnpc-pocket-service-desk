@@ -117,7 +117,9 @@ class PNPC_PSD_Admin
 		}
 
 		// Enqueue Select2 on create ticket page
-		if (isset($_GET['page']) && 'pnpc-service-desk-create-ticket' === $_GET['page']) {
+		// Note: Using CDN for simplicity. For production environments with strict security
+		// requirements, consider bundling Select2 locally with SRI integrity hashes.
+		if (isset($_GET['page']) && 'pnpc-service-desk-create-ticket' === sanitize_text_field(wp_unslash($_GET['page']))) {
 			wp_enqueue_style(
 				'select2',
 				'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css',
@@ -1027,7 +1029,7 @@ class PNPC_PSD_Admin
 				<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
 					<?php echo esc_html($ticket->subject); ?>
 				</a>
-				<?php if (PNPC_PSD_Ticket::get_meta($ticket->id, 'pnpc_psd_staff_created', true)) : ?>
+				<?php if (! empty($ticket->created_by_staff)) : ?>
 					<span class="pnpc-psd-badge pnpc-psd-badge-staff-created" title="<?php esc_attr_e('Created by staff', 'pnpc-pocket-service-desk'); ?>">
 						<span class="dashicons dashicons-admin-users"></span>
 					</span>
@@ -1148,9 +1150,8 @@ class PNPC_PSD_Admin
 		));
 
 		if ($ticket_id) {
-			// Store metadata
+			// Store metadata for backward compatibility and additional tracking
 			PNPC_PSD_Ticket::update_meta($ticket_id, 'pnpc_psd_created_by_staff', get_current_user_id());
-			PNPC_PSD_Ticket::update_meta($ticket_id, 'pnpc_psd_staff_created', true);
 
 			// Send notification if requested
 			if ($notify_customer) {

@@ -191,7 +191,7 @@ $is_trash_view = ('trash' === $current_view);
 							<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
 								<?php echo esc_html($ticket->subject); ?>
 							</a>
-							<?php if (PNPC_PSD_Ticket::get_meta($ticket->id, 'pnpc_psd_staff_created', true)) : ?>
+							<?php if (! empty($ticket->created_by_staff)) : ?>
 								<span class="pnpc-psd-badge pnpc-psd-badge-staff-created" title="<?php esc_attr_e('Created by staff', 'pnpc-pocket-service-desk'); ?>">
 									<span class="dashicons dashicons-admin-users"></span>
 								</span>

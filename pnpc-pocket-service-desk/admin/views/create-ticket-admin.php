@@ -15,11 +15,13 @@ if (! defined('ABSPATH')) {
 settings_errors('pnpc_psd_messages');
 
 // Get all customers
+// Note: Limited to 500 for performance. For larger installations, consider implementing
+// AJAX-based search using Select2's remote data feature.
 $customers = get_users(array(
 	'role__in' => array('customer', 'subscriber'),
 	'orderby' => 'display_name',
 	'order' => 'ASC',
-	'number' => 500, // Limit to prevent performance issues
+	'number' => 500,
 ));
 ?>
 
