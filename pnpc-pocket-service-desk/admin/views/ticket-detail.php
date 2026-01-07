@@ -98,16 +98,70 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 	<div id="pnpc-psd-admin-action-message" class="pnpc-psd-message" style="display:none;"></div>
 
 	<?php if (! empty($ticket_attachments)) : ?>
-		<h3><?php esc_html_e('Attachments', 'pnpc-pocket-service-desk'); ?></h3>
-		<ul>
+		<div class="pnpc-psd-attachments">
+			<h3><?php esc_html_e('Attachments', 'pnpc-pocket-service-desk'); ?> (<?php echo count($ticket_attachments); ?>)</h3>
+			
 			<?php foreach ($ticket_attachments as $att) : ?>
-				<li>
-					<a href="<?php echo esc_url($att->file_path); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($att->file_name); ?></a>
-					<span style="color:#777;margin-left:8px;"><?php echo esc_html(pnpc_psd_format_filesize($att->file_size)); ?></span>
-					<span style="color:#777;margin-left:8px;"><?php echo esc_html(pnpc_psd_admin_format_datetime($att->created_at)); ?></span>
-				</li>
+				<?php
+				$file_size = intval($att->file_size);
+				$file_url = esc_url($att->file_path);
+				$file_name = esc_html($att->file_name);
+				$file_ext = strtolower(pathinfo($att->file_name, PATHINFO_EXTENSION));
+				$file_type = pnpc_psd_get_attachment_type($file_ext);
+				$can_preview = pnpc_psd_can_preview_attachment($file_size);
+				$file_size_formatted = pnpc_psd_format_filesize($file_size);
+				?>
+				
+				<div class="pnpc-psd-attachment pnpc-psd-attachment-<?php echo esc_attr($file_type); ?>">
+					<?php if ($file_type === 'image' && $can_preview) : ?>
+						<img src="<?php echo $file_url; ?>" 
+							 alt="<?php echo $file_name; ?>" 
+							 class="pnpc-psd-attachment-thumbnail">
+					<?php else : ?>
+						<div class="pnpc-psd-attachment-icon">
+							<?php echo pnpc_psd_get_file_icon($file_ext); ?>
+						</div>
+					<?php endif; ?>
+					
+					<div class="pnpc-psd-attachment-info">
+						<strong><?php echo $file_name; ?></strong>
+						<span class="pnpc-psd-attachment-meta">
+							<?php echo esc_html($file_size_formatted); ?> · <?php echo esc_html(strtoupper($file_ext)); ?>
+						</span>
+						
+						<?php if (! $can_preview) : ?>
+							<span class="pnpc-psd-attachment-warning">
+								⚠ <?php
+								/* translators: %s: file size limit */
+								printf(
+									esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
+									esc_html(pnpc_psd_format_filesize(PNPC_PSD_FREE_PREVIEW_LIMIT))
+								);
+								?>
+							</span>
+						<?php endif; ?>
+					</div>
+					
+					<div class="pnpc-psd-attachment-actions">
+						<?php if ($can_preview && in_array($file_type, array('image', 'pdf'), true)) : ?>
+							<button type="button" class="pnpc-psd-view-attachment button" 
+									data-type="<?php echo esc_attr($file_type); ?>" 
+									data-url="<?php echo $file_url; ?>"
+									data-filename="<?php echo $file_name; ?>">
+								<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
+							</button>
+						<?php endif; ?>
+						
+						<a href="<?php echo $file_url; ?>" 
+						   download 
+						   class="button <?php echo ! $can_preview ? 'button-primary' : ''; ?>">
+							<?php esc_html_e('Download', 'pnpc-pocket-service-desk'); ?>
+						</a>
+					</div>
+				</div>
+				
 			<?php endforeach; ?>
-		</ul>
+		</div>
 	<?php endif; ?>
 
 	<h3><?php esc_html_e('Conversation', 'pnpc-pocket-service-desk'); ?></h3>
@@ -132,11 +186,67 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 				<?php if (! empty($atts_for_response)) : ?>
 					<div class="pnpc-psd-response-attachments">
 						<strong><?php esc_html_e('Attachments:', 'pnpc-pocket-service-desk'); ?></strong>
-						<ul>
-							<?php foreach ($atts_for_response as $ra) : ?>
-								<li><a href="<?php echo esc_url($ra->file_path); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($ra->file_name); ?></a> <small>(<?php echo esc_html(pnpc_psd_format_filesize($ra->file_size)); ?>)</small></li>
-							<?php endforeach; ?>
-						</ul>
+						
+						<?php foreach ($atts_for_response as $ra) : ?>
+							<?php
+							$file_size = intval($ra->file_size);
+							$file_url = esc_url($ra->file_path);
+							$file_name = esc_html($ra->file_name);
+							$file_ext = strtolower(pathinfo($ra->file_name, PATHINFO_EXTENSION));
+							$file_type = pnpc_psd_get_attachment_type($file_ext);
+							$can_preview = pnpc_psd_can_preview_attachment($file_size);
+							$file_size_formatted = pnpc_psd_format_filesize($file_size);
+							?>
+							
+							<div class="pnpc-psd-attachment pnpc-psd-attachment-<?php echo esc_attr($file_type); ?>">
+								<?php if ($file_type === 'image' && $can_preview) : ?>
+									<img src="<?php echo $file_url; ?>" 
+										 alt="<?php echo $file_name; ?>" 
+										 class="pnpc-psd-attachment-thumbnail">
+								<?php else : ?>
+									<div class="pnpc-psd-attachment-icon">
+										<?php echo pnpc_psd_get_file_icon($file_ext); ?>
+									</div>
+								<?php endif; ?>
+								
+								<div class="pnpc-psd-attachment-info">
+									<strong><?php echo $file_name; ?></strong>
+									<span class="pnpc-psd-attachment-meta">
+										<?php echo esc_html($file_size_formatted); ?> · <?php echo esc_html(strtoupper($file_ext)); ?>
+									</span>
+									
+									<?php if (! $can_preview) : ?>
+										<span class="pnpc-psd-attachment-warning">
+											⚠ <?php
+											/* translators: %s: file size limit */
+											printf(
+												esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
+												esc_html(pnpc_psd_format_filesize(PNPC_PSD_FREE_PREVIEW_LIMIT))
+											);
+											?>
+										</span>
+									<?php endif; ?>
+								</div>
+								
+								<div class="pnpc-psd-attachment-actions">
+									<?php if ($can_preview && in_array($file_type, array('image', 'pdf'), true)) : ?>
+										<button type="button" class="pnpc-psd-view-attachment button" 
+												data-type="<?php echo esc_attr($file_type); ?>" 
+												data-url="<?php echo $file_url; ?>"
+												data-filename="<?php echo $file_name; ?>">
+											<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
+										</button>
+									<?php endif; ?>
+									
+									<a href="<?php echo $file_url; ?>" 
+									   download 
+									   class="button <?php echo ! $can_preview ? 'button-primary' : ''; ?>">
+										<?php esc_html_e('Download', 'pnpc-pocket-service-desk'); ?>
+									</a>
+								</div>
+							</div>
+							
+						<?php endforeach; ?>
 					</div>
 				<?php endif; ?>
 			</div>
@@ -164,4 +274,42 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 			</form>
 		</div>
 	<?php endif; ?>
+</div>
+
+<!-- Lightbox Modal for Attachments -->
+<div id="pnpc-psd-lightbox" class="pnpc-psd-lightbox" style="display:none;" role="dialog" aria-modal="true" aria-hidden="true" aria-label="<?php esc_attr_e('Attachment Viewer', 'pnpc-pocket-service-desk'); ?>">
+	<div class="pnpc-psd-lightbox-backdrop"></div>
+	<div class="pnpc-psd-lightbox-content">
+		<!-- Close Button -->
+		<button type="button" class="pnpc-psd-lightbox-close" aria-label="<?php esc_attr_e('Close', 'pnpc-pocket-service-desk'); ?>">×</button>
+		
+		<!-- Download Button -->
+		<a href="#" download class="pnpc-psd-lightbox-download button">
+			<?php esc_html_e('Download', 'pnpc-pocket-service-desk'); ?>
+		</a>
+		
+		<!-- Image View -->
+		<div class="pnpc-psd-lightbox-image-container">
+			<img src="" alt="" class="pnpc-psd-lightbox-image">
+			<div class="pnpc-psd-lightbox-caption">
+				<span class="pnpc-psd-lightbox-filename"></span>
+				<span class="pnpc-psd-lightbox-counter"></span>
+			</div>
+		</div>
+		
+		<!-- PDF View -->
+		<div class="pnpc-psd-lightbox-pdf-container" style="display:none;">
+			<iframe src="" type="application/pdf" class="pnpc-psd-lightbox-pdf" title="<?php esc_attr_e('PDF Viewer', 'pnpc-pocket-service-desk'); ?>"></iframe>
+			<div class="pnpc-psd-pdf-fallback" style="display:none;">
+				<p><?php esc_html_e('Your browser cannot display this PDF.', 'pnpc-pocket-service-desk'); ?></p>
+				<a href="#" download class="button button-primary">
+					<?php esc_html_e('Download PDF', 'pnpc-pocket-service-desk'); ?>
+				</a>
+			</div>
+		</div>
+		
+		<!-- Navigation Arrows -->
+		<button type="button" class="pnpc-psd-lightbox-prev" aria-label="<?php esc_attr_e('Previous', 'pnpc-pocket-service-desk'); ?>">‹</button>
+		<button type="button" class="pnpc-psd-lightbox-next" aria-label="<?php esc_attr_e('Next', 'pnpc-pocket-service-desk'); ?>">›</button>
+	</div>
 </div>

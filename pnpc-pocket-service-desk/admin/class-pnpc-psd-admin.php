@@ -43,6 +43,15 @@ class PNPC_PSD_Admin
 				$this->version,
 				'all'
 			);
+
+			// Enqueue attachments viewer CSS
+			wp_enqueue_style(
+				$this->plugin_name . '-attachments',
+				PNPC_PSD_PLUGIN_URL . 'assets/css/pnpc-psd-attachments.css',
+				array(),
+				$this->version,
+				'all'
+			);
 		}
 	}
 
@@ -93,6 +102,15 @@ class PNPC_PSD_Admin
 					'menuBadgeInterval'    => absint($menu_badge_interval),
 					'autoRefreshInterval'  => absint($auto_refresh_interval),
 				)
+			);
+
+			// Enqueue attachments viewer script
+			wp_enqueue_script(
+				$this->plugin_name . '-attachments',
+				PNPC_PSD_PLUGIN_URL . 'assets/js/pnpc-psd-attachments.js',
+				array('jquery'),
+				$this->version,
+				true
 			);
 		}
 	}
