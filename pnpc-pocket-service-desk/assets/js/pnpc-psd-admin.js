@@ -230,16 +230,13 @@
 				return;
 			}
 
-			// For trash action, show the delete reason modal
-			if (action === 'trash') {
-				deleteReasonModal.show(selectedTickets, true);
-				return;
-			}
-
 			var confirmMessage = '';
 			var ajaxAction = '';
 
-			if (action === 'restore') {
+			if (action === 'trash') {
+				confirmMessage = 'Are you sure you want to move ' + selectedTickets.length + ' ticket(s) to trash?';
+				ajaxAction = 'pnpc_psd_bulk_trash_tickets';
+			} else if (action === 'restore') {
 				confirmMessage = 'Are you sure you want to restore ' + selectedTickets.length + ' ticket(s)?';
 				ajaxAction = 'pnpc_psd_bulk_restore_tickets';
 			} else if (action === 'delete') {
@@ -413,6 +410,12 @@
 			});
 		}
 
+		// Delete ticket from detail page (with reason)
+		$(document).on('click', '.pnpc-psd-delete-ticket-btn', function() {
+			var ticketId = $(this).data('ticket-id');
+			deleteReasonModal.show([ticketId], false);
+		});
+
 		// Delete reason modal handling
 		var deleteReasonModal = {
 			ticketIds: [],
@@ -422,15 +425,13 @@
 				this.ticketIds = ticketIds;
 				this.isBulk = isBulk;
 
-				var count = ticketIds.length;
-				var message = isBulk 
-					? 'You are about to move ' + count + ' ticket(s) to trash.'
-					: 'You are about to move this ticket to trash.';
+				var message = 'Why are you deleting this ticket? This action cannot be undone.';
 
 				$('#pnpc-psd-delete-modal-message').text(message);
 				$('#pnpc-psd-delete-reason-select').val('');
 				$('#pnpc-psd-delete-reason-other').val('');
 				$('#pnpc-psd-delete-reason-other-wrapper').hide();
+				$('#pnpc-psd-delete-error-message').hide();
 				$('#pnpc-psd-delete-modal').fadeIn(300);
 			},
 
@@ -444,17 +445,24 @@
 
 				// Validation
 				if (!reason) {
-					showMessage('error', 'Please select a reason before deleting.', 'pnpc-psd-bulk-message');
+					$('#pnpc-psd-delete-error-message')
+						.text('Please select a reason before deleting.')
+						.show();
 					return;
 				}
 
 				if (reason === 'other' && reasonOther.length < 10) {
-					showMessage('error', 'Please provide more details (at least 10 characters).', 'pnpc-psd-bulk-message');
+					$('#pnpc-psd-delete-error-message')
+						.text('Please provide more details (at least 10 characters).')
+						.show();
 					return;
 				}
 
+				// Hide error message
+				$('#pnpc-psd-delete-error-message').hide();
+
 				// Disable submit button during operation
-				$('.pnpc-psd-delete-submit').prop('disabled', true).text('Processing...');
+				$('.pnpc-psd-delete-submit').prop('disabled', true).text('Deleting...');
 
 				// Send AJAX request
 				$.ajax({
@@ -470,19 +478,20 @@
 					success: function(response) {
 						if (response.success) {
 							deleteReasonModal.hide();
-							showMessage('success', response.data.message, 'pnpc-psd-bulk-message');
-							setTimeout(function() {
-								location.reload();
-							}, 1000);
+							// Redirect to ticket list after successful delete from detail page
+							window.location.href = pnpcPsdAdmin.tickets_url || 'admin.php?page=pnpc-service-desk';
 						} else {
-							showMessage('error', 'Error: ' + response.data.message, 'pnpc-psd-bulk-message');
-							$('.pnpc-psd-delete-submit').prop('disabled', false).text('Move to Trash');
+							$('#pnpc-psd-delete-error-message')
+								.text('Error: ' + response.data.message)
+								.show();
+							$('.pnpc-psd-delete-submit').prop('disabled', false).text('Delete Ticket');
 						}
 					},
-					error: function(jqXHR, textStatus, errorThrown) {
-						console.error('pnpc-psd-admin.js delete reason AJAX error', textStatus, errorThrown);
-						showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-bulk-message');
-						$('.pnpc-psd-delete-submit').prop('disabled', false).text('Move to Trash');
+					error: function() {
+						$('#pnpc-psd-delete-error-message')
+							.text('An error occurred. Please try again.')
+							.show();
+						$('.pnpc-psd-delete-submit').prop('disabled', false).text('Delete Ticket');
 					}
 				});
 			}
