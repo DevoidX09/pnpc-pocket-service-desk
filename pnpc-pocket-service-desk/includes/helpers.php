@@ -472,3 +472,37 @@ if (! function_exists('pnpc_psd_can_preview_attachment')) {
         return intval($file_size) <= PNPC_PSD_FREE_PREVIEW_LIMIT;
     }
 }
+
+/**
+ * Format delete reason for display.
+ *
+ * @since 1.2.0
+ * @param string $reason Reason code.
+ * @param string $other_details Optional. Additional details if reason is 'other'.
+ * @return string Formatted reason label.
+ */
+if (! function_exists('pnpc_psd_format_delete_reason')) {
+    function pnpc_psd_format_delete_reason($reason, $other_details = '')
+    {
+        if (empty($reason)) {
+            return esc_html__('No reason provided', 'pnpc-pocket-service-desk');
+        }
+
+        $reasons = array(
+            'spam'               => __('Spam', 'pnpc-pocket-service-desk'),
+            'duplicate'          => __('Duplicate ticket', 'pnpc-pocket-service-desk'),
+            'resolved_elsewhere' => __('Resolved elsewhere', 'pnpc-pocket-service-desk'),
+            'customer_request'   => __('Customer request', 'pnpc-pocket-service-desk'),
+            'test'               => __('Test ticket', 'pnpc-pocket-service-desk'),
+            'other'              => __('Other', 'pnpc-pocket-service-desk'),
+        );
+
+        $label = isset($reasons[$reason]) ? $reasons[$reason] : esc_html($reason);
+
+        if ('other' === $reason && ! empty($other_details)) {
+            $label .= ': ' . esc_html($other_details);
+        }
+
+        return $label;
+    }
+}
