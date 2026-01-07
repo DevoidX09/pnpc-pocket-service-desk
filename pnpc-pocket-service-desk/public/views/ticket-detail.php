@@ -15,6 +15,22 @@ if (! defined('ABSPATH')) {
 	exit;
 }
 
+/**
+ * Mark ticket as viewed by customer
+ */
+if (isset($_GET['ticket_id']) && is_user_logged_in()) {
+	$current_user_id = get_current_user_id();
+	$ticket_id = absint($_GET['ticket_id']);
+	
+	if ($ticket_id > 0) {
+		update_user_meta(
+			$current_user_id,
+			'pnpc_psd_ticket_last_view_' . $ticket_id,
+			current_time('timestamp')
+		);
+	}
+}
+
 // Ensure helpers are available
 $helpers = defined('PNPC_PSD_PLUGIN_DIR') ? PNPC_PSD_PLUGIN_DIR . 'includes/helpers.php' : '';
 if ($helpers && file_exists($helpers)) {

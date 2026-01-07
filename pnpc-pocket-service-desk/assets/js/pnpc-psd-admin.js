@@ -539,6 +539,28 @@
 				$messageDiv.fadeOut();
 			}, 5000);
 		}
+
+		// File attachment preview for admin ticket creation
+		$('#attachments').on('change', function() {
+			var files = this.files;
+			var $preview = $('#pnpc-psd-admin-attachments-preview');
+			$preview.empty();
+			
+			if (files.length > 0) {
+				var html = '<strong>Files to upload:</strong><ul>';
+				for (var i = 0; i < files.length; i++) {
+					var size = (files[i].size / 1024 / 1024).toFixed(2);
+					var sizeClass = size > 5 ? 'style="color: red;"' : '';
+					html += '<li>' + files[i].name + ' (' + size + ' MB)';
+					if (size > 5) {
+						html += ' <span style="color: red;">- Exceeds 5MB limit!</span>';
+					}
+					html += '</li>';
+				}
+				html += '</ul>';
+				$preview.html(html);
+			}
+		});
 	});
 
 })( jQuery );
