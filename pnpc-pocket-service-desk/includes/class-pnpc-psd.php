@@ -57,6 +57,7 @@ class PNPC_PSD
 		$this->loader->add_action('wp_ajax_pnpc_psd_update_ticket_status', $plugin_admin, 'ajax_update_ticket_status');
 		$this->loader->add_action('wp_ajax_pnpc_psd_delete_ticket', $plugin_admin, 'ajax_delete_ticket');
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_trash_tickets', $plugin_admin, 'ajax_bulk_trash_tickets');
+		$this->loader->add_action('wp_ajax_pnpc_psd_trash_with_reason', $plugin_admin, 'ajax_trash_with_reason');
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_restore_tickets', $plugin_admin, 'ajax_bulk_restore_tickets');
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_delete_permanently_tickets', $plugin_admin, 'ajax_bulk_delete_permanently_tickets');
 		

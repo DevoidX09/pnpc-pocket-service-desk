@@ -86,6 +86,7 @@ $is_trash_view = ('trash' === $current_view);
 					<?php esc_html_e('Subject', 'pnpc-pocket-service-desk'); ?>
 					<span class="pnpc-psd-sort-arrow"></span>
 				</th>
+				<?php if (! $is_trash_view) : ?>
 				<th class="pnpc-psd-sortable" data-sort-type="text" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Customer', 'pnpc-pocket-service-desk'); ?>">
 					<?php esc_html_e('Customer', 'pnpc-pocket-service-desk'); ?>
 					<span class="pnpc-psd-sort-arrow"></span>
@@ -106,9 +107,21 @@ $is_trash_view = ('trash' === $current_view);
 					<?php esc_html_e('Created', 'pnpc-pocket-service-desk'); ?>
 					<span class="pnpc-psd-sort-arrow"></span>
 				</th>
-				<?php if (! $is_trash_view) : ?>
 				<th class="pnpc-psd-sortable" data-sort-type="boolean" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by New Responses', 'pnpc-pocket-service-desk'); ?>">
 					<?php esc_html_e('New', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<?php else : ?>
+				<th class="pnpc-psd-sortable" data-sort-type="text" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Delete Reason', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Delete Reason', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="text" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Deleted By', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Deleted By', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="date" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Deleted Date', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Deleted At', 'pnpc-pocket-service-desk'); ?>
 					<span class="pnpc-psd-sort-arrow"></span>
 				</th>
 				<?php endif; ?>
@@ -179,6 +192,7 @@ $is_trash_view = ('trash' === $current_view);
 								<?php echo esc_html($ticket->subject); ?>
 							</a>
 						</td>
+						<?php if (! $is_trash_view) : ?>
 						<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
 						<td data-sort-value="<?php echo absint($status_sort_value); ?>">
 							<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>">
@@ -201,11 +215,41 @@ $is_trash_view = ('trash' === $current_view);
 							}
 							?>
 						</td>
-						<?php if (! $is_trash_view) : ?>
 						<td data-sort-value="<?php echo absint($new_responses); ?>">
 							<?php if ($new_responses > 0) : ?>
 								<span class="pnpc-psd-new-indicator-badge"><?php echo esc_html($new_responses); ?></span>
 							<?php endif; ?>
+						</td>
+						<?php else : ?>
+						<?php
+						// Trash view: show delete reason, deleted by, deleted at
+						$delete_reason       = ! empty($ticket->delete_reason) ? $ticket->delete_reason : '';
+						$delete_reason_other = ! empty($ticket->delete_reason_other) ? $ticket->delete_reason_other : '';
+						$deleted_by_id       = ! empty($ticket->deleted_by) ? absint($ticket->deleted_by) : 0;
+						$deleted_by_user     = $deleted_by_id ? get_userdata($deleted_by_id) : null;
+						$deleted_at          = ! empty($ticket->deleted_at) ? $ticket->deleted_at : '';
+
+						// Get timestamp for deleted at sorting
+						$deleted_timestamp = $deleted_at ? strtotime($deleted_at) : 0;
+						?>
+						<td data-sort-value="<?php echo esc_attr(strtolower($delete_reason)); ?>">
+							<?php echo esc_html(pnpc_psd_format_delete_reason($delete_reason, $delete_reason_other)); ?>
+						</td>
+						<td data-sort-value="<?php echo esc_attr(strtolower($deleted_by_user ? $deleted_by_user->display_name : 'zzz_unknown')); ?>">
+							<?php echo $deleted_by_user ? esc_html($deleted_by_user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?>
+						</td>
+						<td data-sort-value="<?php echo absint($deleted_timestamp); ?>">
+							<?php
+							if ($deleted_at) {
+								if (function_exists('pnpc_psd_format_db_datetime_for_display')) {
+									echo esc_html(pnpc_psd_format_db_datetime_for_display($deleted_at));
+								} else {
+									echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($deleted_at)));
+								}
+							} else {
+								esc_html_e('Unknown', 'pnpc-pocket-service-desk');
+							}
+							?>
 						</td>
 						<?php endif; ?>
 						<td>
@@ -217,7 +261,7 @@ $is_trash_view = ('trash' === $current_view);
 				<?php endforeach; ?>
 			<?php else : ?>
 				<tr>
-					<td colspan="<?php echo $is_trash_view ? (current_user_can('pnpc_psd_delete_tickets') ? '9' : '8') : (current_user_can('pnpc_psd_delete_tickets') ? '10' : '9'); ?>">
+					<td colspan="<?php echo $is_trash_view ? (current_user_can('pnpc_psd_delete_tickets') ? '6' : '5') : (current_user_can('pnpc_psd_delete_tickets') ? '10' : '9'); ?>">
 						<?php
 						if ($is_trash_view) {
 							esc_html_e('No tickets in trash.', 'pnpc-pocket-service-desk');
@@ -230,4 +274,44 @@ $is_trash_view = ('trash' === $current_view);
 			<?php endif; ?>
 		</tbody>
 	</table>
+</div>
+
+<!-- Delete Reason Modal -->
+<div id="pnpc-psd-delete-modal" class="pnpc-psd-modal" style="display:none;">
+	<div class="pnpc-psd-modal-backdrop"></div>
+	<div class="pnpc-psd-modal-content">
+		<div class="pnpc-psd-modal-header">
+			<h2><?php esc_html_e('Confirm Delete', 'pnpc-pocket-service-desk'); ?></h2>
+			<button type="button" class="pnpc-psd-modal-close">&times;</button>
+		</div>
+		<div class="pnpc-psd-modal-body">
+			<p id="pnpc-psd-delete-modal-message"></p>
+			
+			<div class="pnpc-psd-form-group">
+				<label for="pnpc-psd-delete-reason-select">
+					<?php esc_html_e('Reason:', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span>
+				</label>
+				<select id="pnpc-psd-delete-reason-select">
+					<option value=""><?php esc_html_e('Select a reason', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="spam"><?php esc_html_e('Spam', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="duplicate"><?php esc_html_e('Duplicate ticket', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="resolved_elsewhere"><?php esc_html_e('Resolved elsewhere', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="customer_request"><?php esc_html_e('Customer request', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="test"><?php esc_html_e('Test ticket', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="other"><?php esc_html_e('Other (please specify)', 'pnpc-pocket-service-desk'); ?></option>
+				</select>
+			</div>
+			
+			<div class="pnpc-psd-form-group" id="pnpc-psd-delete-reason-other-wrapper" style="display:none;">
+				<label for="pnpc-psd-delete-reason-other">
+					<?php esc_html_e('Additional details:', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span>
+				</label>
+				<textarea id="pnpc-psd-delete-reason-other" rows="3" placeholder="<?php esc_attr_e('Please provide more details (minimum 10 characters)', 'pnpc-pocket-service-desk'); ?>"></textarea>
+			</div>
+		</div>
+		<div class="pnpc-psd-modal-footer">
+			<button type="button" class="button pnpc-psd-delete-cancel"><?php esc_html_e('Cancel', 'pnpc-pocket-service-desk'); ?></button>
+			<button type="button" class="button button-primary pnpc-psd-delete-submit"><?php esc_html_e('Move to Trash', 'pnpc-pocket-service-desk'); ?></button>
+		</div>
+	</div>
 </div>

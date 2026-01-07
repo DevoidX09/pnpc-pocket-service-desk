@@ -611,12 +611,39 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 			return false;
 		}
 
-		// Restore the ticket.
+		// Get current ticket data to preserve deletion history.
+		$ticket = self::get($ticket_id);
+
+		if ($ticket && $ticket->deleted_at) {
+			// Archive current delete reason to history.
+			$history = self::get_meta($ticket_id, 'pnpc_psd_delete_history', true);
+			if (! is_array($history)) {
+				$history = array();
+			}
+
+			$history[] = array(
+				'reason'        => $ticket->delete_reason,
+				'reason_other'  => $ticket->delete_reason_other,
+				'deleted_by'    => $ticket->deleted_by,
+				'deleted_at'    => $ticket->deleted_at,
+				'restored_at'   => function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true),
+				'restored_by'   => get_current_user_id(),
+			);
+
+			self::update_meta($ticket_id, 'pnpc_psd_delete_history', $history);
+		}
+
+		// Restore the ticket and clear delete metadata.
 		$result = $wpdb->update(
 			$table_name,
-			array('deleted_at' => null),
+			array(
+				'deleted_at'          => null,
+				'delete_reason'       => null,
+				'delete_reason_other' => null,
+				'deleted_by'          => null,
+			),
 			array('id' => $ticket_id),
-			array('%s'),
+			array('%s', '%s', '%s', '%s'),
 			array('%d')
 		);
 
@@ -789,6 +816,175 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 			$attachments_table,
 			array('ticket_id' => $ticket_id),
 			array('%d')
+		);
+
+		return false !== $result;
+	}
+
+	/**
+	 * Move a ticket to trash with a reason (soft delete).
+	 *
+	 * @since 1.2.0
+	 * @param int    $ticket_id Ticket ID.
+	 * @param string $reason Delete reason.
+	 * @param string $reason_other Optional. Additional details if reason is 'other'.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function trash_with_reason($ticket_id, $reason, $reason_other = '')
+	{
+		// Call existing trash method.
+		$result = self::trash($ticket_id);
+
+		if ($result) {
+			global $wpdb;
+			$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+
+			// Store reason in tickets table columns.
+			$update_data = array(
+				'delete_reason'       => sanitize_text_field($reason),
+				'delete_reason_other' => null, // Clear by default
+				'deleted_by'          => get_current_user_id(),
+			);
+
+			$format = array('%s', '%s', '%d');
+
+			if ('other' === $reason && ! empty($reason_other)) {
+				$update_data['delete_reason_other'] = sanitize_textarea_field($reason_other);
+			}
+
+			$wpdb->update(
+				$table_name,
+				$update_data,
+				array('id' => absint($ticket_id)),
+				$format,
+				array('%d')
+			);
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Move multiple tickets to trash with a reason.
+	 *
+	 * @since 1.2.0
+	 * @param array  $ticket_ids Array of ticket IDs.
+	 * @param string $reason Delete reason.
+	 * @param string $reason_other Optional. Additional details if reason is 'other'.
+	 * @return int Number of tickets trashed.
+	 */
+	public static function bulk_trash_with_reason($ticket_ids, $reason, $reason_other = '')
+	{
+		if (! is_array($ticket_ids) || empty($ticket_ids)) {
+			return 0;
+		}
+
+		$count = 0;
+		foreach ($ticket_ids as $ticket_id) {
+			if (self::trash_with_reason($ticket_id, $reason, $reason_other)) {
+				$count++;
+			}
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Update ticket meta.
+	 *
+	 * @since 1.2.0
+	 * @param int    $ticket_id Ticket ID.
+	 * @param string $meta_key Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 * @return bool|int False on failure, number of rows affected on success.
+	 */
+	public static function update_meta($ticket_id, $meta_key, $meta_value)
+	{
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_meta';
+
+		// Check if meta exists.
+		$exists = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT meta_id FROM {$table_name} WHERE ticket_id = %d AND meta_key = %s",
+				$ticket_id,
+				$meta_key
+			)
+		);
+
+		if ($exists) {
+			return $wpdb->update(
+				$table_name,
+				array('meta_value' => maybe_serialize($meta_value)),
+				array(
+					'ticket_id' => $ticket_id,
+					'meta_key'  => $meta_key,
+				),
+				array('%s'),
+				array('%d', '%s')
+			);
+		} else {
+			return $wpdb->insert(
+				$table_name,
+				array(
+					'ticket_id'  => $ticket_id,
+					'meta_key'   => $meta_key,
+					'meta_value' => maybe_serialize($meta_value),
+				),
+				array('%d', '%s', '%s')
+			);
+		}
+	}
+
+	/**
+	 * Get ticket meta.
+	 *
+	 * @since 1.2.0
+	 * @param int    $ticket_id Ticket ID.
+	 * @param string $meta_key Meta key.
+	 * @param bool   $single Optional. Whether to return a single value. Default true.
+	 * @return mixed Meta value or null if not found.
+	 */
+	public static function get_meta($ticket_id, $meta_key, $single = true)
+	{
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_meta';
+
+		$result = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT meta_value FROM {$table_name} WHERE ticket_id = %d AND meta_key = %s",
+				$ticket_id,
+				$meta_key
+			)
+		);
+
+		if ($result) {
+			return maybe_unserialize($result);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Delete ticket meta.
+	 *
+	 * @since 1.2.0
+	 * @param int    $ticket_id Ticket ID.
+	 * @param string $meta_key Meta key.
+	 * @return bool True on success, false on failure.
+	 */
+	public static function delete_meta($ticket_id, $meta_key)
+	{
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_meta';
+
+		$result = $wpdb->delete(
+			$table_name,
+			array(
+				'ticket_id' => $ticket_id,
+				'meta_key'  => $meta_key,
+			),
+			array('%d', '%s')
 		);
 
 		return false !== $result;
