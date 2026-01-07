@@ -934,47 +934,81 @@ class PNPC_PSD_Admin
 			$tickets = PNPC_PSD_Ticket::get_all($args);
 		}
 		
-		// Calculate badge counts for each ticket (fresh calculation)
+		// Calculate badge counts for ALL tickets (not just assigned ones)
 		$badge_counts = array();
 		
-		foreach ($tickets as $ticket) {
-			if (!$is_trash_view) {
+		if (!$is_trash_view) {
+			foreach ($tickets as $ticket) {
 				$badge_count = $this->calculate_new_badge_count($ticket->id, $current_user_id);
 				$badge_counts[$ticket->id] = $badge_count;
+			}
+		}
+		
+		// Separate active and closed tickets for proper display
+		$active_tickets = array();
+		$closed_tickets = array();
+		
+		if (!$is_trash_view) {
+			foreach ($tickets as $ticket) {
+				$status_lower = strtolower($ticket->status);
+				if ($status_lower === 'closed' || $status_lower === 'resolved') {
+					$closed_tickets[] = $ticket;
+				} else {
+					$active_tickets[] = $ticket;
+				}
 			}
 		}
 		
 		// Pass pagination info to view
 		$_GET['paged'] = $paged;
 
-		// Generate HTML for ticket rows
+		// Generate HTML for ticket rows with separation
 		ob_start();
-		if (! empty($tickets)) {
-			// For trash view, don't separate by status
-			if ($is_trash_view) {
+		
+		if ($is_trash_view) {
+			// Trash view - no separation needed
+			if (! empty($tickets)) {
 				foreach ($tickets as $ticket) {
-					$this->render_ticket_row($ticket, $is_trash_view);
+					$this->render_ticket_row($ticket, $is_trash_view, $badge_counts);
 				}
 			} else {
-				// Separate active and closed tickets
-				$separated = $this->separate_active_and_closed_tickets($tickets);
-				$active_tickets = $separated['active'];
-				$closed_tickets = $separated['closed'];
-				$has_active = !empty($active_tickets);
-				$has_closed = !empty($closed_tickets);
-
-				// Render active tickets
+				$colspan = current_user_can('pnpc_psd_delete_tickets') ? '6' : '5';
+				?>
+				<tr>
+					<td colspan="<?php echo esc_attr($colspan); ?>">
+						<?php esc_html_e('No tickets in trash.', 'pnpc-pocket-service-desk'); ?>
+					</td>
+				</tr>
+				<?php
+			}
+		} else {
+			// Active view - separate active and closed tickets
+			$has_active = !empty($active_tickets);
+			$has_closed = !empty($closed_tickets);
+			
+			if (!$has_active && !$has_closed) {
+				$colspan = current_user_can('pnpc_psd_delete_tickets') ? '10' : '9';
+				?>
+				<tr>
+					<td colspan="<?php echo esc_attr($colspan); ?>">
+						<?php esc_html_e('No tickets found.', 'pnpc-pocket-service-desk'); ?>
+					</td>
+				</tr>
+				<?php
+			} else {
+				// Render active tickets first
 				if ($has_active) {
 					foreach ($active_tickets as $ticket) {
-						$this->render_ticket_row($ticket, false);
+						$this->render_ticket_row($ticket, $is_trash_view, $badge_counts);
 					}
 				}
-
-				// Render divider if both sections exist
+				
+				// Add divider if we have both active and closed
 				if ($has_active && $has_closed) {
+					$colspan = current_user_can('pnpc_psd_delete_tickets') ? '10' : '9';
 					?>
 					<tr class="pnpc-psd-closed-divider">
-						<td colspan="<?php echo current_user_can('pnpc_psd_delete_tickets') ? '10' : '9'; ?>">
+						<td colspan="<?php echo esc_attr($colspan); ?>">
 							<div class="pnpc-psd-divider-content">
 								<span class="pnpc-psd-divider-line"></span>
 								<span class="pnpc-psd-divider-text">
@@ -991,30 +1025,16 @@ class PNPC_PSD_Admin
 					</tr>
 					<?php
 				}
-
-				// Render closed tickets with special class
+				
+				// Render closed tickets
 				if ($has_closed) {
 					foreach ($closed_tickets as $ticket) {
-						$this->render_ticket_row($ticket, false, true);
+						$this->render_ticket_row($ticket, $is_trash_view, $badge_counts, true);
 					}
 				}
 			}
-		} else {
-			$colspan = $is_trash_view ? (current_user_can('pnpc_psd_delete_tickets') ? '6' : '5') : (current_user_can('pnpc_psd_delete_tickets') ? '10' : '9');
-			?>
-			<tr>
-				<td colspan="<?php echo esc_attr($colspan); ?>">
-					<?php
-					if ($is_trash_view) {
-						esc_html_e('No tickets in trash.', 'pnpc-pocket-service-desk');
-					} else {
-						esc_html_e('No tickets found.', 'pnpc-pocket-service-desk');
-					}
-					?>
-				</td>
-			</tr>
-			<?php
 		}
+		
 		$html = ob_get_clean();
 
 		// Get counts for tabs
@@ -1029,6 +1049,12 @@ class PNPC_PSD_Admin
 				'open'   => $open_count,
 				'closed' => $closed_count,
 				'trash'  => $trash_count,
+			),
+			'debug' => array(
+				'total_tickets' => count($tickets),
+				'active_tickets' => count($active_tickets),
+				'closed_tickets' => count($closed_tickets),
+				'badges_calculated' => count($badge_counts),
 			),
 		));
 	}
@@ -1116,9 +1142,10 @@ class PNPC_PSD_Admin
 	 * @since 1.0.0
 	 * @param object $ticket Ticket object
 	 * @param bool $is_trash_view Whether viewing trash
-	 * @param bool $is_closed Whether this is a closed ticket (for styling)
+	 * @param array $badge_counts Pre-calculated badge counts (optional)
+	 * @param bool $is_closed Whether this is a closed ticket row
 	 */
-	private function render_ticket_row($ticket, $is_trash_view = false, $is_closed = false)
+	private function render_ticket_row($ticket, $is_trash_view = false, $badge_counts = array(), $is_closed = false)
 	{
 		$user          = get_userdata($ticket->user_id);
 		$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
@@ -1140,47 +1167,58 @@ class PNPC_PSD_Admin
 			$created_timestamp = 0;
 		}
 		
-		// Calculate new responses - simplified to avoid N+1 queries
-		// Only show for assigned tickets to current user
+		// Use pre-calculated badge count if available, otherwise calculate
 		$new_responses = 0;
-		$current_admin_id = get_current_user_id();
-		if ($current_admin_id && $ticket->assigned_to && (int) $ticket->assigned_to === (int) $current_admin_id) {
-			// Use a transient to cache the response count
-			$transient_key = 'pnpc_psd_new_resp_' . $ticket->id . '_' . $current_admin_id;
-			$cached_count = get_transient($transient_key);
-			
-			if (false === $cached_count) {
-				$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
-				$last_view_raw  = get_user_meta($current_admin_id, $last_view_key, true);
-				$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
+		if (isset($badge_counts[$ticket->id])) {
+			$new_responses = $badge_counts[$ticket->id];
+		} else {
+			// Fallback calculation (used on initial page load from view)
+			$current_admin_id = get_current_user_id();
+			if ($current_admin_id && $ticket->assigned_to && (int) $ticket->assigned_to === (int) $current_admin_id) {
+				// Use a transient to cache the response count
+				$transient_key = 'pnpc_psd_new_resp_' . $ticket->id . '_' . $current_admin_id;
+				$cached_count = get_transient($transient_key);
+				
+				if (false === $cached_count) {
+					$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
+					$last_view_raw  = get_user_meta($current_admin_id, $last_view_key, true);
+					$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
 
-				// Cache function_exists check
-				static $use_helper_func = null;
-				if (null === $use_helper_func) {
-					$use_helper_func = function_exists('pnpc_psd_mysql_to_wp_local_ts');
-				}
+					// Cache function_exists check
+					static $use_helper_func = null;
+					if (null === $use_helper_func) {
+						$use_helper_func = function_exists('pnpc_psd_mysql_to_wp_local_ts');
+					}
 
-				$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
-				if (! empty($responses)) {
-					foreach ($responses as $response) {
-						if ((int) $response->user_id === (int) $current_admin_id) {
-							continue;
-						}
-						$resp_time = $use_helper_func ? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) : intval(strtotime($response->created_at));
-						if ($resp_time > $last_view_time) {
-							$new_responses++;
+					$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
+					if (! empty($responses)) {
+						foreach ($responses as $response) {
+							if ((int) $response->user_id === (int) $current_admin_id) {
+								continue;
+							}
+							$resp_time = $use_helper_func ? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) : intval(strtotime($response->created_at));
+							if ($resp_time > $last_view_time) {
+								$new_responses++;
+							}
 						}
 					}
+					
+					// Cache for 30 seconds
+					set_transient($transient_key, $new_responses, 30);
+				} else {
+					$new_responses = (int) $cached_count;
 				}
-				
-				// Cache for 30 seconds
-				set_transient($transient_key, $new_responses, 30);
-			} else {
-				$new_responses = (int) $cached_count;
 			}
 		}
+		
+		// Add closed ticket class if applicable
+		$row_classes = array();
+		if ($is_closed) {
+			$row_classes[] = 'pnpc-psd-ticket-closed';
+		}
+		$row_class_attr = !empty($row_classes) ? ' class="' . esc_attr(implode(' ', $row_classes)) . '"' : '';
 		?>
-		<tr<?php echo $is_closed ? ' class="pnpc-psd-ticket-closed"' : ''; ?>>
+		<tr<?php echo $row_class_attr; ?>>
 			<?php if (current_user_can('pnpc_psd_delete_tickets')) : ?>
 			<th scope="row" class="check-column">
 				<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">
