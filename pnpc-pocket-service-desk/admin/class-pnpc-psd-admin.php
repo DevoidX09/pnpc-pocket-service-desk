@@ -75,6 +75,10 @@ class PNPC_PSD_Admin
 					'ajax_url' => admin_url('admin-ajax.php'),
 					'nonce'    => wp_create_nonce('pnpc_psd_admin_nonce'),
 					'tickets_url' => admin_url('admin.php?page=pnpc-service-desk'),
+					'i18n' => array(
+						'new_ticket_singular' => __('1 new ticket arrived', 'pnpc-pocket-service-desk'),
+						'new_tickets_plural' => __('new tickets arrived', 'pnpc-pocket-service-desk'),
+					),
 				)
 			);
 
@@ -379,6 +383,16 @@ class PNPC_PSD_Admin
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
 				'default'           => 30,
+			)
+		);
+
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_tickets_per_page',
+			array(
+				'type'              => 'integer',
+				'default'           => 20,
+				'sanitize_callback' => 'absint',
 			)
 		);
 
@@ -903,20 +917,35 @@ class PNPC_PSD_Admin
 
 		$status = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : '';
 		$view   = isset($_POST['view']) ? sanitize_text_field(wp_unslash($_POST['view'])) : '';
+		$paged  = isset($_POST['paged']) ? absint($_POST['paged']) : 1;
+		$current_user_id = get_current_user_id();
 
 		$args = array(
 			'limit'  => 20,
 		);
 
 		// Check if viewing trash
-		if ('trash' === $view) {
+		$is_trash_view = ('trash' === $view);
+		
+		if ($is_trash_view) {
 			$tickets = PNPC_PSD_Ticket::get_trashed($args);
-			$is_trash_view = true;
 		} else {
 			$args['status'] = $status;
 			$tickets = PNPC_PSD_Ticket::get_all($args);
-			$is_trash_view = false;
 		}
+		
+		// Calculate badge counts for each ticket (fresh calculation)
+		$badge_counts = array();
+		
+		foreach ($tickets as $ticket) {
+			if (!$is_trash_view) {
+				$badge_count = $this->calculate_new_badge_count($ticket->id, $current_user_id);
+				$badge_counts[$ticket->id] = $badge_count;
+			}
+		}
+		
+		// Pass pagination info to view
+		$_GET['paged'] = $paged;
 
 		// Generate HTML for ticket rows
 		ob_start();
@@ -925,7 +954,7 @@ class PNPC_PSD_Admin
 				$this->render_ticket_row($ticket, $is_trash_view);
 			}
 		} else {
-			$colspan = $is_trash_view ? (current_user_can('pnpc_psd_delete_tickets') ? '9' : '8') : (current_user_can('pnpc_psd_delete_tickets') ? '10' : '9');
+			$colspan = $is_trash_view ? (current_user_can('pnpc_psd_delete_tickets') ? '6' : '5') : (current_user_can('pnpc_psd_delete_tickets') ? '10' : '9');
 			?>
 			<tr>
 				<td colspan="<?php echo esc_attr($colspan); ?>">
@@ -949,12 +978,62 @@ class PNPC_PSD_Admin
 
 		wp_send_json_success(array(
 			'html' => $html,
+			'badge_counts' => $badge_counts,
 			'counts' => array(
 				'open'   => $open_count,
 				'closed' => $closed_count,
 				'trash'  => $trash_count,
 			),
 		));
+	}
+	
+	/**
+	 * Calculate "New" badge count for a ticket and specific agent
+	 * Centralized logic to ensure consistency
+	 *
+	 * @since 1.0.0
+	 * @param int $ticket_id Ticket ID
+	 * @param int $user_id User ID
+	 * @return int Number of new responses
+	 */
+	private function calculate_new_badge_count($ticket_id, $user_id)
+	{
+		// Get last view timestamp for this user
+		$last_view_meta = get_user_meta($user_id, 'pnpc_psd_ticket_last_view_' . intval($ticket_id), true);
+		
+		if (empty($last_view_meta)) {
+			// User has NEVER viewed this ticket
+			return 1; // The ticket itself is "new"
+		}
+		
+		// Convert to integer timestamp
+		$last_view_time = is_numeric($last_view_meta) 
+			? intval($last_view_meta) 
+			: strtotime($last_view_meta);
+		
+		// Get all responses for this ticket
+		$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket_id, array('orderby' => 'created_at', 'order' => 'ASC'));
+		
+		$new_count = 0;
+		
+		if (!empty($responses)) {
+			foreach ($responses as $response) {
+				// Skip this user's own responses
+				if (intval($response->user_id) === intval($user_id)) {
+					continue;
+				}
+				
+				// Convert response timestamp
+				$response_time = strtotime($response->created_at);
+				
+				// Count if response is AFTER last view
+				if ($response_time > $last_view_time) {
+					$new_count++;
+				}
+			}
+		}
+		
+		return $new_count;
 	}
 
 	/**

@@ -264,7 +264,7 @@
 	 * Restore state after refresh
 	 */
 	function restoreCurrentState() {
-		// Restore checkbox selections
+		// Restore checkbox selections FIRST (works immediately)
 		if (selectedTicketIds.length > 0) {
 			selectedTicketIds.forEach(function(ticketId) {
 				$('input[name="ticket[]"][value="' + ticketId + '"]').prop('checked', true);
@@ -274,36 +274,97 @@
 			updateSelectAllCheckbox();
 		}
 
-		// Restore sort order by triggering the sort event
-		// Note: This relies on the existing sortTable function in pnpc-psd-admin.js
-		// which is triggered by click events on sortable column headers
+		// Restore sort order AFTER DOM is ready
 		if (currentSortColumn && currentSortOrder) {
-			var $columnToSort = $('.pnpc-psd-sortable[data-sort-type="' + currentSortColumn + '"]');
-			if ($columnToSort.length) {
-				// Check current state
-				var currentAttrOrder = $columnToSort.attr('data-sort-order');
+			setTimeout(function() {
+				// Find the column header
+				var $columnHeader = $('.pnpc-psd-sortable[data-sort-type="' + currentSortColumn + '"]');
 				
-				// Only trigger click if the order needs to change
-				if (currentAttrOrder !== currentSortOrder) {
-					// Trigger click to cycle through sort states
-					// The sortTable function in pnpc-psd-admin.js handles the logic
-					$columnToSort.trigger('click');
+				if ($columnHeader.length) {
+					// Remove all existing sort indicators
+					$('.pnpc-psd-sortable').attr('data-sort-order', '');
 					
-					// If still not matching after one click, click again
-					// This handles cycling from empty -> asc -> desc -> empty
-					setTimeout(function() {
-						if ($columnToSort.attr('data-sort-order') !== currentSortOrder) {
-							$columnToSort.trigger('click');
-						}
-					}, config.sortRestoreDelay);
+					// Set the sort order data attribute
+					$columnHeader.attr('data-sort-order', currentSortOrder);
+					
+					// Actually sort the table
+					sortTable(currentSortColumn, currentSortOrder);
 				}
-			}
+			}, 150); // Small delay ensures DOM is ready
 		}
 
-		// Restore scroll position (with small delay for DOM update)
+		// Restore scroll position (keep existing)
 		setTimeout(function() {
 			$(window).scrollTop(currentScrollPosition);
-		}, config.scrollRestoreDelay);
+		}, 200);
+	}
+
+	/**
+	 * Helper function to sort table without triggering click event
+	 */
+	function sortTable(sortType, sortOrder) {
+		var $tbody = $('#pnpc-psd-tickets-table tbody');
+		var $rows = $tbody.find('tr').toArray();
+		
+		if ($rows.length <= 1) {
+			return; // Nothing to sort
+		}
+		
+		$rows.sort(function(a, b) {
+			var $aCells = $(a).find('td');
+			var $bCells = $(b).find('td');
+			
+			// Find cells with data-sort-value matching our column
+			var aValue = null;
+			var bValue = null;
+			
+			$aCells.each(function() {
+				var $cell = $(this);
+				if ($cell.attr('data-sort-value') !== undefined) {
+					// Check if this is the right column by comparing with header position
+					var cellIndex = $cell.index();
+					var $header = $('.pnpc-psd-sortable').eq(cellIndex - ($(a).find('th').length > 0 ? 1 : 0));
+					if ($header.attr('data-sort-type') === sortType) {
+						aValue = $cell.attr('data-sort-value');
+						return false; // break
+					}
+				}
+			});
+			
+			$bCells.each(function() {
+				var $cell = $(this);
+				if ($cell.attr('data-sort-value') !== undefined) {
+					var cellIndex = $cell.index();
+					var $header = $('.pnpc-psd-sortable').eq(cellIndex - ($(b).find('th').length > 0 ? 1 : 0));
+					if ($header.attr('data-sort-type') === sortType) {
+						bValue = $cell.attr('data-sort-value');
+						return false; // break
+					}
+				}
+			});
+			
+			// Handle different data types
+			if (!isNaN(aValue) && !isNaN(bValue)) {
+				// Numeric comparison
+				aValue = parseFloat(aValue);
+				bValue = parseFloat(bValue);
+			} else {
+				// String comparison
+				aValue = String(aValue).toLowerCase();
+				bValue = String(bValue).toLowerCase();
+			}
+			
+			if (sortOrder === 'asc') {
+				return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+			} else {
+				return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+			}
+		});
+		
+		// Re-append sorted rows
+		$.each($rows, function(index, row) {
+			$tbody.append(row);
+		});
 	}
 
 	/**
@@ -322,6 +383,7 @@
 
 		// Apply highlight animation to new tickets
 		if (newTicketIds.length > 0) {
+			// Flash individual rows
 			newTicketIds.forEach(function(ticketId) {
 				var $row = $('input[name="ticket[]"][value="' + ticketId + '"]').closest('tr');
 
@@ -333,7 +395,44 @@
 					$row.removeClass('pnpc-psd-ticket-row-new');
 				}, config.newTicketAnimationDuration);
 			});
+			
+			// ALSO flash entire screen border
+			flashScreenBorder(newTicketIds.length);
 		}
+	}
+	
+	/**
+	 * Flash full-screen border to alert user of new tickets
+	 */
+	function flashScreenBorder(count) {
+		// Create full-screen border overlay
+		var $overlay = $('<div class="pnpc-psd-screen-flash-overlay"></div>');
+		
+		// Add notification text
+		var ticketText = count === 1 
+			? (typeof pnpcPsdAdmin !== 'undefined' && pnpcPsdAdmin.i18n && pnpcPsdAdmin.i18n.new_ticket_singular 
+				? pnpcPsdAdmin.i18n.new_ticket_singular 
+				: '1 new ticket arrived')
+			: count + ' ' + (typeof pnpcPsdAdmin !== 'undefined' && pnpcPsdAdmin.i18n && pnpcPsdAdmin.i18n.new_tickets_plural 
+				? pnpcPsdAdmin.i18n.new_tickets_plural 
+				: 'new tickets arrived');
+		
+		var $notification = $('<div class="pnpc-psd-screen-flash-notification">' + ticketText + '</div>');
+		
+		$('body').append($overlay).append($notification);
+		
+		// Remove after animation
+		setTimeout(function() {
+			$overlay.fadeOut(500, function() {
+				$(this).remove();
+			});
+			$notification.fadeOut(500, function() {
+				$(this).remove();
+			});
+		}, 3000);
+		
+		// Optional: Play notification sound
+		// playNotificationSound();
 	}
 
 	/**
@@ -375,6 +474,7 @@
 		var urlParams = new URLSearchParams(window.location.search);
 		var status = urlParams.get('status') || '';
 		var view = urlParams.get('view') || '';
+		var currentPage = urlParams.get('paged') || 1;
 
 		$.ajax({
 			url: pnpcPsdRealtime.ajaxUrl,
@@ -383,7 +483,8 @@
 				action: 'pnpc_psd_refresh_ticket_list',
 				nonce: pnpcPsdRealtime.nonce,
 				status: status,
-				view: view
+				view: view,
+				paged: currentPage
 			},
 			beforeSend: function() {
 				$('.pnpc-psd-refresh-indicator').addClass('active');
