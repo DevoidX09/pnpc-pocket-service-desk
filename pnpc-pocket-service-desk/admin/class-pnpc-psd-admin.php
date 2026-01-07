@@ -1109,6 +1109,34 @@ class PNPC_PSD_Admin
 	}
 
 	/**
+	 * Separate tickets into active and closed
+	 * Active = open, in-progress, waiting, pending, etc.
+	 * Closed = closed, resolved
+	 *
+	 * @param array $tickets All tickets
+	 * @return array ['active' => [], 'closed' => []]
+	 */
+	private function separate_active_and_closed_tickets($tickets)
+	{
+		$active = array();
+		$closed = array();
+		
+		foreach ($tickets as $ticket) {
+			$status_lower = strtolower($ticket->status);
+			if ($status_lower === 'closed' || $status_lower === 'resolved') {
+				$closed[] = $ticket;
+			} else {
+				$active[] = $ticket;
+			}
+		}
+		
+		return array(
+			'active' => $active,
+			'closed' => $closed,
+		);
+	}
+
+	/**
 	 * Render a single ticket row (extracted from tickets-list.php for reuse)
 	 *
 	 * @since 1.0.0
