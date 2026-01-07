@@ -18,6 +18,11 @@
 	var menuBadgeTimer = null;
 	var lastRefreshTime = Date.now();
 	var isRefreshing = false;
+	var previousTicketIds = [];
+	var currentSortColumn = '';
+	var currentSortOrder = '';
+	var selectedTicketIds = [];
+	var currentScrollPosition = 0;
 
 	$(document).ready(function() {
 		// Only proceed if we have the required data
@@ -223,6 +228,108 @@
 	}
 
 	/**
+	 * Save current state before refresh
+	 */
+	function saveCurrentState() {
+		// Store current ticket IDs
+		previousTicketIds = [];
+		$('input[name="ticket[]"]').each(function() {
+			previousTicketIds.push(parseInt($(this).val()));
+		});
+
+		// Store sort state
+		var $sortedColumn = $('.pnpc-psd-sortable[data-sort-order!=""]').first();
+		if ($sortedColumn.length) {
+			currentSortColumn = $sortedColumn.attr('data-sort-type');
+			currentSortOrder = $sortedColumn.attr('data-sort-order');
+		}
+
+		// Store selected checkboxes
+		selectedTicketIds = [];
+		$('input[name="ticket[]"]:checked').each(function() {
+			selectedTicketIds.push(parseInt($(this).val()));
+		});
+
+		// Store scroll position
+		currentScrollPosition = $(window).scrollTop();
+	}
+
+	/**
+	 * Restore state after refresh
+	 */
+	function restoreCurrentState() {
+		// Restore checkbox selections
+		if (selectedTicketIds.length > 0) {
+			selectedTicketIds.forEach(function(ticketId) {
+				$('input[name="ticket[]"][value="' + ticketId + '"]').prop('checked', true);
+			});
+
+			// Update "select all" checkbox state
+			updateSelectAllCheckbox();
+		}
+
+		// Restore sort order
+		if (currentSortColumn && currentSortOrder) {
+			var $columnToSort = $('.pnpc-psd-sortable[data-sort-type="' + currentSortColumn + '"]');
+			if ($columnToSort.length) {
+				// Trigger sort (using existing sort function from pnpc-psd-admin.js)
+				$columnToSort.attr('data-sort-order', currentSortOrder === 'asc' ? '' : 'asc');
+				$columnToSort.trigger('click');
+			}
+		}
+
+		// Restore scroll position (with small delay for DOM update)
+		setTimeout(function() {
+			$(window).scrollTop(currentScrollPosition);
+		}, 100);
+	}
+
+	/**
+	 * Detect and highlight new tickets
+	 */
+	function detectAndHighlightNewTickets() {
+		var newTicketIds = [];
+
+		// Find tickets that weren't in previous list
+		$('input[name="ticket[]"]').each(function() {
+			var ticketId = parseInt($(this).val());
+			if (previousTicketIds.indexOf(ticketId) === -1) {
+				newTicketIds.push(ticketId);
+			}
+		});
+
+		// Apply highlight animation to new tickets
+		if (newTicketIds.length > 0) {
+			newTicketIds.forEach(function(ticketId) {
+				var $row = $('input[name="ticket[]"][value="' + ticketId + '"]').closest('tr');
+
+				// Add animation class
+				$row.addClass('pnpc-psd-ticket-row-new');
+
+				// Remove class after animation (3 seconds)
+				setTimeout(function() {
+					$row.removeClass('pnpc-psd-ticket-row-new');
+				}, 3000);
+			});
+		}
+	}
+
+	/**
+	 * Update "select all" checkbox state
+	 */
+	function updateSelectAllCheckbox() {
+		var $checkboxes = $('input[name="ticket[]"]');
+		var $checkedBoxes = $('input[name="ticket[]"]:checked');
+		var $selectAll = $('#cb-select-all-1');
+
+		if ($checkboxes.length === $checkedBoxes.length && $checkboxes.length > 0) {
+			$selectAll.prop('checked', true);
+		} else {
+			$selectAll.prop('checked', false);
+		}
+	}
+
+	/**
 	 * Refresh the ticket list via AJAX
 	 */
 	function refreshTicketList() {
@@ -238,6 +345,9 @@
 		}
 
 		isRefreshing = true;
+
+		// Save current state before refresh
+		saveCurrentState();
 
 		// Get current filter/tab from URL
 		var urlParams = new URLSearchParams(window.location.search);
@@ -260,11 +370,18 @@
 				if (response.success && response.data.html) {
 					var $tbody = $('#pnpc-psd-tickets-table tbody');
 					$tbody.fadeOut(200, function() {
-						$tbody.html(response.data.html).fadeIn(200);
-						updateLastRefreshTime();
-						
-						// Trigger custom event for other scripts
-						$(document).trigger('pnpc_psd_tickets_refreshed');
+						$tbody.html(response.data.html).fadeIn(200, function() {
+							// Detect and highlight new tickets
+							detectAndHighlightNewTickets();
+
+							// Restore previous state
+							restoreCurrentState();
+
+							updateLastRefreshTime();
+
+							// Trigger custom event for other scripts
+							$(document).trigger('pnpc_psd_tickets_refreshed');
+						});
 					});
 				}
 			},
