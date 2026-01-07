@@ -1116,6 +1116,12 @@ class PNPC_PSD_Admin
 		$priority = isset($_POST['priority']) ? sanitize_text_field(wp_unslash($_POST['priority'])) : 'normal';
 		$notify_customer = isset($_POST['notify_customer']);
 
+		// Validate priority against allowed values
+		$allowed_priorities = array('low', 'normal', 'high', 'urgent');
+		if (! in_array($priority, $allowed_priorities, true)) {
+			$priority = 'normal';
+		}
+
 		// Validate required fields
 		if (! $customer_id || ! $subject || ! $description) {
 			add_settings_error(
@@ -1150,9 +1156,6 @@ class PNPC_PSD_Admin
 		));
 
 		if ($ticket_id) {
-			// Store metadata for backward compatibility and additional tracking
-			PNPC_PSD_Ticket::update_meta($ticket_id, 'pnpc_psd_created_by_staff', get_current_user_id());
-
 			// Send notification if requested
 			if ($notify_customer) {
 				$this->send_staff_created_ticket_notification($ticket_id, $customer_id);
