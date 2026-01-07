@@ -4,6 +4,58 @@
  * @package PNPC_Pocket_Service_Desk
  */
 
+/* Ticket detail header navigation */
+.pnpc-psd-ticket-detail-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+	padding-bottom: 15px;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.pnpc-psd-breadcrumb {
+	font-size: 14px;
+	color: #50575e;
+}
+
+.pnpc-psd-breadcrumb a {
+	color: #2271b1;
+	text-decoration: none;
+}
+
+.pnpc-psd-breadcrumb a:hover {
+	color: #135e96;
+	text-decoration: underline;
+}
+
+.pnpc-psd-breadcrumb .separator {
+	margin: 0 8px;
+	color: #a7aaad;
+}
+
+.pnpc-psd-breadcrumb .current {
+	color: #1d2327;
+	font-weight: 600;
+}
+
+.pnpc-psd-quick-nav {
+	display: flex;
+	gap: 10px;
+}
+
+.pnpc-psd-quick-nav .button {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.pnpc-psd-quick-nav .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
 .pnpc-psd-ticket-detail {
 	background: #fff;
 	padding: 20px;
@@ -408,6 +460,36 @@
 		width: 100%;
 		margin-left: 0;
 		margin-top: 5px;
+	}
+	
+	.pnpc-psd-ticket-detail-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 15px;
+	}
+	
+	.pnpc-psd-quick-nav {
+		flex-direction: column;
+		width: 100%;
+	}
+	
+	.pnpc-psd-quick-nav .button {
+		width: 100%;
+		justify-content: center;
+	}
+	
+	.pnpc-psd-pagination {
+		flex-direction: column;
+		gap: 15px;
+	}
+	
+	.pnpc-psd-pagination-info {
+		text-align: center;
+	}
+	
+	.pnpc-psd-pagination-links {
+		flex-wrap: wrap;
+		justify-content: center;
 	}
 }
 

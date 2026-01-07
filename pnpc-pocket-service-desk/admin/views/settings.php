@@ -106,6 +106,26 @@ if (! defined('ABSPATH')) {
 					<p class="description"><?php esc_html_e('How often to automatically refresh the ticket list on the admin page.', 'pnpc-pocket-service-desk'); ?></p>
 				</td>
 			</tr>
+			
+			<tr>
+				<th scope="row">
+					<label for="pnpc_psd_tickets_per_page">
+						<?php esc_html_e('Tickets Per Page', 'pnpc-pocket-service-desk'); ?>
+					</label>
+				</th>
+				<td>
+					<select id="pnpc_psd_tickets_per_page" name="pnpc_psd_tickets_per_page">
+						<option value="10" <?php selected(get_option('pnpc_psd_tickets_per_page', 20), '10'); ?>>10</option>
+						<option value="15" <?php selected(get_option('pnpc_psd_tickets_per_page', 20), '15'); ?>>15</option>
+						<option value="20" <?php selected(get_option('pnpc_psd_tickets_per_page', 20), '20'); ?>>20</option>
+						<option value="25" <?php selected(get_option('pnpc_psd_tickets_per_page', 20), '25'); ?>>25</option>
+						<option value="50" <?php selected(get_option('pnpc_psd_tickets_per_page', 20), '50'); ?>>50</option>
+					</select>
+					<p class="description">
+						<?php esc_html_e('Number of tickets to display per page in the ticket list.', 'pnpc-pocket-service-desk'); ?>
+					</p>
+				</td>
+			</tr>
 		</table>
 
 		<h2><?php esc_html_e('Colors & Buttons', 'pnpc-pocket-service-desk'); ?></h2>
