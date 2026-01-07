@@ -97,7 +97,7 @@ class PNPC_PSD_Activator {
 
 		// Set default options.
 		add_option( 'pnpc_psd_version', PNPC_PSD_VERSION );
-		add_option( 'pnpc_psd_db_version', '1.2.0' );
+		add_option( 'pnpc_psd_db_version', '1.3.0' );
 		add_option( 'pnpc_psd_ticket_counter', 1000 );
 
 		// Run database migration for existing installations.
@@ -123,6 +123,11 @@ class PNPC_PSD_Activator {
 		// Upgrade to 1.2.0 if needed.
 		if ( version_compare( $current_db_version, '1.2.0', '<' ) ) {
 			self::upgrade_to_1_2_0();
+		}
+
+		// Upgrade to 1.3.0 if needed.
+		if ( version_compare( $current_db_version, '1.3.0', '<' ) ) {
+			self::upgrade_to_1_3_0();
 		}
 	}
 
@@ -283,6 +288,48 @@ class PNPC_PSD_Activator {
 
 		// Update DB version.
 		update_option( 'pnpc_psd_db_version', '1.2.0' );
+	}
+
+	/**
+	 * Upgrade database to version 1.3.0 (staff-created tickets tracking).
+	 *
+	 * @since 1.3.0
+	 */
+	private static function upgrade_to_1_3_0() {
+		global $wpdb;
+
+		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		// Verify table exists before attempting to alter it.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$table_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$tickets_table
+			)
+		);
+
+		if ( $table_exists ) {
+			// Check if created_by_staff column exists.
+			$column_exists = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
+					'created_by_staff'
+				)
+			);
+
+			if ( empty( $column_exists ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query(
+					"ALTER TABLE {$tickets_table} 
+					ADD COLUMN created_by_staff BIGINT(20) UNSIGNED DEFAULT NULL AFTER assigned_to,
+					ADD KEY created_by_staff (created_by_staff)"
+				);
+			}
+		}
+
+		// Update DB version.
+		update_option( 'pnpc_psd_db_version', '1.3.0' );
 	}
 
 	/**

@@ -67,8 +67,18 @@ class PNPC_PSD_Ticket
 				'created_at'    => $created_at_utc,
 			);
 
+			// Add created_by_staff if provided
+			if (isset($data['created_by_staff']) && ! empty($data['created_by_staff'])) {
+				$insert_data['created_by_staff'] = absint($data['created_by_staff']);
+			}
+
 			// Format array must match the insert order above.
 			$format = array('%s', '%d', '%s', '%s', '%s', '%s', '%d', '%s');
+			
+			// Add format for created_by_staff if present
+			if (isset($insert_data['created_by_staff'])) {
+				$format[] = '%d';
+			}
 
 			$result = $wpdb->insert(
 				$table_name,

@@ -30,6 +30,7 @@ class PNPC_PSD_Admin
 			add_action('edit_user_profile_update', array($this, 'save_user_allocated_products'));
 
 			add_action('admin_init', array($this, 'register_settings'));
+			add_action('admin_init', array($this, 'process_admin_create_ticket'));
 		}
 	}
 
@@ -114,6 +115,35 @@ class PNPC_PSD_Admin
 				true
 			);
 		}
+
+		// Enqueue Select2 on create ticket page
+		if (isset($_GET['page']) && 'pnpc-service-desk-create-ticket' === $_GET['page']) {
+			wp_enqueue_style(
+				'select2',
+				'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css',
+				array(),
+				'4.1.0'
+			);
+
+			wp_enqueue_script(
+				'select2',
+				'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js',
+				array('jquery'),
+				'4.1.0',
+				true
+			);
+
+			wp_add_inline_script(
+				'select2',
+				'jQuery(document).ready(function($) {
+					$("#customer_id").select2({
+						placeholder: "' . esc_js(__('Search for a customer...', 'pnpc-pocket-service-desk')) . '",
+						allowClear: true,
+						width: "100%"
+					});
+				});'
+			);
+		}
 	}
 
 	public function add_plugin_admin_menu()
@@ -153,6 +183,15 @@ class PNPC_PSD_Admin
 			'pnpc_psd_view_tickets',
 			'pnpc-service-desk',
 			array($this, 'display_tickets_page')
+		);
+
+		add_submenu_page(
+			'pnpc-service-desk',
+			__('Create Ticket', 'pnpc-pocket-service-desk'),
+			__('Create Ticket', 'pnpc-pocket-service-desk'),
+			'pnpc_psd_view_tickets',
+			'pnpc-service-desk-create-ticket',
+			array($this, 'display_create_ticket_page')
 		);
 
 		add_submenu_page(
@@ -988,6 +1027,11 @@ class PNPC_PSD_Admin
 				<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
 					<?php echo esc_html($ticket->subject); ?>
 				</a>
+				<?php if (PNPC_PSD_Ticket::get_meta($ticket->id, 'pnpc_psd_staff_created', true)) : ?>
+					<span class="pnpc-psd-badge pnpc-psd-badge-staff-created" title="<?php esc_attr_e('Created by staff', 'pnpc-pocket-service-desk'); ?>">
+						<span class="dashicons dashicons-admin-users"></span>
+					</span>
+				<?php endif; ?>
 			</td>
 			<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
 			<td data-sort-value="<?php echo absint($status_sort_value); ?>">
@@ -1035,5 +1079,149 @@ class PNPC_PSD_Admin
 		}
 
 		return strpos($screen->id, 'pnpc-service-desk') !== false;
+	}
+
+	public function display_create_ticket_page()
+	{
+		if (! current_user_can('pnpc_psd_view_tickets')) {
+			wp_die(esc_html__('You do not have permission to access this page.', 'pnpc-pocket-service-desk'));
+		}
+
+		include PNPC_PSD_PLUGIN_DIR . 'admin/views/create-ticket-admin.php';
+	}
+
+	public function process_admin_create_ticket()
+	{
+		// Check if form submitted
+		if (! isset($_POST['pnpc_psd_create_ticket_nonce'])) {
+			return;
+		}
+
+		// Verify nonce
+		if (! wp_verify_nonce(wp_unslash($_POST['pnpc_psd_create_ticket_nonce']), 'pnpc_psd_create_ticket_admin')) {
+			wp_die(esc_html__('Security check failed.', 'pnpc-pocket-service-desk'));
+		}
+
+		// Check permissions
+		if (! current_user_can('pnpc_psd_view_tickets')) {
+			wp_die(esc_html__('Permission denied.', 'pnpc-pocket-service-desk'));
+		}
+
+		// Validate and sanitize input
+		$customer_id = isset($_POST['customer_id']) ? absint($_POST['customer_id']) : 0;
+		$subject = isset($_POST['subject']) ? sanitize_text_field(wp_unslash($_POST['subject'])) : '';
+		$description = isset($_POST['description']) ? sanitize_textarea_field(wp_unslash($_POST['description'])) : '';
+		$priority = isset($_POST['priority']) ? sanitize_text_field(wp_unslash($_POST['priority'])) : 'normal';
+		$notify_customer = isset($_POST['notify_customer']);
+
+		// Validate required fields
+		if (! $customer_id || ! $subject || ! $description) {
+			add_settings_error(
+				'pnpc_psd_messages',
+				'pnpc_psd_message',
+				__('Please fill in all required fields.', 'pnpc-pocket-service-desk'),
+				'error'
+			);
+			return;
+		}
+
+		// Verify customer exists
+		$customer = get_userdata($customer_id);
+		if (! $customer) {
+			add_settings_error(
+				'pnpc_psd_messages',
+				'pnpc_psd_message',
+				__('Invalid customer selected.', 'pnpc-pocket-service-desk'),
+				'error'
+			);
+			return;
+		}
+
+		// Create ticket
+		$ticket_id = PNPC_PSD_Ticket::create(array(
+			'user_id' => $customer_id,
+			'subject' => $subject,
+			'description' => $description,
+			'priority' => $priority,
+			'status' => 'open',
+			'created_by_staff' => get_current_user_id(),
+		));
+
+		if ($ticket_id) {
+			// Store metadata
+			PNPC_PSD_Ticket::update_meta($ticket_id, 'pnpc_psd_created_by_staff', get_current_user_id());
+			PNPC_PSD_Ticket::update_meta($ticket_id, 'pnpc_psd_staff_created', true);
+
+			// Send notification if requested
+			if ($notify_customer) {
+				$this->send_staff_created_ticket_notification($ticket_id, $customer_id);
+			}
+
+			// Success message and redirect
+			add_settings_error(
+				'pnpc_psd_messages',
+				'pnpc_psd_message',
+				__('Ticket created successfully!', 'pnpc-pocket-service-desk'),
+				'success'
+			);
+
+			// Redirect to ticket detail
+			wp_redirect(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket_id));
+			exit;
+		} else {
+			add_settings_error(
+				'pnpc_psd_messages',
+				'pnpc_psd_message',
+				__('Failed to create ticket. Please try again.', 'pnpc-pocket-service-desk'),
+				'error'
+			);
+		}
+	}
+
+	private function send_staff_created_ticket_notification($ticket_id, $customer_id)
+	{
+		$ticket = PNPC_PSD_Ticket::get($ticket_id);
+		$customer = get_userdata($customer_id);
+		$staff = wp_get_current_user();
+
+		if (! $ticket || ! $customer) {
+			return false;
+		}
+
+		$to = $customer->user_email;
+		$subject = sprintf(
+			/* translators: 1: site name, 2: ticket number */
+			__('[%1$s] Support Ticket Created - #%2$s', 'pnpc-pocket-service-desk'),
+			get_bloginfo('name'),
+			$ticket->ticket_number
+		);
+
+		$ticket_url = admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket_id);
+
+		$message = sprintf(
+			/* translators: 1: customer name, 2: ticket number, 3: subject, 4: priority, 5: description, 6: ticket URL, 7: staff name, 8: site name */
+			__('Hello %1$s,', 'pnpc-pocket-service-desk') . "\n\n" .
+			__('A support ticket has been created for you by our support team.', 'pnpc-pocket-service-desk') . "\n\n" .
+			__('Ticket Number: %2$s', 'pnpc-pocket-service-desk') . "\n" .
+			__('Subject: %3$s', 'pnpc-pocket-service-desk') . "\n" .
+			__('Priority: %4$s', 'pnpc-pocket-service-desk') . "\n\n" .
+			__('Description:', 'pnpc-pocket-service-desk') . "\n%5$s\n\n" .
+			__('You can view and respond to this ticket here:', 'pnpc-pocket-service-desk') . "\n%6$s\n\n" .
+			__('Created by: %7$s', 'pnpc-pocket-service-desk') . "\n\n" .
+			__('Thank you,', 'pnpc-pocket-service-desk') . "\n" .
+			__('%8$s Support Team', 'pnpc-pocket-service-desk'),
+			$customer->display_name,
+			$ticket->ticket_number,
+			$ticket->subject,
+			ucfirst($ticket->priority),
+			$ticket->description,
+			$ticket_url,
+			$staff->display_name,
+			get_bloginfo('name')
+		);
+
+		$headers = array('Content-Type: text/plain; charset=UTF-8');
+
+		return wp_mail($to, $subject, $message, $headers);
 	}
 }

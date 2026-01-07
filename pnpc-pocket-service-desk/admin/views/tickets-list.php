@@ -191,6 +191,11 @@ $is_trash_view = ('trash' === $current_view);
 							<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
 								<?php echo esc_html($ticket->subject); ?>
 							</a>
+							<?php if (PNPC_PSD_Ticket::get_meta($ticket->id, 'pnpc_psd_staff_created', true)) : ?>
+								<span class="pnpc-psd-badge pnpc-psd-badge-staff-created" title="<?php esc_attr_e('Created by staff', 'pnpc-pocket-service-desk'); ?>">
+									<span class="dashicons dashicons-admin-users"></span>
+								</span>
+							<?php endif; ?>
 						</td>
 						<?php if (! $is_trash_view) : ?>
 						<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
