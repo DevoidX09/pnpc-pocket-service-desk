@@ -13,6 +13,30 @@ if (! defined('ABSPATH')) {
 
 $current_view = isset($_GET['view']) ? sanitize_text_field(wp_unslash($_GET['view'])) : '';
 $is_trash_view = ('trash' === $current_view);
+
+// Initialize badge_counts if not set (initial page load)
+if (!isset($badge_counts)) {
+	$badge_counts = array();
+}
+
+// Pagination setup
+$per_page = get_option('pnpc_psd_tickets_per_page', 20);
+$current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
+$total_tickets = count($tickets);
+$total_pages = ceil($total_tickets / $per_page);
+$offset = ($current_page - 1) * $per_page;
+
+// Slice tickets for current page
+$tickets_paginated = array_slice($tickets, $offset, $per_page);
+
+// Build pagination links helper function
+if (!function_exists('pnpc_psd_get_pagination_link')) {
+	function pnpc_psd_get_pagination_link($page) {
+		$args = $_GET;
+		$args['paged'] = $page;
+		return add_query_arg($args, admin_url('admin.php'));
+	}
+}
 ?>
 
 <div class="wrap">
@@ -129,8 +153,8 @@ $is_trash_view = ('trash' === $current_view);
 			</tr>
 		</thead>
 		<tbody>
-			<?php if (! empty($tickets)) : ?>
-				<?php foreach ($tickets as $ticket) : ?>
+			<?php if (! empty($tickets_paginated)) : ?>
+				<?php foreach ($tickets_paginated as $ticket) : ?>
 					<?php
 					$user          = get_userdata($ticket->user_id);
 					$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
@@ -153,42 +177,48 @@ $is_trash_view = ('trash' === $current_view);
 					}
 					
 					// Calculate "New" badge count for this agent
-					$new_responses = 0;
+					// Use pre-calculated badge count if available (from AJAX refresh)
+					if (isset($badge_counts) && isset($badge_counts[$ticket->id])) {
+						$new_responses = $badge_counts[$ticket->id];
+					} else {
+						// Calculate fresh (initial page load)
+						$new_responses = 0;
 
-					if (! $is_trash_view && current_user_can('pnpc_psd_view_tickets')) {
-						$current_user_id = get_current_user_id();
-						
-						// Get last view timestamp for THIS agent
-						$last_view_meta = get_user_meta($current_user_id, 'pnpc_psd_ticket_last_view_' . intval($ticket->id), true);
-						
-						if (empty($last_view_meta)) {
-							// Agent has NEVER viewed this ticket
-							// The ticket itself is "new" to this agent
-							$new_responses = 1;
-						} else {
-							// Agent has viewed before - count NEW customer responses since then
-							$last_view_time = is_numeric($last_view_meta) 
-								? intval($last_view_meta) 
-								: strtotime($last_view_meta);
+						if (! $is_trash_view && current_user_can('pnpc_psd_view_tickets')) {
+							$current_user_id = get_current_user_id();
 							
-							// Get all responses for this ticket
-							$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id, array('orderby' => 'created_at', 'order' => 'ASC'));
+							// Get last view timestamp for THIS agent
+							$last_view_meta = get_user_meta($current_user_id, 'pnpc_psd_ticket_last_view_' . intval($ticket->id), true);
 							
-							if (! empty($responses)) {
-								foreach ($responses as $response) {
-									// Skip agent's own responses
-									if (intval($response->user_id) === $current_user_id) {
-										continue;
-									}
-									
-									// Convert response timestamp to integer
-									$response_time = function_exists('pnpc_psd_mysql_to_wp_local_ts') 
-										? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) 
-										: intval(strtotime($response->created_at));
-									
-									// Count if response is AFTER last view
-									if ($response_time > $last_view_time) {
-										$new_responses++;
+							if (empty($last_view_meta)) {
+								// Agent has NEVER viewed this ticket
+								// The ticket itself is "new" to this agent
+								$new_responses = 1;
+							} else {
+								// Agent has viewed before - count NEW customer responses since then
+								$last_view_time = is_numeric($last_view_meta) 
+									? intval($last_view_meta) 
+									: strtotime($last_view_meta);
+								
+								// Get all responses for this ticket
+								$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id, array('orderby' => 'created_at', 'order' => 'ASC'));
+								
+								if (! empty($responses)) {
+									foreach ($responses as $response) {
+										// Skip agent's own responses
+										if (intval($response->user_id) === $current_user_id) {
+											continue;
+										}
+										
+										// Convert response timestamp to integer
+										$response_time = function_exists('pnpc_psd_mysql_to_wp_local_ts') 
+											? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) 
+											: intval(strtotime($response->created_at));
+										
+										// Count if response is AFTER last view
+										if ($response_time > $last_view_time) {
+											$new_responses++;
+										}
 									}
 								}
 							}
@@ -300,4 +330,51 @@ $is_trash_view = ('trash' === $current_view);
 			<?php endif; ?>
 		</tbody>
 	</table>
+	
+	<?php if ($total_pages > 1) : ?>
+	<div class="pnpc-psd-pagination">
+		<div class="pnpc-psd-pagination-info">
+			<?php
+			$showing_start = $offset + 1;
+			$showing_end = min($offset + $per_page, $total_tickets);
+			printf(
+				esc_html__('Showing %d-%d of %d tickets', 'pnpc-pocket-service-desk'),
+				$showing_start,
+				$showing_end,
+				$total_tickets
+			);
+			?>
+		</div>
+		
+		<div class="pnpc-psd-pagination-links">
+			<?php if ($current_page > 1) : ?>
+				<a href="<?php echo esc_url(pnpc_psd_get_pagination_link($current_page - 1)); ?>" class="button">
+					&laquo; <?php esc_html_e('Previous', 'pnpc-pocket-service-desk'); ?>
+				</a>
+			<?php endif; ?>
+			
+			<?php
+			// Show page numbers
+			$range = 2; // Pages to show on each side of current page
+			for ($i = 1; $i <= $total_pages; $i++) {
+				if ($i == 1 || $i == $total_pages || ($i >= $current_page - $range && $i <= $current_page + $range)) {
+					if ($i == $current_page) {
+						echo '<span class="pnpc-psd-page-number current">' . $i . '</span>';
+					} else {
+						echo '<a href="' . esc_url(pnpc_psd_get_pagination_link($i)) . '" class="pnpc-psd-page-number">' . $i . '</a>';
+					}
+				} elseif ($i == $current_page - $range - 1 || $i == $current_page + $range + 1) {
+					echo '<span class="pnpc-psd-page-dots">...</span>';
+				}
+			}
+			?>
+			
+			<?php if ($current_page < $total_pages) : ?>
+				<a href="<?php echo esc_url(pnpc_psd_get_pagination_link($current_page + 1)); ?>" class="button">
+					<?php esc_html_e('Next', 'pnpc-pocket-service-desk'); ?> &raquo;
+				</a>
+			<?php endif; ?>
+		</div>
+	</div>
+	<?php endif; ?>
 </div>

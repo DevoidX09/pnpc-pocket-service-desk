@@ -60,6 +60,26 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 ?>
 
 <div class="wrap pnpc-psd-ticket-detail" id="pnpc-psd-ticket-detail" data-ticket-id="<?php echo esc_attr($ticket->id); ?>">
+	<div class="pnpc-psd-ticket-detail-header">
+		<div class="pnpc-psd-breadcrumb">
+			<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk')); ?>">
+				<?php esc_html_e('All Tickets', 'pnpc-pocket-service-desk'); ?>
+			</a>
+			<span class="separator"> &raquo; </span>
+			<span class="current"><?php echo esc_html($ticket->ticket_number); ?></span>
+		</div>
+		
+		<div class="pnpc-psd-quick-nav">
+			<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk')); ?>" class="button">
+				<span class="dashicons dashicons-arrow-left-alt2"></span>
+				<?php esc_html_e('Back to All Tickets', 'pnpc-pocket-service-desk'); ?>
+			</a>
+			<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk&status=open')); ?>" class="button">
+				<?php esc_html_e('Open Tickets', 'pnpc-pocket-service-desk'); ?>
+			</a>
+		</div>
+	</div>
+
 	<?php
 	// Check if staff-created
 	if (! empty($ticket->created_by_staff)) {
