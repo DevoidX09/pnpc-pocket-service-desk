@@ -252,7 +252,6 @@ $is_trash_view = ('trash' === $current_view);
 							?>
 						</td>
 						<?php endif; ?>
-						<?php endif; ?>
 						<td>
 							<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>" class="button button-small">
 								<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
