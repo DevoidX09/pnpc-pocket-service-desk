@@ -1200,7 +1200,17 @@ class PNPC_PSD_Admin
 			$ticket->ticket_number
 		);
 
-		$ticket_url = admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket_id);
+		// Try to get customer-facing ticket detail page, fallback to admin URL
+		$ticket_detail_page_id = absint(get_option('pnpc_psd_ticket_detail_page_id', 0));
+		if ($ticket_detail_page_id > 0 && get_post($ticket_detail_page_id)) {
+			$ticket_url = add_query_arg(
+				array('ticket_id' => $ticket_id),
+				get_permalink($ticket_detail_page_id)
+			);
+		} else {
+			// Fallback to admin URL if no customer portal is configured
+			$ticket_url = admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket_id);
+		}
 
 		$message = sprintf(
 			/* translators: 1: customer name, 2: ticket number, 3: subject, 4: priority, 5: description, 6: ticket URL, 7: staff name, 8: site name */
