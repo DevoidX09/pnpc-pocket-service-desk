@@ -117,7 +117,9 @@ class PNPC_PSD_Admin
 		}
 
 		// Enqueue Select2 on create ticket page
-		// Note: Using CDN for simplicity. For production environments with strict security
+		// Note 1: $_GET['page'] access is safe here as we're only comparing to a known value
+		// for script enqueueing decisions. The value is sanitized before any usage.
+		// Note 2: Using CDN for simplicity. For production environments with strict security
 		// requirements, consider bundling Select2 locally with SRI integrity hashes.
 		if (isset($_GET['page']) && 'pnpc-service-desk-create-ticket' === sanitize_text_field(wp_unslash($_GET['page']))) {
 			wp_enqueue_style(

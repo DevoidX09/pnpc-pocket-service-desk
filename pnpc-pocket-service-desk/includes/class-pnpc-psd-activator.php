@@ -313,7 +313,7 @@ class PNPC_PSD_Activator {
 			// Check if created_by_staff column exists.
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
-					"SHOW COLUMNS FROM `{$tickets_table}` LIKE %s",
+					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
 					'created_by_staff'
 				)
 			);
@@ -323,7 +323,7 @@ class PNPC_PSD_Activator {
 				// which is a controlled WordPress constant.
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
 				$wpdb->query(
-					"ALTER TABLE `{$tickets_table}` 
+					"ALTER TABLE {$tickets_table} 
 					ADD COLUMN created_by_staff BIGINT(20) UNSIGNED DEFAULT NULL AFTER assigned_to,
 					ADD KEY created_by_staff (created_by_staff)"
 				);
