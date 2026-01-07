@@ -230,13 +230,16 @@
 				return;
 			}
 
+			// For trash action, show the delete reason modal
+			if (action === 'trash') {
+				deleteReasonModal.show(selectedTickets, true);
+				return;
+			}
+
 			var confirmMessage = '';
 			var ajaxAction = '';
 
-			if (action === 'trash') {
-				confirmMessage = 'Are you sure you want to move ' + selectedTickets.length + ' ticket(s) to trash?';
-				ajaxAction = 'pnpc_psd_bulk_trash_tickets';
-			} else if (action === 'restore') {
+			if (action === 'restore') {
 				confirmMessage = 'Are you sure you want to restore ' + selectedTickets.length + ' ticket(s)?';
 				ajaxAction = 'pnpc_psd_bulk_restore_tickets';
 			} else if (action === 'delete') {
@@ -409,6 +412,105 @@
 				});
 			});
 		}
+
+		// Delete reason modal handling
+		var deleteReasonModal = {
+			ticketIds: [],
+			isBulk: false,
+
+			show: function(ticketIds, isBulk) {
+				this.ticketIds = ticketIds;
+				this.isBulk = isBulk;
+
+				var count = ticketIds.length;
+				var message = isBulk 
+					? 'You are about to move ' + count + ' ticket(s) to trash.'
+					: 'You are about to move this ticket to trash.';
+
+				$('#pnpc-psd-delete-modal-message').text(message);
+				$('#pnpc-psd-delete-reason-select').val('');
+				$('#pnpc-psd-delete-reason-other').val('');
+				$('#pnpc-psd-delete-reason-other-wrapper').hide();
+				$('#pnpc-psd-delete-modal').fadeIn(300);
+			},
+
+			hide: function() {
+				$('#pnpc-psd-delete-modal').fadeOut(300);
+			},
+
+			submit: function() {
+				var reason = $('#pnpc-psd-delete-reason-select').val();
+				var reasonOther = $('#pnpc-psd-delete-reason-other').val();
+
+				// Validation
+				if (!reason) {
+					alert('Please select a reason');
+					return;
+				}
+
+				if (reason === 'other' && reasonOther.length < 10) {
+					alert('Please provide more details (at least 10 characters)');
+					return;
+				}
+
+				// Disable submit button during operation
+				$('.pnpc-psd-delete-submit').prop('disabled', true).text('Processing...');
+
+				// Send AJAX request
+				$.ajax({
+					url: pnpcPsdAdmin.ajax_url,
+					type: 'POST',
+					data: {
+						action: 'pnpc_psd_trash_with_reason',
+						nonce: adminNonce,
+						ticket_ids: deleteReasonModal.ticketIds,
+						reason: reason,
+						reason_other: reasonOther
+					},
+					success: function(response) {
+						if (response.success) {
+							deleteReasonModal.hide();
+							showMessage('success', response.data.message, 'pnpc-psd-bulk-message');
+							setTimeout(function() {
+								location.reload();
+							}, 1000);
+						} else {
+							alert('Error: ' + response.data.message);
+							$('.pnpc-psd-delete-submit').prop('disabled', false).text('Move to Trash');
+						}
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+						console.error('pnpc-psd-admin.js delete reason AJAX error', textStatus, errorThrown);
+						alert('An error occurred. Please try again.');
+						$('.pnpc-psd-delete-submit').prop('disabled', false).text('Move to Trash');
+					}
+				});
+			}
+		};
+
+		// Show reason field if "Other" is selected
+		$(document).on('change', '#pnpc-psd-delete-reason-select', function() {
+			if ($(this).val() === 'other') {
+				$('#pnpc-psd-delete-reason-other-wrapper').slideDown(200);
+			} else {
+				$('#pnpc-psd-delete-reason-other-wrapper').slideUp(200);
+			}
+		});
+
+		// Modal close handlers
+		$(document).on('click', '.pnpc-psd-modal-close, .pnpc-psd-delete-cancel', function() {
+			deleteReasonModal.hide();
+		});
+
+		// Modal submit handler
+		$(document).on('click', '.pnpc-psd-delete-submit', function() {
+			deleteReasonModal.submit();
+		});
+
+		// Close modal when clicking backdrop
+		$(document).on('click', '.pnpc-psd-modal-backdrop', function() {
+			deleteReasonModal.hide();
+		});
 
 		function showMessage(type, message, targetId) {
 			var safeTarget = (targetId && MESSAGE_TARGETS.indexOf(targetId) !== -1) ? targetId : '';

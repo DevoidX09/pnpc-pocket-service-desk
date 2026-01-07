@@ -231,3 +231,43 @@ $is_trash_view = ('trash' === $current_view);
 		</tbody>
 	</table>
 </div>
+
+<!-- Delete Reason Modal -->
+<div id="pnpc-psd-delete-modal" class="pnpc-psd-modal" style="display:none;">
+	<div class="pnpc-psd-modal-backdrop"></div>
+	<div class="pnpc-psd-modal-content">
+		<div class="pnpc-psd-modal-header">
+			<h2><?php esc_html_e('Confirm Delete', 'pnpc-pocket-service-desk'); ?></h2>
+			<button type="button" class="pnpc-psd-modal-close">&times;</button>
+		</div>
+		<div class="pnpc-psd-modal-body">
+			<p id="pnpc-psd-delete-modal-message"></p>
+			
+			<div class="pnpc-psd-form-group">
+				<label for="pnpc-psd-delete-reason-select">
+					<?php esc_html_e('Reason:', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span>
+				</label>
+				<select id="pnpc-psd-delete-reason-select">
+					<option value=""><?php esc_html_e('Select a reason', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="spam"><?php esc_html_e('Spam', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="duplicate"><?php esc_html_e('Duplicate ticket', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="resolved_elsewhere"><?php esc_html_e('Resolved elsewhere', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="customer_request"><?php esc_html_e('Customer request', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="test"><?php esc_html_e('Test ticket', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="other"><?php esc_html_e('Other (please specify)', 'pnpc-pocket-service-desk'); ?></option>
+				</select>
+			</div>
+			
+			<div class="pnpc-psd-form-group" id="pnpc-psd-delete-reason-other-wrapper" style="display:none;">
+				<label for="pnpc-psd-delete-reason-other">
+					<?php esc_html_e('Additional details:', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span>
+				</label>
+				<textarea id="pnpc-psd-delete-reason-other" rows="3" placeholder="<?php esc_attr_e('Please provide more details (minimum 10 characters)', 'pnpc-pocket-service-desk'); ?>"></textarea>
+			</div>
+		</div>
+		<div class="pnpc-psd-modal-footer">
+			<button type="button" class="button pnpc-psd-delete-cancel"><?php esc_html_e('Cancel', 'pnpc-pocket-service-desk'); ?></button>
+			<button type="button" class="button button-primary pnpc-psd-delete-submit"><?php esc_html_e('Move to Trash', 'pnpc-pocket-service-desk'); ?></button>
+		</div>
+	</div>
+</div>

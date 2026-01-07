@@ -97,7 +97,7 @@ class PNPC_PSD_Activator {
 
 		// Set default options.
 		add_option( 'pnpc_psd_version', PNPC_PSD_VERSION );
-		add_option( 'pnpc_psd_db_version', '1.1.0' );
+		add_option( 'pnpc_psd_db_version', '1.2.0' );
 		add_option( 'pnpc_psd_ticket_counter', 1000 );
 
 		// Run database migration for existing installations.
@@ -115,10 +115,23 @@ class PNPC_PSD_Activator {
 	public static function maybe_upgrade_database() {
 		$current_db_version = get_option( 'pnpc_psd_db_version', '1.0.0' );
 
-		// If already at latest version, skip.
-		if ( version_compare( $current_db_version, '1.1.0', '>=' ) ) {
-			return;
+		// Upgrade to 1.1.0 if needed.
+		if ( version_compare( $current_db_version, '1.1.0', '<' ) ) {
+			self::upgrade_to_1_1_0();
 		}
+
+		// Upgrade to 1.2.0 if needed.
+		if ( version_compare( $current_db_version, '1.2.0', '<' ) ) {
+			self::upgrade_to_1_2_0();
+		}
+	}
+
+	/**
+	 * Upgrade database to version 1.1.0 (trash system).
+	 *
+	 * @since 1.1.0
+	 */
+	private static function upgrade_to_1_1_0() {
 
 		global $wpdb;
 
@@ -208,6 +221,68 @@ class PNPC_PSD_Activator {
 
 		// Update DB version.
 		update_option( 'pnpc_psd_db_version', '1.1.0' );
+	}
+
+	/**
+	 * Upgrade database to version 1.2.0 (delete reason tracking).
+	 *
+	 * @since 1.2.0
+	 */
+	private static function upgrade_to_1_2_0() {
+		global $wpdb;
+
+		// Add delete reason columns to tickets table.
+		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		// Verify table exists before attempting to alter it.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$table_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$tickets_table
+			)
+		);
+
+		if ( $table_exists ) {
+			// Check if delete_reason column exists.
+			$column_exists = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
+					'delete_reason'
+				)
+			);
+
+			if ( empty( $column_exists ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query(
+					"ALTER TABLE {$tickets_table} 
+					ADD COLUMN delete_reason VARCHAR(50) DEFAULT NULL AFTER deleted_at,
+					ADD COLUMN delete_reason_other TEXT DEFAULT NULL AFTER delete_reason,
+					ADD COLUMN deleted_by BIGINT(20) UNSIGNED DEFAULT NULL AFTER delete_reason_other,
+					ADD KEY delete_reason (delete_reason),
+					ADD KEY deleted_by (deleted_by)"
+				);
+			}
+		}
+
+		// Create ticket meta table for deletion history.
+		$meta_table       = $wpdb->prefix . 'pnpc_psd_ticket_meta';
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE IF NOT EXISTS {$meta_table} (
+			meta_id BIGINT(20) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			ticket_id BIGINT(20) UNSIGNED NOT NULL,
+			meta_key VARCHAR(255) NOT NULL,
+			meta_value LONGTEXT,
+			KEY ticket_id (ticket_id),
+			KEY meta_key (meta_key)
+		) {$charset_collate};";
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta( $sql );
+
+		// Update DB version.
+		update_option( 'pnpc_psd_db_version', '1.2.0' );
 	}
 
 	/**
