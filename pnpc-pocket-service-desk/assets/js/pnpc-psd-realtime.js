@@ -237,8 +237,11 @@
 			previousTicketIds.push(parseInt($(this).val()));
 		});
 
-		// Store sort state
-		var $sortedColumn = $('.pnpc-psd-sortable[data-sort-order!=""]').first();
+		// Store sort state - find column with non-empty data-sort-order
+		var $sortedColumn = $('.pnpc-psd-sortable').filter(function() {
+			return $(this).attr('data-sort-order') !== '';
+		}).first();
+		
 		if ($sortedColumn.length) {
 			currentSortColumn = $sortedColumn.attr('data-sort-type');
 			currentSortOrder = $sortedColumn.attr('data-sort-order');
@@ -268,13 +271,27 @@
 			updateSelectAllCheckbox();
 		}
 
-		// Restore sort order
+		// Restore sort order by triggering the sort event
 		if (currentSortColumn && currentSortOrder) {
 			var $columnToSort = $('.pnpc-psd-sortable[data-sort-type="' + currentSortColumn + '"]');
 			if ($columnToSort.length) {
-				// Trigger sort (using existing sort function from pnpc-psd-admin.js)
-				$columnToSort.attr('data-sort-order', currentSortOrder === 'asc' ? '' : 'asc');
-				$columnToSort.trigger('click');
+				// Check current state
+				var currentAttrOrder = $columnToSort.attr('data-sort-order');
+				
+				// Only trigger click if the order needs to change
+				if (currentAttrOrder !== currentSortOrder) {
+					// Trigger click to cycle through sort states
+					// The sortTable function in pnpc-psd-admin.js handles the logic
+					$columnToSort.trigger('click');
+					
+					// If still not matching after one click, click again
+					// This handles cycling from empty -> asc -> desc -> empty
+					setTimeout(function() {
+						if ($columnToSort.attr('data-sort-order') !== currentSortOrder) {
+							$columnToSort.trigger('click');
+						}
+					}, 50);
+				}
 			}
 		}
 
@@ -405,14 +422,18 @@
 	 * Update tab counts in navigation
 	 */
 	function updateTabCounts(counts) {
+		// Sanitize counts to ensure they are integers
 		if (counts.open !== undefined) {
-			$('.subsubsub a[href*="status=open"]').html('Open (' + counts.open + ')');
+			var openCount = parseInt(counts.open, 10) || 0;
+			$('.subsubsub a[href*="status=open"]').text('Open (' + openCount + ')');
 		}
 		if (counts.closed !== undefined) {
-			$('.subsubsub a[href*="status=closed"]').html('Closed (' + counts.closed + ')');
+			var closedCount = parseInt(counts.closed, 10) || 0;
+			$('.subsubsub a[href*="status=closed"]').text('Closed (' + closedCount + ')');
 		}
 		if (counts.trash !== undefined) {
-			$('.subsubsub a[href*="view=trash"]').html('Trash (' + counts.trash + ')');
+			var trashCount = parseInt(counts.trash, 10) || 0;
+			$('.subsubsub a[href*="view=trash"]').text('Trash (' + trashCount + ')');
 		}
 	}
 
