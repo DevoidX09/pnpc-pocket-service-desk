@@ -276,6 +276,59 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 	<?php endif; ?>
 </div>
 
+<?php if (current_user_can('pnpc_psd_delete_tickets')) : ?>
+<div class="pnpc-psd-danger-zone">
+	<h3><?php esc_html_e('Danger Zone', 'pnpc-pocket-service-desk'); ?></h3>
+	<p><?php esc_html_e('Once you delete this ticket, there is no going back. Please be certain.', 'pnpc-pocket-service-desk'); ?></p>
+	
+	<button type="button" class="button button-danger pnpc-psd-delete-ticket-btn" data-ticket-id="<?php echo absint($ticket->id); ?>">
+		<?php esc_html_e('Delete This Ticket', 'pnpc-pocket-service-desk'); ?>
+	</button>
+</div>
+<?php endif; ?>
+
+<!-- Delete Reason Modal -->
+<div id="pnpc-psd-delete-modal" class="pnpc-psd-modal" style="display:none;">
+	<div class="pnpc-psd-modal-backdrop"></div>
+	<div class="pnpc-psd-modal-content">
+		<div class="pnpc-psd-modal-header">
+			<h2><?php esc_html_e('Confirm Delete', 'pnpc-pocket-service-desk'); ?></h2>
+			<button type="button" class="pnpc-psd-modal-close">&times;</button>
+		</div>
+		<div class="pnpc-psd-modal-body">
+			<p id="pnpc-psd-delete-modal-message"></p>
+			
+			<div class="pnpc-psd-form-group">
+				<label for="pnpc-psd-delete-reason-select">
+					<?php esc_html_e('Reason:', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span>
+				</label>
+				<select id="pnpc-psd-delete-reason-select">
+					<option value=""><?php esc_html_e('Select a reason', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="spam"><?php esc_html_e('Spam', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="duplicate"><?php esc_html_e('Duplicate ticket', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="resolved_elsewhere"><?php esc_html_e('Resolved elsewhere', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="customer_request"><?php esc_html_e('Customer request', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="test"><?php esc_html_e('Test ticket', 'pnpc-pocket-service-desk'); ?></option>
+					<option value="other"><?php esc_html_e('Other (please specify)', 'pnpc-pocket-service-desk'); ?></option>
+				</select>
+			</div>
+			
+			<div class="pnpc-psd-form-group" id="pnpc-psd-delete-reason-other-wrapper" style="display:none;">
+				<label for="pnpc-psd-delete-reason-other">
+					<?php esc_html_e('Additional details:', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span>
+				</label>
+				<textarea id="pnpc-psd-delete-reason-other" rows="3" placeholder="<?php esc_attr_e('Please provide more details (minimum 10 characters)', 'pnpc-pocket-service-desk'); ?>"></textarea>
+			</div>
+			
+			<div id="pnpc-psd-delete-error-message" class="pnpc-psd-error-message" style="display:none;"></div>
+		</div>
+		<div class="pnpc-psd-modal-footer">
+			<button type="button" class="button pnpc-psd-delete-cancel"><?php esc_html_e('Cancel', 'pnpc-pocket-service-desk'); ?></button>
+			<button type="button" class="button button-primary pnpc-psd-delete-submit"><?php esc_html_e('Delete Ticket', 'pnpc-pocket-service-desk'); ?></button>
+		</div>
+	</div>
+</div>
+
 <!-- Lightbox Modal for Attachments -->
 <div id="pnpc-psd-lightbox" class="pnpc-psd-lightbox" style="display:none;" role="dialog" aria-modal="true" aria-hidden="true" aria-label="<?php esc_attr_e('Attachment Viewer', 'pnpc-pocket-service-desk'); ?>">
 	<div class="pnpc-psd-lightbox-backdrop"></div>

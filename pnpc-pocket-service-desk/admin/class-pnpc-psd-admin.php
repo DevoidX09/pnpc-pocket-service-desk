@@ -73,6 +73,7 @@ class PNPC_PSD_Admin
 				array(
 					'ajax_url' => admin_url('admin-ajax.php'),
 					'nonce'    => wp_create_nonce('pnpc_psd_admin_nonce'),
+					'tickets_url' => admin_url('admin.php?page=pnpc-service-desk'),
 				)
 			);
 
