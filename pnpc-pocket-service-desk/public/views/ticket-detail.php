@@ -58,11 +58,12 @@ if (function_exists('pnpc_psd_get_dashboard_url')) {
 	$dashboard_url = pnpc_psd_get_dashboard_url();
 }
 if (empty($dashboard_url)) {
-	$page = get_page_by_path('dashboard-single');
+	$page = get_page_by_path('dashboard');
 	if ($page && ! is_wp_error($page)) {
 		$dashboard_url = get_permalink($page->ID);
 	} else {
-		$dashboard_url = home_url('/dashboard-single/');
+		// Fallback to a stable slug; home_url(...) respects multisite/subdirectory installs.
+		$dashboard_url = home_url('/dashboard/');
 	}
 }
 ?>

@@ -43,6 +43,11 @@ if (! class_exists('WooCommerce')) {
 
 $products = array();
 
+// Pagination: defaults to 4 per page (can be overridden via shortcode attribute).
+$per_page = isset( $pnpc_psd_services_limit ) ? max( 1, absint( $pnpc_psd_services_limit ) ) : 4;
+$paged    = isset( $pnpc_psd_services_page ) ? max( 1, absint( $pnpc_psd_services_page ) ) : 1;
+$total_pages = 1;
+
 // If user-specific (pro) is enabled, show allocated products only (takes precedence).
 if ($user_specific) {
     if (! $user_id) {
@@ -67,11 +72,24 @@ if ($user_specific) {
         return;
     }
 
-    $products = wc_get_products(array(
-        'include' => $ids,
-        'status'  => 'publish',
-        'limit'   => -1,
-    ));
+    // Keep allocated ordering but paginate.
+    $q = new WP_Query( array(
+        'post_type'      => 'product',
+        'post_status'    => 'publish',
+        'post__in'       => $ids,
+        'orderby'        => 'post__in',
+        'posts_per_page' => $per_page,
+        'paged'          => $paged,
+        'no_found_rows'  => false,
+    ) );
+
+    $products = array();
+    if ( $q->have_posts() ) {
+        foreach ( $q->posts as $p ) {
+            $products[] = wc_get_product( (int) $p->ID );
+        }
+    }
+    $total_pages = ! empty( $q->max_num_pages ) ? (int) $q->max_num_pages : 1;
 
     if (empty($products)) {
         echo '<div class="pnpc-psd-services"><p class="pnpc-psd-help-text">';
@@ -81,10 +99,23 @@ if ($user_specific) {
     }
 } else {
     // Display public products (free mode).
-    $products = wc_get_products(array(
-        'status' => 'publish',
-        'limit'  => 12,
-    ));
+    $q = new WP_Query( array(
+        'post_type'      => 'product',
+        'post_status'    => 'publish',
+        'posts_per_page' => $per_page,
+        'paged'          => $paged,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+        'no_found_rows'  => false,
+    ) );
+
+    $products = array();
+    if ( $q->have_posts() ) {
+        foreach ( $q->posts as $p ) {
+            $products[] = wc_get_product( (int) $p->ID );
+        }
+    }
+    $total_pages = ! empty( $q->max_num_pages ) ? (int) $q->max_num_pages : 1;
 
     if (empty($products)) {
         echo '<div class="pnpc-psd-services"><p class="pnpc-psd-help-text">';
@@ -97,7 +128,7 @@ if ($user_specific) {
 <div class="pnpc-psd-services">
     <h3><?php esc_html_e('Services', 'pnpc-pocket-service-desk'); ?></h3>
 
-    <div class="pnpc-psd-services-list" style="display:flex;gap:16px;flex-wrap:wrap;">
+    <div class="pnpc-psd-services-list">
         <?php foreach ($products as $product) :
             if (is_numeric($product)) {
                 $product = wc_get_product((int) $product);
@@ -110,11 +141,30 @@ if ($user_specific) {
             $title      = $product->get_name();
             $price_html = $product->get_price_html();
         ?>
-            <div class="pnpc-psd-service-item" style="flex:0 0 220px;border:1px solid #eee;padding:12px;border-radius:6px;background:#fff;">
-                <h4 style="margin:0 0 8px;"><a href="<?php echo esc_url($permalink); ?>"><?php echo esc_html($title); ?></a></h4>
-                <div class="pnpc-psd-service-price" style="margin-bottom:8px;"><?php echo wp_kses_post($price_html); ?></div>
+            <div class="pnpc-psd-service-item">
+                <h4 class="pnpc-psd-service-title"><a href="<?php echo esc_url($permalink); ?>"><?php echo esc_html($title); ?></a></h4>
+                <div class="pnpc-psd-service-price"><?php echo wp_kses_post($price_html); ?></div>
                 <p><a class="pnpc-psd-button" href="<?php echo esc_url($permalink); ?>"><?php esc_html_e('View / Purchase', 'pnpc-pocket-service-desk'); ?></a></p>
             </div>
         <?php endforeach; ?>
     </div>
+
+	<?php if ( $total_pages > 1 ) : ?>
+		<div class="pnpc-psd-pagination" style="margin-top:16px;">
+			<?php
+			$base = remove_query_arg( 'psd_services_page' );
+			echo wp_kses_post(
+				paginate_links( array(
+					'base'      => add_query_arg( 'psd_services_page', '%#%', $base ),
+					'format'    => '',
+					'current'   => $paged,
+					'total'     => $total_pages,
+					'prev_text' => '&laquo; ' . esc_html__( 'Previous', 'pnpc-pocket-service-desk' ),
+					'next_text' => esc_html__( 'Next', 'pnpc-pocket-service-desk' ) . ' &raquo;',
+				)
+				)
+			);
+			?>
+		</div>
+	<?php endif; ?>
 </div>

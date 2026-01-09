@@ -31,6 +31,58 @@ class PNPC_PSD_Public
 			$this->version,
 			'all'
 		);
+
+		// Apply admin-configured button colors (including the Profile Settings Logout button).
+		// Sanitize/normalize hex colors defensively (prevents empty/invalid values from producing "no-op" CSS).
+		$primary          = sanitize_hex_color( (string) get_option('pnpc_psd_primary_button_color', '#2b9f6a') ) ?: '#2b9f6a';
+		$primary_hover    = sanitize_hex_color( (string) get_option('pnpc_psd_primary_button_hover_color', '#238a56') ) ?: '#238a56';
+		$secondary        = sanitize_hex_color( (string) get_option('pnpc_psd_secondary_button_color', '#6c757d') ) ?: '#6c757d';
+		$secondary_hover  = sanitize_hex_color( (string) get_option('pnpc_psd_secondary_button_hover_color', '#5a6268') ) ?: '#5a6268';
+		$logout           = sanitize_hex_color( (string) get_option('pnpc_psd_logout_button_color', '#dc3545') ) ?: '#dc3545';
+		$logout_hover     = sanitize_hex_color( (string) get_option('pnpc_psd_logout_button_hover_color', '#b02a37') ) ?: '#b02a37';
+
+
+		// Product/Service card colors ([pnpc_services]).
+		$card_bg          = (string) get_option('pnpc_psd_card_bg_color', '#ffffff');
+		$card_bg_hover    = (string) get_option('pnpc_psd_card_bg_hover_color', '#f7f9fb');
+		$card_title       = (string) get_option('pnpc_psd_card_title_color', '#2271b1');
+		$card_title_hover = (string) get_option('pnpc_psd_card_title_hover_color', '#135e96');
+		$card_btn         = (string) get_option('pnpc_psd_card_button_color', '#2b9f6a');
+		$card_btn_hover   = (string) get_option('pnpc_psd_card_button_hover_color', '#238a56');
+
+		// My Tickets card + View Details button colors ([pnpc_my_tickets]).
+		$my_card_bg       = (string) get_option('pnpc_psd_my_tickets_card_bg_color', '#ffffff');
+		$my_card_bg_hover = (string) get_option('pnpc_psd_my_tickets_card_bg_hover_color', '#f7f9fb');
+		$my_view_btn      = (string) get_option('pnpc_psd_my_tickets_view_button_color', '#2b9f6a');
+		$my_view_btn_hover= (string) get_option('pnpc_psd_my_tickets_view_button_hover_color', '#238a56');
+
+		$css = '';
+		$css .= '.pnpc-psd-button-primary{background:' . esc_attr($primary) . ';border-color:' . esc_attr($primary) . ';color:#fff;}';
+		$css .= '.pnpc-psd-button-primary:hover{background:' . esc_attr($primary_hover) . ';border-color:' . esc_attr($primary_hover) . ';color:#fff;}';
+		// Use !important for hover state to avoid theme overrides on <button> hover styles.
+		$css .= '.pnpc-psd-button-secondary{background:' . esc_attr($secondary) . ';border-color:' . esc_attr($secondary) . ';color:#fff;}';
+		$css .= '.pnpc-psd-button-secondary:hover{background:' . esc_attr($secondary_hover) . ' !important;border-color:' . esc_attr($secondary_hover) . ' !important;color:#fff !important;}';
+		$css .= '.pnpc-psd-button-logout{background:' . esc_attr($logout) . ';border-color:' . esc_attr($logout) . ';color:#fff;}';
+		$css .= '.pnpc-psd-button-logout:hover{background:' . esc_attr($logout_hover) . ';border-color:' . esc_attr($logout_hover) . ';color:#fff;}';
+
+
+		// [pnpc_services] card + title + button styling.
+		$css .= '.pnpc-psd-services .pnpc-psd-service-item{background:' . esc_attr($card_bg) . ';}';
+		$css .= '.pnpc-psd-services .pnpc-psd-service-item:hover{background:' . esc_attr($card_bg_hover) . ';}';
+		$css .= '.pnpc-psd-services .pnpc-psd-service-title a{color:' . esc_attr($card_title) . ';}';
+		$css .= '.pnpc-psd-services .pnpc-psd-service-title a:hover{color:' . esc_attr($card_title_hover) . ';}';
+		$css .= '.pnpc-psd-services .pnpc-psd-service-item .pnpc-psd-button{background:' . esc_attr($card_btn) . ';border-color:' . esc_attr($card_btn) . ';color:#fff;}';
+		$css .= '.pnpc-psd-services .pnpc-psd-service-item .pnpc-psd-button:hover{background:' . esc_attr($card_btn_hover) . ';border-color:' . esc_attr($card_btn_hover) . ';color:#fff;}';
+
+		// [pnpc_my_tickets] card + View Details button styling.
+		$css .= '.pnpc-psd-my-tickets .pnpc-psd-ticket-item{background:' . esc_attr($my_card_bg) . ';}';
+		$css .= '.pnpc-psd-my-tickets .pnpc-psd-ticket-item:hover{background:' . esc_attr($my_card_bg_hover) . ';}';
+		$css .= '.pnpc-psd-my-tickets .pnpc-psd-my-tickets-view-btn{background:' . esc_attr($my_view_btn) . ';border-color:' . esc_attr($my_view_btn) . ';color:#fff;}';
+		$css .= '.pnpc-psd-my-tickets .pnpc-psd-my-tickets-view-btn:hover{background:' . esc_attr($my_view_btn_hover) . ';border-color:' . esc_attr($my_view_btn_hover) . ';color:#fff;}';
+
+		if (! empty($css)) {
+			wp_add_inline_style($this->plugin_name, $css);
+		}
 	}
 
 	public function enqueue_scripts()
@@ -97,7 +149,19 @@ class PNPC_PSD_Public
 			return '<p>' . esc_html__('Please log in to view your tickets.', 'pnpc-pocket-service-desk') . '</p>';
 		}
 		$current_user = wp_get_current_user();
-		$tickets      = PNPC_PSD_Ticket::get_by_user($current_user->ID);
+		$tab          = isset($_GET['pnpc_psd_tab']) ? sanitize_key(wp_unslash($_GET['pnpc_psd_tab'])) : 'open';
+		if (! in_array($tab, array('open', 'closed'), true)) {
+			$tab = 'open';
+		}
+
+		$ticket_args = array();
+		if ('closed' === $tab) {
+			$ticket_args['status'] = 'closed';
+		} else {
+			$ticket_args['exclude_statuses'] = array('closed');
+		}
+
+		$tickets = PNPC_PSD_Ticket::get_by_user($current_user->ID, $ticket_args);
 
 		ob_start();
 		include PNPC_PSD_PLUGIN_DIR . 'public/views/my-tickets.php';
@@ -166,7 +230,9 @@ class PNPC_PSD_Public
 
 	public function render_services($atts)
 	{
-		$atts = shortcode_atts(array('limit' => 6), (array) $atts, 'pnpc_services');
+		$atts = shortcode_atts(array('limit' => 4), (array) $atts, 'pnpc_services');
+		$pnpc_psd_services_limit = max( 1, absint( $atts['limit'] ) );
+		$pnpc_psd_services_page  = isset( $_GET['psd_services_page'] ) ? max( 1, absint( $_GET['psd_services_page'] ) ) : 1;
 		ob_start();
 		include PNPC_PSD_PLUGIN_DIR . 'public/views/services.php';
 		return ob_get_clean();
@@ -278,6 +344,37 @@ class PNPC_PSD_Public
 			}
 		}
 
+
+		// Persist any uploaded attachments against this ticket.
+		if ( ! empty( $attachments ) && $ticket_id ) {
+			global $wpdb;
+			$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+
+			foreach ( (array) $attachments as $att ) {
+				$att_name = isset( $att['file_name'] ) ? (string) $att['file_name'] : '';
+				$att_url  = isset( $att['file_path'] ) ? (string) $att['file_path'] : '';
+				if ( '' === $att_name || '' === $att_url ) {
+					continue;
+				}
+
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$wpdb->insert(
+					$attachments_table,
+					array(
+						'ticket_id'    => absint( $ticket_id ),
+						'response_id'  => null,
+						'file_name'    => sanitize_file_name( $att_name ),
+						'file_path'    => esc_url_raw( $att_url ),
+						'file_type'    => isset( $att['file_type'] ) ? sanitize_text_field( (string) $att['file_type'] ) : '',
+						'file_size'    => isset( $att['file_size'] ) ? absint( $att['file_size'] ) : 0,
+						'uploaded_by'  => isset( $att['uploaded_by'] ) ? absint( $att['uploaded_by'] ) : absint( $current_user->ID ),
+						'created_at'   => current_time( 'mysql', true ),
+						'deleted_at'   => null,
+					),
+					array( '%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s', '%s' )
+				);
+			}
+		}
 		$ticket = PNPC_PSD_Ticket::get($ticket_id);
 		$detail_url = function_exists('pnpc_psd_get_ticket_detail_url') ? pnpc_psd_get_ticket_detail_url($ticket_id) : '';
 
@@ -387,16 +484,63 @@ class PNPC_PSD_Public
 			wp_send_json_error(array('message' => __('File size must not exceed 2MB.', 'pnpc-pocket-service-desk')));
 		}
 
-		$upload = wp_handle_upload($file, array('test_form' => false));
+		// Prefer WordPress media handling so uploads persist properly and are manageable.
+		// This stores an attachment ID (more robust) and also stores the URL for backward compatibility.
+		$attachment_id = media_handle_upload('profile_image', 0);
+		if (is_wp_error($attachment_id)) {
+			wp_send_json_error(array('message' => $attachment_id->get_error_message()));
+		}
 
-		if (isset($upload['error'])) {
-			wp_send_json_error(array('message' => $upload['error']));
+		$uploaded_url = wp_get_attachment_url($attachment_id);
+		if (empty($uploaded_url)) {
+			wp_send_json_error(array('message' => __('Upload succeeded but the file URL could not be determined.', 'pnpc-pocket-service-desk')));
 		}
 
 		$current_user = wp_get_current_user();
-		update_user_meta($current_user->ID, 'pnpc_psd_profile_image', $upload['url']);
+		update_user_meta($current_user->ID, 'pnpc_psd_profile_image_id', intval($attachment_id));
+		update_user_meta($current_user->ID, 'pnpc_psd_profile_image', esc_url_raw($uploaded_url));
 
-		wp_send_json_success(array('message' => __('Profile image uploaded successfully.', 'pnpc-pocket-service-desk'), 'url' => $upload['url']));
+		wp_send_json_success(array(
+			'message' => __('Profile image uploaded successfully.', 'pnpc-pocket-service-desk'),
+			'url'     => $uploaded_url,
+			'id'      => intval($attachment_id),
+		));
+	}
+
+	/**
+	 * AJAX: Refresh current user's ticket list for [pnpc_my_tickets].
+	 */
+	public function ajax_refresh_my_tickets()
+	{
+		$nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
+		if (! wp_verify_nonce($nonce, 'pnpc_psd_public_nonce')) {
+			wp_send_json_error(array('message' => __('Security check failed. Please refresh and try again.', 'pnpc-pocket-service-desk')));
+		}
+
+		if (! is_user_logged_in()) {
+			wp_send_json_error(array('message' => __('You must be logged in.', 'pnpc-pocket-service-desk')));
+		}
+
+		$current_user = wp_get_current_user();
+		$tab          = isset($_POST['tab']) ? sanitize_key(wp_unslash($_POST['tab'])) : 'open';
+		if (! in_array($tab, array('open', 'closed'), true)) {
+			$tab = 'open';
+		}
+
+		$ticket_args = array();
+		if ('closed' === $tab) {
+			$ticket_args['status'] = 'closed';
+		} else {
+			$ticket_args['exclude_statuses'] = array('closed');
+		}
+
+		$tickets = PNPC_PSD_Ticket::get_by_user($current_user->ID, $ticket_args);
+
+		ob_start();
+		include PNPC_PSD_PLUGIN_DIR . 'public/views/my-tickets-list.php';
+		$html = ob_get_clean();
+
+		wp_send_json_success(array('html' => $html));
 	}
 
 	public function ajax_get_ticket_detail()

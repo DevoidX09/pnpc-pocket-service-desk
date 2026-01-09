@@ -19,6 +19,16 @@ $user_id        = ! empty($current_user->ID) ? (int) $current_user->ID : 0;
 $profile_image  = $user_id ? get_user_meta($user_id, 'pnpc_psd_profile_image', true) : '';
 $default_avatar = get_avatar_url($user_id ?: 0);
 
+// Logout redirect target (admin-configurable). Default to home page.
+$logout_redirect_page_id = absint(get_option('pnpc_psd_logout_redirect_page_id', 0));
+$logout_redirect_url     = home_url('/');
+if ($logout_redirect_page_id) {
+	$maybe = get_permalink($logout_redirect_page_id);
+	if (! empty($maybe)) {
+		$logout_redirect_url = $maybe;
+	}
+}
+
 // helper: valid WP_User with non-zero ID
 $is_valid_user = ($current_user instanceof WP_User) && ($user_id > 0);
 
@@ -70,18 +80,19 @@ $show_welcome_profile = (bool) get_option('pnpc_psd_show_welcome_profile', 1);
 			<div class="pnpc-psd-profile-column" style="flex:1;min-width:280px;">
 				<div class="pnpc-psd-profile-section">
 					<h3><?php esc_html_e('Account Settings', 'pnpc-pocket-service-desk'); ?></h3>
-					<p class="pnpc-psd-help-text">
-						<?php
-						/* translators: %s: URL to WordPress profile page */
-						$profile_link = esc_url(admin_url('profile.php'));
-						echo wp_kses_post(sprintf(__('To change your name or email, please visit your <a href="%s">WordPress profile page</a>.', 'pnpc-pocket-service-desk'), $profile_link));
-						?>
-					</p>
-					<p>
-						<a href="<?php echo esc_url(admin_url('profile.php')); ?>" class="pnpc-psd-button pnpc-psd-button-primary">
-							<?php esc_html_e('Edit Profile', 'pnpc-pocket-service-desk'); ?>
-						</a>
-					</p>
+					<div style="text-align:center;">
+						<p class="pnpc-psd-help-text" style="margin:10px auto 18px;max-width:520px;">
+							<?php esc_html_e('To view or edit your account settings press the button below.', 'pnpc-pocket-service-desk'); ?>
+						</p>
+						<p style="margin:0;">
+							<a href="<?php echo esc_url(admin_url('profile.php')); ?>" class="pnpc-psd-button pnpc-psd-button-primary" style="display:inline-block;">
+								<?php esc_html_e('Edit Profile', 'pnpc-pocket-service-desk'); ?>
+							</a>
+							<a href="<?php echo esc_url(wp_logout_url($logout_redirect_url)); ?>" class="pnpc-psd-button pnpc-psd-button-logout" style="display:inline-block;margin-left:10px;">
+								<?php esc_html_e('Logout', 'pnpc-pocket-service-desk'); ?>
+							</a>
+						</p>
+					</div>
 				</div>
 			</div>
 		</div>

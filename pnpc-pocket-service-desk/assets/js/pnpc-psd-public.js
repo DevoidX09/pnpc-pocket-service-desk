@@ -9,6 +9,116 @@
 		var responseFiles = [];
 		var MAX_ATTACHMENTS = 10;
 
+		// ================================
+		// Profile Settings: Upload Profile Image / Logo
+		// ================================
+		function showProfileImageMessage(type, message) {
+			var $msg = $('#profile-image-message');
+			if (!$msg.length) {
+				return;
+			}
+			$msg.removeClass('success error').addClass(type).text(message).show();
+			setTimeout(function() { $msg.fadeOut(); }, 6000);
+		}
+
+		$(document).on('change', '#profile-image-upload', function(e) {
+			if (typeof pnpcPsdPublic === 'undefined') {
+				return;
+			}
+			var file = e.target && e.target.files ? e.target.files[0] : null;
+			if (!file) {
+				return;
+			}
+
+			var formData = new FormData();
+			formData.append('action', 'pnpc_psd_upload_profile_image');
+			formData.append('nonce', pnpcPsdPublic.nonce);
+			formData.append('profile_image', file);
+
+			showProfileImageMessage('success', 'Uploading...');
+
+			$.ajax({
+				url: pnpcPsdPublic.ajax_url,
+				type: 'POST',
+				data: formData,
+				processData: false,
+				contentType: false,
+				success: function(result) {
+					if (result && result.success && result.data && result.data.url) {
+						$('#profile-image-preview').attr('src', result.data.url);
+						showProfileImageMessage('success', result.data.message || 'Profile image updated.');
+					} else {
+						var msg = (result && result.data && result.data.message) ? result.data.message : 'Upload failed.';
+						showProfileImageMessage('error', msg);
+					}
+				},
+				error: function(xhr, status, err) {
+					console.error('pnpc-psd-public.js profile upload error', status, err, xhr && xhr.responseText);
+					showProfileImageMessage('error', 'Upload failed. Please try again.');
+				}
+			});
+		});
+
+		// ================================
+		// My Tickets: Lightweight refresh/polling
+		// ================================
+		var myTicketsPolling = null;
+		function setMyTicketsStatus(text) {
+			var $s = $('#pnpc-psd-my-tickets-status');
+			if ($s.length) {
+				$s.text(text || '');
+			}
+		}
+		function refreshMyTickets(options) {
+			options = options || {};
+			if (typeof pnpcPsdPublic === 'undefined') {
+				return;
+			}
+			if (!$('#pnpc-psd-my-tickets-list').length) {
+				return;
+			}
+
+			if (!options.silent) {
+				setMyTicketsStatus('Refreshing...');
+			}
+
+			$.ajax({
+				url: pnpcPsdPublic.ajax_url,
+				type: 'POST',
+				data: {
+					action: 'pnpc_psd_refresh_my_tickets',
+					nonce: pnpcPsdPublic.nonce,
+					tab: ($('#pnpc-psd-my-tickets').length ? ($('#pnpc-psd-my-tickets').attr('data-tab') || 'open') : 'open')
+				},
+				success: function(result) {
+					if (result && result.success && result.data && typeof result.data.html === 'string') {
+						// Replace entire list block; partial includes wrapper.
+						var $existing = $('#pnpc-psd-my-tickets-list');
+						$existing.replaceWith(result.data.html);
+						setMyTicketsStatus('Updated ' + (new Date()).toLocaleTimeString());
+					} else {
+						setMyTicketsStatus('');
+					}
+				},
+				error: function(xhr, status, err) {
+					console.error('pnpc-psd-public.js my tickets refresh error', status, err, xhr && xhr.responseText);
+					setMyTicketsStatus('');
+				}
+			});
+		}
+
+		$(document).on('click', '#pnpc-psd-my-tickets-refresh', function() {
+			refreshMyTickets({ silent: false });
+		});
+
+		// Start polling when the My Tickets view is present.
+		if ($('#pnpc-psd-my-tickets-refresh').length && $('#pnpc-psd-my-tickets-list').length) {
+			// Poll every 15 seconds (lightweight). Adjust as needed.
+			myTicketsPolling = setInterval(function() {
+				refreshMyTickets({ silent: true });
+			}, 15000);
+		}
+
 		function renderAttachmentList(files, $list, inputSelector) {
 			if (!$list.length) {
 				return;

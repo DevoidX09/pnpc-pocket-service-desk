@@ -43,6 +43,27 @@ class PNPC_PSD_Ticket
 			return false;
 		}
 
+		// Apply default agent assignment if no assignee provided.
+		if (empty($data['assigned_to'])) {
+			$default_agent_id = absint(get_option('pnpc_psd_default_agent_user_id', 0));
+			if ($default_agent_id > 0) {
+				$staff_user = get_userdata($default_agent_id);
+				if ($staff_user && ! empty($staff_user->ID) && ! empty($staff_user->roles)) {
+					$allowed_roles = array('administrator', 'pnpc_psd_manager', 'pnpc_psd_agent');
+					$has_allowed_role = false;
+					foreach ((array) $staff_user->roles as $r) {
+						if (in_array((string) $r, $allowed_roles, true)) {
+							$has_allowed_role = true;
+							break;
+						}
+					}
+					if ($has_allowed_role) {
+						$data['assigned_to'] = absint($staff_user->ID);
+					}
+				}
+			}
+		}
+
 		// Generate unique ticket number.
 		$ticket_number = '';
 		$attempts = 0;
@@ -139,6 +160,70 @@ class PNPC_PSD_Ticket
 	}
 
 	/**
+	 * Update a ticket row.
+	 *
+	 * This is a lightweight wrapper around $wpdb->update() with strict field allowlisting.
+	 * It is intentionally conservative to avoid accidental schema writes.
+	 *
+	 * @since 1.4.2
+	 * @param int   $ticket_id Ticket ID.
+	 * @param array $data      Associative array of columns to update.
+	 * @return bool True when a row is updated (or values are identical), false on error.
+	 */
+	public static function update( $ticket_id, $data ) {
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		$ticket_id  = absint( $ticket_id );
+		if ( ! $ticket_id || ! is_array( $data ) || empty( $data ) ) {
+			return false;
+		}
+
+		// Allowlist: only columns that should ever be changed via update().
+		$allowed = array(
+			'status'      => '%s',
+			'priority'    => '%s',
+			'assigned_to' => '%d',
+			'subject'     => '%s',
+		);
+
+		$update_data   = array();
+		$update_format = array();
+		foreach ( $data as $key => $value ) {
+			$key = sanitize_key( $key );
+			if ( ! isset( $allowed[ $key ] ) ) {
+				continue;
+			}
+			if ( 'assigned_to' === $key ) {
+				$update_data[ $key ] = ( 0 === absint( $value ) ) ? null : absint( $value );
+				$update_format[] = '%d';
+				continue;
+			}
+			$update_data[ $key ] = is_string( $value ) ? sanitize_text_field( wp_unslash( $value ) ) : $value;
+			$update_format[] = $allowed[ $key ];
+		}
+
+		if ( empty( $update_data ) ) {
+			return false;
+		}
+
+		// Always bump updated_at for visibility.
+		$update_data['updated_at'] = function_exists( 'pnpc_psd_get_utc_mysql_datetime' ) ? pnpc_psd_get_utc_mysql_datetime() : current_time( 'mysql', true );
+		$update_format[] = '%s';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$result = $wpdb->update(
+			$table_name,
+			$update_data,
+			array( 'id' => $ticket_id ),
+			$update_format,
+			array( '%d' )
+		);
+
+		// $wpdb->update returns 0 when data is identical; treat as success.
+		return false !== $result;
+	}
+
+	/**
 	 * Get tickets for a user.
 	 *
 	 * @since 1.0.0
@@ -155,6 +240,7 @@ class PNPC_PSD_Ticket
 
 		$defaults = array(
 			'status'          => '',
+			'exclude_statuses' => array(),
 			'orderby'         => 'created_at',
 			'order'           => 'DESC',
 			'limit'           => 50,
@@ -173,6 +259,18 @@ class PNPC_PSD_Ticket
 
 		if (! empty($args['status'])) {
 			$where .= $wpdb->prepare(' AND status = %s', $args['status']);
+		}
+
+		// Exclude statuses when requested (e.g., hide Closed on the My Tickets tab).
+		if (! empty($args['exclude_statuses']) && is_array($args['exclude_statuses'])) {
+			$exclude = array_values(array_filter(array_map('sanitize_key', $args['exclude_statuses'])));
+			if (! empty($exclude)) {
+				$placeholders = implode(',', array_fill(0, count($exclude), '%s'));
+				$query = " AND status NOT IN ($placeholders)";
+				// wpdb::prepare expects a varargs list; use call_user_func_array for dynamic placeholder counts.
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				$where .= call_user_func_array(array($wpdb, 'prepare'), array_merge(array($query), $exclude));
+			}
 		}
 
 		// Whitelist allowed orderby columns.
@@ -224,6 +322,7 @@ class PNPC_PSD_Ticket
 			'limit'           => 50,
 			'offset'          => 0,
 			'include_trashed' => false,
+			'include_pending_delete' => false,
 		);
 
 		$args = wp_parse_args($args, $defaults);
@@ -233,6 +332,11 @@ class PNPC_PSD_Ticket
 		// Exclude trashed tickets by default.
 		if (! $args['include_trashed']) {
 			$where .= ' AND deleted_at IS NULL';
+		}
+
+		// Exclude pending delete tickets by default (these belong in the Review queue).
+		if ( empty( $args['include_pending_delete'] ) ) {
+			$where .= ' AND pending_delete_at IS NULL';
 		}
 
 		if (! empty($args['status'])) {
@@ -269,52 +373,6 @@ class PNPC_PSD_Ticket
 		);
 
 		return $tickets;
-	}
-
-	/**
-	 * Update a ticket.
-	 *
-	 * @since 1.0.0
-	 * @param int   $ticket_id Ticket ID.
-	 * @param array $data Update data.
-	 * @return bool True on success, false on failure.
-	 */
-	public static function update($ticket_id, $data)
-	{
-		global $wpdb;
-
-		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
-		$ticket_id  = absint($ticket_id);
-
-		$allowed_fields = array('status', 'priority', 'assigned_to', 'subject', 'description');
-		$update_data    = array();
-		$format         = array();
-
-		foreach ($allowed_fields as $field) {
-			if (isset($data[$field])) {
-				if ('assigned_to' === $field) {
-					$update_data[$field] = ! empty($data[$field]) ? absint($data[$field]) : null;
-					$format[]              = '%d';
-				} else {
-					$update_data[$field] = sanitize_text_field($data[$field]);
-					$format[]              = '%s';
-				}
-			}
-		}
-
-		if (empty($update_data)) {
-			return false;
-		}
-
-		$result = $wpdb->update(
-			$table_name,
-			$update_data,
-			array('id' => $ticket_id),
-			$format,
-			array('%d')
-		);
-
-		return false !== $result;
 	}
 
 	/**
@@ -458,13 +516,13 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$count = $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$table_name} WHERE status = %s AND deleted_at IS NULL",
+					"SELECT COUNT(*) FROM {$table_name} WHERE status = %s AND deleted_at IS NULL AND pending_delete_at IS NULL",
 					$status
 				)
 			);
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NULL");
+			$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NULL");
 		}
 
 		return absint($count);
@@ -536,6 +594,291 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NOT NULL");
 
 		return absint($count);
+	}
+
+	/**
+	 * Get tickets pending delete review (Review queue).
+	 *
+	 * @since 1.4.0
+	 * @param array $args Query arguments.
+	 * @return array
+	 */
+	public static function get_pending_delete($args = array())
+	{
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		$defaults = array(
+			'orderby' => 'pending_delete_at',
+			'order'   => 'DESC',
+			'limit'   => 50,
+			'offset'  => 0,
+		);
+		$args = wp_parse_args($args, $defaults);
+
+		$allowed_orderby = array('id', 'ticket_number', 'created_at', 'updated_at', 'pending_delete_at', 'status', 'priority');
+		if (! in_array($args['orderby'], $allowed_orderby, true)) {
+			$args['orderby'] = 'pending_delete_at';
+		}
+
+		$args['order'] = strtoupper($args['order']);
+		if (! in_array($args['order'], array('ASC', 'DESC'), true)) {
+			$args['order'] = 'DESC';
+		}
+
+		$orderby = sanitize_sql_orderby("{$args['orderby']} {$args['order']}");
+		if (false === $orderby) {
+			$orderby = 'pending_delete_at DESC';
+		}
+
+		$limit  = absint($args['limit']);
+		$offset = absint($args['offset']);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return $wpdb->get_results(
+			"SELECT * FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NOT NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
+		);
+	}
+
+	/**
+	 * Get count of tickets pending delete review.
+	 *
+	 * @since 1.4.0
+	 * @return int
+	 */
+	public static function get_pending_delete_count()
+	{
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NOT NULL");
+		return absint($count);
+	}
+
+	/**
+	 * Request deletion for a ticket (puts it into Review queue).
+	 *
+	 * @since 1.4.0
+	 * @param int    $ticket_id Ticket ID.
+	 * @param int    $requested_by User ID requesting deletion.
+	 * @param string $reason Delete reason.
+	 * @param string $reason_other Optional details.
+	 * @return bool
+	 */
+	public static function request_delete_with_reason($ticket_id, $requested_by, $reason, $reason_other = '')
+	{
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		$ticket_id  = absint($ticket_id);
+		$requested_by = absint($requested_by);
+		if (! $ticket_id || ! $requested_by) {
+			return false;
+		}
+
+		$pending_at = function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true);
+
+		$update_data = array(
+			'pending_delete_at'           => $pending_at,
+			'pending_delete_by'           => $requested_by,
+			'pending_delete_reason'       => sanitize_text_field($reason),
+			'pending_delete_reason_other' => null,
+		);
+		$formats = array('%s', '%d', '%s', '%s');
+		if ('other' === $reason && ! empty($reason_other)) {
+			$update_data['pending_delete_reason_other'] = sanitize_textarea_field($reason_other);
+		}
+
+		$updated = $wpdb->update(
+			$table_name,
+			$update_data,
+			array('id' => $ticket_id),
+			$formats,
+			array('%d')
+		);
+
+		return false !== $updated;
+	}
+
+	/**
+	 * Bulk request deletion for tickets (Review queue).
+	 *
+	 * @since 1.4.0
+	 * @param array  $ticket_ids Ticket IDs.
+	 * @param int    $requested_by User requesting deletion.
+	 * @param string $reason Reason.
+	 * @param string $reason_other Optional details.
+	 * @return int
+	 */
+	public static function bulk_request_delete_with_reason($ticket_ids, $requested_by, $reason, $reason_other = '')
+	{
+		if (! is_array($ticket_ids) || empty($ticket_ids)) {
+			return 0;
+		}
+		$count = 0;
+		foreach ($ticket_ids as $ticket_id) {
+			if (self::request_delete_with_reason($ticket_id, $requested_by, $reason, $reason_other)) {
+				$count++;
+			}
+		}
+		return $count;
+	}
+
+	/**
+	 * Cancel a pending delete request (restore from Review queue).
+	 *
+	 * @since 1.4.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool
+	 */
+	public static function cancel_pending_delete($ticket_id)
+	{
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		$ticket_id  = absint($ticket_id);
+		if (! $ticket_id) {
+			return false;
+		}
+
+		$updated = $wpdb->update(
+			$table_name,
+			array(
+				'pending_delete_at'           => null,
+				'pending_delete_by'           => null,
+				'pending_delete_reason'       => null,
+				'pending_delete_reason_other' => null,
+			),
+			array('id' => $ticket_id),
+			array('%s', '%d', '%s', '%s'),
+			array('%d')
+		);
+
+		return false !== $updated;
+	}
+
+
+	/**
+	 * Approve a pending delete request and move the ticket to Trash.
+	 *
+	 * Copies the queued delete reason/requester from the Review queue fields to the Trash fields.
+	 *
+	 * @since 1.4.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool
+	 */
+	public static function approve_pending_delete_to_trash($ticket_id)
+	{
+		$ticket_id = absint($ticket_id);
+		if (! $ticket_id) {
+			return false;
+		}
+
+		// Ensure delete tracking columns exist before we attempt to persist them.
+		if ( class_exists( 'PNPC_PSD_Activator' ) && method_exists( 'PNPC_PSD_Activator', 'ensure_delete_reason_columns' ) ) {
+			PNPC_PSD_Activator::ensure_delete_reason_columns();
+		}
+
+		$ticket = self::get($ticket_id);
+		if (! $ticket) {
+			return false;
+		}
+
+		// Must have a pending delete request to approve.
+		$pending_at = isset($ticket->pending_delete_at) ? (string) $ticket->pending_delete_at : '';
+		if ( '' === $pending_at ) {
+			return false;
+		}
+
+		// Prefer the pending request data; fall back to a direct re-query if anything looks missing.
+		$reason       = ! empty($ticket->pending_delete_reason) ? (string) $ticket->pending_delete_reason : '';
+		$reason_other = ! empty($ticket->pending_delete_reason_other) ? (string) $ticket->pending_delete_reason_other : '';
+		$requested_by = ! empty($ticket->pending_delete_by) ? absint($ticket->pending_delete_by) : 0;
+
+		if ( '' === $reason || 0 === $requested_by ) {
+			global $wpdb;
+			$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$pending = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT pending_delete_by, pending_delete_reason, pending_delete_reason_other FROM {$table_name} WHERE id = %d",
+					$ticket_id
+				)
+			);
+			if ( $pending ) {
+				if ( 0 === $requested_by && ! empty( $pending->pending_delete_by ) ) {
+					$requested_by = absint( $pending->pending_delete_by );
+				}
+				if ( '' === $reason && ! empty( $pending->pending_delete_reason ) ) {
+					$reason = (string) $pending->pending_delete_reason;
+				}
+				if ( '' === $reason_other && ! empty( $pending->pending_delete_reason_other ) ) {
+					$reason_other = (string) $pending->pending_delete_reason_other;
+				}
+			}
+		}
+
+		// Move to trash first (soft-delete).
+		$trashed = self::trash($ticket_id);
+		if (! $trashed) {
+			return false;
+		}
+
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		$data = array(
+			'delete_reason'               => $reason ? sanitize_text_field($reason) : null,
+			'delete_reason_other'         => ('other' === $reason && ! empty($reason_other)) ? sanitize_textarea_field($reason_other) : null,
+			'deleted_by'                  => $requested_by ? $requested_by : get_current_user_id(),
+			'pending_delete_at'           => null,
+			'pending_delete_by'           => null,
+			'pending_delete_reason'       => null,
+			'pending_delete_reason_other' => null,
+		);
+
+		// Use NULL formats for NULL values so $wpdb writes actual SQL NULLs.
+		$formats = array();
+		foreach ( $data as $v ) {
+			if ( null === $v ) {
+				$formats[] = null;
+			} elseif ( is_int( $v ) ) {
+				$formats[] = '%d';
+			} else {
+				$formats[] = '%s';
+			}
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$updated = $wpdb->update(
+			$table_name,
+			$data,
+			array('id' => $ticket_id),
+			$formats,
+			array('%d')
+		);
+
+		return false !== $updated;
+	}
+
+
+	/**
+	 * Bulk approve pending delete requests.
+	 *
+	 * @since 1.4.0
+	 * @param array $ticket_ids Ticket IDs.
+	 * @return int
+	 */
+	public static function bulk_approve_pending_delete_to_trash($ticket_ids)
+	{
+		if (! is_array($ticket_ids) || empty($ticket_ids)) {
+			return 0;
+		}
+		$count = 0;
+		foreach ($ticket_ids as $ticket_id) {
+			if (self::approve_pending_delete_to_trash($ticket_id)) {
+				$count++;
+			}
+		}
+		return $count;
 	}
 
 	/**

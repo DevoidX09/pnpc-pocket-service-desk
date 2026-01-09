@@ -155,7 +155,18 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 		</div>
 	</div>
 
-	<div id="pnpc-psd-admin-action-message" class="pnpc-psd-message" style="display:none;"></div>
+	
+	<div class="pnpc-psd-ticket-body" style="margin: 15px 0; padding: 12px 14px; background: #fff; border: 1px solid #dcdcde; border-radius: 4px;">
+		<h3 style="margin-top:0;"><?php esc_html_e('Ticket', 'pnpc-pocket-service-desk'); ?></h3>
+		<div class="pnpc-psd-ticket-content">
+			<?php
+			$ticket_body = isset($ticket->description) ? $ticket->description : '';
+			echo wp_kses_post( wpautop( $ticket_body ) );
+			?>
+		</div>
+	</div>
+
+<div id="pnpc-psd-admin-action-message" class="pnpc-psd-message" style="display:none;"></div>
 
 	<?php if (! empty($ticket_attachments)) : ?>
 		<div class="pnpc-psd-attachments">
@@ -336,13 +347,16 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 	<?php endif; ?>
 </div>
 
-<?php if (current_user_can('pnpc_psd_delete_tickets')) : ?>
+<?php
+// Agents can request deletion into the Review queue; only Managers/Admins can approve to Trash.
+if ( current_user_can( 'pnpc_psd_view_tickets' ) ) :
+?>
 <div class="pnpc-psd-danger-zone">
 	<h3><?php esc_html_e('Danger Zone', 'pnpc-pocket-service-desk'); ?></h3>
-	<p><?php esc_html_e('Once you delete this ticket, there is no going back. Please be certain.', 'pnpc-pocket-service-desk'); ?></p>
+	<p><?php esc_html_e('Submitting a delete request sends this ticket to the Review queue for approval by a manager or administrator.', 'pnpc-pocket-service-desk'); ?></p>
 	
 	<button type="button" class="button button-danger pnpc-psd-delete-ticket-btn" data-ticket-id="<?php echo absint($ticket->id); ?>">
-		<?php esc_html_e('Delete This Ticket', 'pnpc-pocket-service-desk'); ?>
+		<?php esc_html_e('Request Delete', 'pnpc-pocket-service-desk'); ?>
 	</button>
 </div>
 <?php endif; ?>

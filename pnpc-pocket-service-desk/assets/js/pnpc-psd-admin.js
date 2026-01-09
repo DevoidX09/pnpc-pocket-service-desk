@@ -255,18 +255,24 @@
 			rebindCheckboxHandlers();
 		});
 
-		// Handle bulk action apply button
-		$applyButton.on('click', function(e) {
+		// Handle bulk action apply button (delegated, survives AJAX refreshes)
+		$(document).off('click.pnpcpsdBulks', '#doaction, #doaction2');
+		$(document).on('click.pnpcpsdBulks', '#doaction, #doaction2', function(e) {
 			e.preventDefault();
 
-			var action = $bulkActionSelector.val();
+			var $btn = $(this);
+			// Bulk action selector lives next to the clicked button
+			var $actionsWrap = $btn.closest('.bulkactions');
+			var $selector = $actionsWrap.length ? $actionsWrap.find('select[name="action"]') : $('#bulk-action-selector-top');
+
+			var action = $selector.length ? $selector.val() : '-1';
 			if (action === '-1') {
 				return;
 			}
 
-			// Get fresh checkboxes to account for any DOM updates
+			// Always pull a fresh checkbox set (tbody is replaced during auto-refresh)
 			var selectedTickets = [];
-			$('input[name="ticket[]"]:checked').each(function() {
+			$('#pnpc-psd-tickets-table').find('input[name="ticket[]"]:checked').each(function() {
 				selectedTickets.push($(this).val());
 			});
 
@@ -287,6 +293,12 @@
 			} else if (action === 'delete') {
 				confirmMessage = 'Are you sure you want to permanently delete ' + selectedTickets.length + ' ticket(s)? This cannot be undone!';
 				ajaxAction = 'pnpc_psd_bulk_delete_permanently_tickets';
+			} else if (action === 'approve_to_trash') {
+				confirmMessage = 'Approve deletion for ' + selectedTickets.length + ' ticket(s) and move to trash?';
+				ajaxAction = 'pnpc_psd_bulk_approve_review_tickets';
+			} else if (action === 'cancel_review') {
+				confirmMessage = 'Restore ' + selectedTickets.length + ' ticket(s) and cancel delete request?';
+				ajaxAction = 'pnpc_psd_bulk_cancel_review_tickets';
 			}
 
 			if (!confirm(confirmMessage)) {
@@ -294,7 +306,7 @@
 			}
 
 			// Disable button during operation
-			$applyButton.prop('disabled', true).val('Processing...');
+			$btn.prop('disabled', true).val('Processing...');
 
 			$.ajax({
 				url: pnpcPsdAdmin.ajax_url,
@@ -307,21 +319,21 @@
 				success: function(result) {
 					if (result && result.success) {
 						showMessage('success', result.data.message, 'pnpc-psd-bulk-message');
-						setTimeout(function() {
-							location.reload();
-						}, 1000);
+						// Ask realtime refresh script to pull fresh rows immediately (if loaded)
+						$(document).trigger('pnpc_psd_force_refresh');
+						$btn.prop('disabled', false).val('Apply');
 					} else if (result && result.data && result.data.message) {
 						showMessage('error', result.data.message, 'pnpc-psd-bulk-message');
-						$applyButton.prop('disabled', false).val('Apply');
+						$btn.prop('disabled', false).val('Apply');
 					} else {
 						showMessage('error', 'Failed to perform bulk action.', 'pnpc-psd-bulk-message');
-						$applyButton.prop('disabled', false).val('Apply');
+						$btn.prop('disabled', false).val('Apply');
 					}
 				},
 				error: function(jqXHR, textStatus, errorThrown) {
 					console.error('pnpc-psd-admin.js bulk action AJAX error', textStatus, errorThrown);
 					showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-bulk-message');
-					$applyButton.prop('disabled', false).val('Apply');
+					$btn.prop('disabled', false).val('Apply');
 				}
 			});
 		});
@@ -507,14 +519,14 @@
 				$('#pnpc-psd-delete-error-message').hide();
 
 				// Disable submit button during operation
-				$('.pnpc-psd-delete-submit').prop('disabled', true).text('Deleting...');
+				$('.pnpc-psd-delete-submit').prop('disabled', true).text('Submitting...');
 
 				// Send AJAX request
 				$.ajax({
 					url: pnpcPsdAdmin.ajax_url,
 					type: 'POST',
 					data: {
-						action: 'pnpc_psd_trash_with_reason',
+						action: 'pnpc_psd_request_delete_with_reason',
 						nonce: adminNonce,
 						ticket_ids: deleteReasonModal.ticketIds,
 						reason: reason,
@@ -523,20 +535,21 @@
 					success: function(response) {
 						if (response.success) {
 							deleteReasonModal.hide();
-							// Redirect to ticket list after successful delete from detail page
-							window.location.href = pnpcPsdAdmin.tickets_url || 'admin.php?page=pnpc-service-desk';
+							// Redirect to the All Tickets tab after a successful delete request.
+							// All Tickets is the default view for the ticket list page.
+							window.location.href = (pnpcPsdAdmin.tickets_url ? pnpcPsdAdmin.tickets_url : 'admin.php?page=pnpc-service-desk');
 						} else {
 							$('#pnpc-psd-delete-error-message')
 								.text('Error: ' + response.data.message)
 								.show();
-							$('.pnpc-psd-delete-submit').prop('disabled', false).text('Delete Ticket');
+							$('.pnpc-psd-delete-submit').prop('disabled', false).text('Request Delete');
 						}
 					},
 					error: function() {
 						$('#pnpc-psd-delete-error-message')
 							.text('An error occurred. Please try again.')
 							.show();
-						$('.pnpc-psd-delete-submit').prop('disabled', false).text('Delete Ticket');
+						$('.pnpc-psd-delete-submit').prop('disabled', false).text('Request Delete');
 					}
 				});
 			}

@@ -47,8 +47,15 @@
 		}
 
 		// Initialize auto-refresh (only on ticket list page)
-		if (pnpcPsdRealtime.enableAutoRefresh && isTicketListPage()) {
+		if (pnpcPsdRealtime.enableAutoRefresh && isTicketListPage() && isAutoRefreshEligibleView()) {
 			initAutoRefresh();
+
+			// Allow other admin scripts to request an immediate refresh (e.g., after bulk actions)
+			$(document).on('pnpc_psd_force_refresh', function() {
+				// Bypass cacheTimeout gate and refresh immediately
+				lastRefreshTime = 0;
+				refreshTicketList();
+			});
 		}
 	});
 
@@ -57,6 +64,31 @@
 	 */
 	function isTicketListPage() {
 		return $('#pnpc-psd-tickets-table').length > 0;
+	}
+
+	/**
+	 * Auto-refresh is intentionally disabled for certain views.
+	 * - Closed (status=closed)
+	 * - Review (view=review)
+	 * - Trash (view=trash)
+	 */
+	function isAutoRefreshEligibleView() {
+		try {
+			var params = new URLSearchParams(window.location.search || '');
+			var view = (params.get('view') || '').toString().toLowerCase();
+			var status = (params.get('status') || '').toString().toLowerCase();
+
+			if (view === 'review' || view === 'trash') {
+				return false;
+			}
+			if (status === 'closed') {
+				return false;
+			}
+		} catch (e) {
+			// If URLSearchParams is unavailable for any reason, default to enabled.
+			return true;
+		}
+		return true;
 	}
 
 	/**
@@ -480,6 +512,73 @@
 	}
 
 	/**
+	 * Apply server-provided badge counts to the "New" column after an AJAX refresh.
+	 *
+	 * The refresh endpoint returns `badge_counts`; we apply them here to guarantee
+	 * the indicators continue to work after the table <tbody> is replaced.
+	 *
+	 * @param {Object} badgeCounts Map of ticketId -> count.
+	 */
+	function applyNewBadgeCounts(badgeCounts) {
+		// If the "New" column is not present (e.g., trash view), do nothing.
+		var $table = $('#pnpc-psd-tickets-table');
+		if (!$table.length) {
+			return;
+		}
+		var hasNewColumn = $table.find('th').filter(function() {
+			return $(this).text().trim().toLowerCase() === 'new';
+		}).length > 0;
+		if (!hasNewColumn) {
+			return;
+		}
+
+		// Normalize and apply.
+		Object.keys(badgeCounts).forEach(function(ticketId) {
+			var count = parseInt(badgeCounts[ticketId], 10);
+			if (isNaN(count) || count < 0) {
+				count = 0;
+			}
+
+			// Locate the row by checkbox value (most reliable selector across templates).
+			var $row = $table.find('input[name="ticket[]"][value="' + ticketId + '"]').closest('tr');
+			if (!$row.length) {
+				return;
+			}
+
+			// The "New" column is the cell that either contains the badge span or has
+			// a data-sort-value equal to the badge count.
+			var $newCell = $row.find('td').filter(function() {
+				return $(this).find('.pnpc-psd-new-indicator-badge').length > 0;
+			}).first();
+			if (!$newCell.length) {
+				// Fallback: pick the td with the smallest non-empty text that matches a number,
+				// but prefer the first empty/new-like cell near the end.
+				$newCell = $row.find('td').eq($row.find('td').length - 2);
+			}
+
+			// Keep sort value accurate.
+			$newCell.attr('data-sort-value', String(count));
+
+			// Update badge markup.
+			var $badge = $newCell.find('.pnpc-psd-new-indicator-badge');
+			if (count > 0) {
+				if (!$badge.length) {
+					$badge = $('<span class="pnpc-psd-new-indicator-badge"></span>');
+					$newCell.empty().append($badge);
+				}
+				$badge.text(String(count));
+			} else {
+				// Remove any existing badge for zero counts.
+				$badge.remove();
+				// Ensure the cell is empty (matches initial template behavior).
+				if ($newCell.text().trim() !== '') {
+					$newCell.empty();
+				}
+			}
+		});
+	}
+
+	/**
 	 * Update "select all" checkbox state
 	 */
 	function updateSelectAllCheckbox() {
@@ -538,6 +637,12 @@
 					var $tbody = $('#pnpc-psd-tickets-table tbody');
 					$tbody.fadeOut(200, function() {
 						$tbody.html(response.data.html).fadeIn(200, function() {
+								// Ensure "New" badge indicators are correct after refresh.
+								// The refresh endpoint returns badge_counts; apply them defensively
+								// in case row markup varies by view.
+								if (response.data.badge_counts) {
+									applyNewBadgeCounts(response.data.badge_counts);
+								}
 							// Detect and highlight new tickets
 							detectAndHighlightNewTickets();
 

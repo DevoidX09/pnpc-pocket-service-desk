@@ -129,6 +129,131 @@ class PNPC_PSD_Activator {
 		if ( version_compare( $current_db_version, '1.3.0', '<' ) ) {
 			self::upgrade_to_1_3_0();
 		}
+
+		// Upgrade to 1.4.0 if needed.
+		if ( version_compare( $current_db_version, '1.4.0', '<' ) ) {
+			self::upgrade_to_1_4_0();
+		}
+	}
+
+
+	/**
+	 * Ensure delete reason tracking columns exist (defensive schema guard).
+	 *
+	 * Some environments can miss the 1.2.0 migration if the plugin was upgraded without reactivation.
+	 * This check is safe to run on init; it only ALTERs the table when columns are missing.
+	 *
+	 * @since 1.4.1
+	 * @return void
+	 */
+	public static function ensure_delete_reason_columns() {
+		global $wpdb;
+		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		// Verify tickets table exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$table_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$tickets_table
+			)
+		);
+		if ( ! $table_exists ) {
+			return;
+		}
+
+		// Check columns individually; some sites can end up with partial migrations.
+		$needs = array(
+			'delete_reason'       => "ALTER TABLE {$tickets_table} ADD COLUMN delete_reason VARCHAR(50) DEFAULT NULL AFTER deleted_at",
+			'delete_reason_other' => "ALTER TABLE {$tickets_table} ADD COLUMN delete_reason_other TEXT DEFAULT NULL AFTER delete_reason",
+			'deleted_by'          => "ALTER TABLE {$tickets_table} ADD COLUMN deleted_by BIGINT(20) UNSIGNED DEFAULT NULL AFTER delete_reason_other",
+		);
+
+		foreach ( $needs as $col => $sql ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$column_exists = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
+					$col
+				)
+			);
+			if ( empty( $column_exists ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query( $sql );
+			}
+		}
+
+		// Add indexes if missing.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$idx_reason = $wpdb->get_results("SHOW INDEX FROM {$tickets_table} WHERE Key_name = 'delete_reason'");
+		if ( empty( $idx_reason ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query("ALTER TABLE {$tickets_table} ADD KEY delete_reason (delete_reason)");
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$idx_deleted_by = $wpdb->get_results("SHOW INDEX FROM {$tickets_table} WHERE Key_name = 'deleted_by'");
+		if ( empty( $idx_deleted_by ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query("ALTER TABLE {$tickets_table} ADD KEY deleted_by (deleted_by)");
+		}
+	}
+
+	/**
+	 * Upgrade database to version 1.4.0 (delete review queue).
+	 *
+	 * Adds pending delete fields so agent/staff deletion requests can be reviewed
+	 * before being moved to trash.
+	 *
+	 * @since 1.4.0
+	 */
+	private static function upgrade_to_1_4_0() {
+		global $wpdb;
+
+		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		// Verify table exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$table_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$tickets_table
+			)
+		);
+
+		if ( empty( $table_exists ) ) {
+			return;
+		}
+
+		$columns_to_add = array(
+			'pending_delete_at'          => "ALTER TABLE {$tickets_table} ADD COLUMN pending_delete_at datetime DEFAULT NULL AFTER deleted_at",
+			'pending_delete_by'          => "ALTER TABLE {$tickets_table} ADD COLUMN pending_delete_by BIGINT(20) UNSIGNED DEFAULT NULL AFTER pending_delete_at",
+			'pending_delete_reason'      => "ALTER TABLE {$tickets_table} ADD COLUMN pending_delete_reason varchar(100) DEFAULT NULL AFTER pending_delete_by",
+			'pending_delete_reason_other'=> "ALTER TABLE {$tickets_table} ADD COLUMN pending_delete_reason_other text DEFAULT NULL AFTER pending_delete_reason",
+		);
+
+		foreach ( $columns_to_add as $col => $sql ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$column_exists = $wpdb->get_results(
+				$wpdb->prepare(
+					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
+					$col
+				)
+			);
+			if ( empty( $column_exists ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query( $sql );
+			}
+		}
+
+		// Add indexes to keep review queries fast.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$pending_idx = $wpdb->get_results("SHOW INDEX FROM {$tickets_table} WHERE Key_name = 'pending_delete_at'");
+		if ( empty( $pending_idx ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query("ALTER TABLE {$tickets_table} ADD KEY pending_delete_at (pending_delete_at)");
+		}
+
+		update_option( 'pnpc_psd_db_version', '1.4.0' );
 	}
 
 	/**
@@ -390,4 +515,72 @@ class PNPC_PSD_Activator {
 			$subscriber_role->add_cap( 'pnpc_psd_view_own_tickets' );
 		}
 	}
+
+
+/**
+ * Ensure custom roles and required caps are present (updates existing roles too).
+ *
+ * NOTE: add_role() does not update an existing role, so we must add_cap() when the role already exists.
+ *
+ * @return void
+ */
+public static function sync_custom_roles_caps() {
+    // Define the canonical capabilities for our custom roles.
+    $agent_caps = array(
+        'read'                        => true,
+        // Some sites restrict wp-admin access for non-admins by checking legacy caps like
+        // 'edit_posts' or 'level_0' (instead of just 'read'). Grant these minimal legacy caps
+        // to ensure agents can access the back end to service tickets without granting admin privileges.
+        'edit_posts'                  => true,
+        'level_0'                     => true,
+        'pnpc_psd_view_tickets'       => true,
+        'pnpc_psd_respond_to_tickets' => true,
+        'pnpc_psd_assign_tickets'     => true,
+    );
+
+    $manager_caps = array(
+        'read'                        => true,
+        // Same rationale as agent role (see above).
+        'edit_posts'                  => true,
+        'level_0'                     => true,
+        'pnpc_psd_view_tickets'       => true,
+        'pnpc_psd_respond_to_tickets' => true,
+        'pnpc_psd_assign_tickets'     => true,
+        'pnpc_psd_delete_tickets'     => true,
+        'pnpc_psd_manage_settings'    => true,
+    );
+
+    // Agent role: create if missing, otherwise ensure caps exist.
+    $agent_role = get_role( 'pnpc_psd_agent' );
+    if ( ! $agent_role ) {
+        add_role(
+            'pnpc_psd_agent',
+            __( 'Service Desk Agent', 'pnpc-pocket-service-desk' ),
+            $agent_caps
+        );
+    } else {
+        foreach ( $agent_caps as $cap => $grant ) {
+            if ( $grant ) {
+                $agent_role->add_cap( $cap );
+            }
+        }
+    }
+
+    // Manager role: create if missing, otherwise ensure caps exist.
+    $manager_role = get_role( 'pnpc_psd_manager' );
+    if ( ! $manager_role ) {
+        add_role(
+            'pnpc_psd_manager',
+            __( 'Service Desk Manager', 'pnpc-pocket-service-desk' ),
+            $manager_caps
+        );
+    } else {
+        foreach ( $manager_caps as $cap => $grant ) {
+            if ( $grant ) {
+                $manager_role->add_cap( $cap );
+            }
+        }
+    }
+}
+
 }

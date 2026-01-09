@@ -476,3 +476,28 @@
 	font-weight: 600;
 	margin-left: 6px;
 }
+
+/* =========================
+ * [pnpc_services] cards
+ * ========================= */
+.pnpc-psd-services-list{
+	display:flex;
+	gap:16px;
+	flex-wrap:wrap;
+}
+
+.pnpc-psd-services .pnpc-psd-service-item{
+	flex:0 0 220px;
+	border:1px solid #eee;
+	padding:12px;
+	border-radius:6px;
+	transition:all .15s ease;
+}
+
+.pnpc-psd-services .pnpc-psd-service-title{
+	margin:0 0 8px;
+}
+
+.pnpc-psd-services .pnpc-psd-service-price{
+	margin-bottom:8px;
+}

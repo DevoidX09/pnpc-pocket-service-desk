@@ -170,9 +170,17 @@ if (! function_exists('pnpc_psd_get_dashboard_url')) {
             return $cached;
         }
 
-        $page = get_page_by_path('dashboard-single');
+        // Prefer a stable, human-friendly dashboard slug.
+        // Order: explicit setting -> /dashboard/ page -> legacy /dashboard-single/ page -> my tickets.
+        $page = get_page_by_path('dashboard');
         if ($page && ! is_wp_error($page)) {
             $cached = get_permalink($page->ID);
+            return $cached;
+        }
+
+        $legacy = get_page_by_path('dashboard-single');
+        if ($legacy && ! is_wp_error($legacy)) {
+            $cached = get_permalink($legacy->ID);
             return $cached;
         }
 
@@ -505,4 +513,173 @@ if (! function_exists('pnpc_psd_format_delete_reason')) {
 
         return $label;
     }
+}
+
+/**
+ * Ensure custom roles and capabilities exist even after plugin updates.
+ * Note: add_role() does not update an existing role, so we must add missing caps explicitly.
+ */
+if ( ! function_exists( 'pnpc_psd_sync_roles_caps' ) ) {
+	function pnpc_psd_sync_roles_caps() {
+		// Define canonical caps.
+		$agent_caps = array(
+			'read'                        => true,
+			'pnpc_psd_view_tickets'       => true,
+			'pnpc_psd_respond_to_tickets' => true,
+			'pnpc_psd_assign_tickets'     => true,
+		);
+
+		$manager_caps = $agent_caps + array(
+			'pnpc_psd_delete_tickets'   => true,
+			'pnpc_psd_manage_settings'  => true,
+		);
+
+		// Roles: Agent.
+		$agent_role = get_role( 'pnpc_psd_agent' );
+		if ( ! $agent_role ) {
+			add_role( 'pnpc_psd_agent', __( 'Service Desk Agent', 'pnpc-pocket-service-desk' ), $agent_caps );
+			$agent_role = get_role( 'pnpc_psd_agent' );
+		}
+		if ( $agent_role ) {
+			foreach ( $agent_caps as $cap => $grant ) {
+				if ( $grant ) { $agent_role->add_cap( $cap ); }
+			}
+		}
+
+		// Roles: Manager.
+		$manager_role = get_role( 'pnpc_psd_manager' );
+		if ( ! $manager_role ) {
+			add_role( 'pnpc_psd_manager', __( 'Service Desk Manager', 'pnpc-pocket-service-desk' ), $manager_caps );
+			$manager_role = get_role( 'pnpc_psd_manager' );
+		}
+		if ( $manager_role ) {
+			foreach ( $manager_caps as $cap => $grant ) {
+				if ( $grant ) { $manager_role->add_cap( $cap ); }
+			}
+		}
+
+		// Ensure Administrators always have staff caps (menu visibility relies on these).
+		$admin_role = get_role( 'administrator' );
+		if ( $admin_role ) {
+			$admin_caps = array( 'pnpc_psd_view_tickets', 'pnpc_psd_respond_to_tickets', 'pnpc_psd_assign_tickets', 'pnpc_psd_delete_tickets', 'pnpc_psd_manage_settings' );
+			foreach ( $admin_caps as $cap ) {
+				$admin_role->add_cap( $cap );
+			}
+		}
+
+		// Customer / Subscriber public caps (safe idempotent).
+		$public_roles = array( 'customer', 'subscriber' );
+		foreach ( $public_roles as $role_key ) {
+			$r = get_role( $role_key );
+			if ( $r ) {
+				$r->add_cap( 'pnpc_psd_create_tickets' );
+				$r->add_cap( 'pnpc_psd_view_own_tickets' );
+			}
+		}
+	}
+}
+
+add_action( 'init', 'pnpc_psd_sync_roles_caps', 1 );
+
+/**
+ * Sanitize Agents option array.
+ *
+ * Stored format:
+ *   [ user_id => [ 'enabled' => 1|0, 'notify_email' => '...' ] ]
+ *
+ * @param mixed $value Raw value.
+ * @return array Sanitized option value.
+ */
+if ( ! function_exists( 'pnpc_psd_sanitize_agents_option' ) ) {
+	function pnpc_psd_sanitize_agents_option( $value ) {
+		if ( ! is_array( $value ) ) {
+			return array();
+		}
+
+		$out = array();
+		foreach ( $value as $user_id => $row ) {
+			$uid = absint( $user_id );
+			if ( ! $uid ) {
+				continue;
+			}
+			$row = is_array( $row ) ? $row : array();
+			$enabled = isset( $row['enabled'] ) ? absint( $row['enabled'] ) : 0;
+			$email   = isset( $row['notify_email'] ) ? sanitize_email( (string) $row['notify_email'] ) : '';
+			$out[ $uid ] = array(
+				'enabled'     => $enabled ? 1 : 0,
+				'notify_email'=> $email,
+			);
+		}
+
+		return $out;
+	}
+}
+
+/**
+ * Get assignable agent users.
+ *
+ * Backwards compatible: if no agents are configured, falls back to staff roles.
+ *
+ * @return WP_User[]
+ */
+if ( ! function_exists( 'pnpc_psd_get_assignable_agents' ) ) {
+	function pnpc_psd_get_assignable_agents() {
+		$cfg = get_option( 'pnpc_psd_agents', array() );
+		$ids = array();
+		if ( is_array( $cfg ) ) {
+			foreach ( $cfg as $uid => $row ) {
+				$uid = absint( $uid );
+				if ( ! $uid ) { continue; }
+				$enabled = is_array( $row ) && ! empty( $row['enabled'] );
+				if ( $enabled ) {
+					$ids[] = $uid;
+				}
+			}
+		}
+		$ids = array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) );
+
+		if ( ! empty( $ids ) ) {
+			return get_users(
+				array(
+					'include' => $ids,
+					'orderby' => 'display_name',
+					'order'   => 'ASC',
+				)
+			);
+		}
+
+		// Fallback: original behavior based on staff roles.
+		return get_users(
+			array(
+				'role__in' => array( 'administrator', 'pnpc_psd_manager', 'pnpc_psd_agent' ),
+				'orderby'  => 'display_name',
+				'order'    => 'ASC',
+			)
+		);
+	}
+}
+
+/**
+ * Resolve the notification email for an agent.
+ * Falls back to the user's account email if no override is set.
+ *
+ * @param int $user_id Agent user ID.
+ * @return string Email address.
+ */
+if ( ! function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
+	function pnpc_psd_get_agent_notification_email( $user_id ) {
+		$user_id = absint( $user_id );
+		if ( ! $user_id ) {
+			return '';
+		}
+		$cfg = get_option( 'pnpc_psd_agents', array() );
+		if ( is_array( $cfg ) && isset( $cfg[ $user_id ]['notify_email'] ) ) {
+			$e = sanitize_email( (string) $cfg[ $user_id ]['notify_email'] );
+			if ( ! empty( $e ) ) {
+				return $e;
+			}
+		}
+		$u = get_user_by( 'id', $user_id );
+		return ( $u && ! empty( $u->user_email ) ) ? (string) $u->user_email : '';
+	}
 }
