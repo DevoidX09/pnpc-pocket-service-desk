@@ -14,6 +14,7 @@ if (! defined('ABSPATH')) {
 $current_view = isset($_GET['view']) ? sanitize_text_field(wp_unslash($_GET['view'])) : '';
 $is_trash_view = ('trash' === $current_view);
 $is_review_view = ('review' === $current_view);
+$is_archived_view = ('archived' === $current_view);
 
 // Bulk Actions:
 // - Main list + Trash are Admin-only.
@@ -47,15 +48,34 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 
 <div class="wrap">
 	<h1><?php esc_html_e('Service Desk Tickets', 'pnpc-pocket-service-desk'); ?></h1>
+	<div style="margin: 10px 0 15px;">
+		<?php
+		$csv_export_url = wp_nonce_url(
+			add_query_arg(
+				array(
+					'action' => 'pnpc_psd_export_tickets',
+					'view'   => $current_view,
+					'status' => isset( $status ) ? $status : '',
+				),
+				admin_url( 'admin-post.php' )
+			),
+			'pnpc_psd_export_tickets'
+		);
+		?>
+		<a class="button button-secondary" href="<?php echo esc_url( $csv_export_url ); ?>">
+			<?php esc_html_e( 'Export CSV', 'pnpc-pocket-service-desk' ); ?>
+		</a>
+	</div>
+
 
 	<ul class="subsubsub">
 		<li>
-			<a href="?page=pnpc-service-desk" <?php echo empty($status) && ! $is_trash_view && ! $is_review_view ? 'class="current"' : ''; ?>>
+			<a href="?page=pnpc-service-desk" <?php echo empty($status) && ! $is_trash_view && ! $is_review_view && ! $is_archived_view ? 'class="current"' : ''; ?>>
 				<?php esc_html_e('All', 'pnpc-pocket-service-desk'); ?>
 			</a> |
 		</li>
 		<li>
-			<a href="?page=pnpc-service-desk&status=open" <?php echo 'open' === $status && ! $is_trash_view && ! $is_review_view ? 'class="current"' : ''; ?>>
+			<a href="?page=pnpc-service-desk&status=open" <?php echo 'open' === $status && ! $is_trash_view && ! $is_review_view && ! $is_archived_view ? 'class="current"' : ''; ?>>
 				<?php
 				/* translators: %d: number of open tickets */
 				printf(esc_html__('Open (%d)', 'pnpc-pocket-service-desk'), absint($open_count));
@@ -63,7 +83,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 			</a> |
 		</li>
 		<li>
-			<a href="?page=pnpc-service-desk&status=in-progress" <?php echo 'in-progress' === $status && ! $is_trash_view && ! $is_review_view ? 'class="current"' : ''; ?>>
+			<a href="?page=pnpc-service-desk&status=in-progress" <?php echo 'in-progress' === $status && ! $is_trash_view && ! $is_review_view && ! $is_archived_view ? 'class="current"' : ''; ?>>
 				<?php
 				/* translators: %d: number of in-progress tickets */
 				printf(esc_html__('In-Progress (%d)', 'pnpc-pocket-service-desk'), absint($in_progress_count));
@@ -71,7 +91,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 			</a> |
 		</li>
 		<li>
-			<a href="?page=pnpc-service-desk&status=waiting" <?php echo 'waiting' === $status && ! $is_trash_view && ! $is_review_view ? 'class="current"' : ''; ?>>
+			<a href="?page=pnpc-service-desk&status=waiting" <?php echo 'waiting' === $status && ! $is_trash_view && ! $is_review_view && ! $is_archived_view ? 'class="current"' : ''; ?>>
 				<?php
 				/* translators: %d: number of waiting tickets */
 				printf(esc_html__('Waiting (%d)', 'pnpc-pocket-service-desk'), absint($waiting_count));
@@ -79,7 +99,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 			</a> |
 		</li>
 		<li>
-			<a href="?page=pnpc-service-desk&status=closed" <?php echo 'closed' === $status && ! $is_trash_view && ! $is_review_view ? 'class="current"' : ''; ?>>
+			<a href="?page=pnpc-service-desk&status=closed" <?php echo 'closed' === $status && ! $is_trash_view && ! $is_review_view && ! $is_archived_view ? 'class="current"' : ''; ?>>
 				<?php
 				/* translators: %d: number of closed tickets */
 				printf(esc_html__('Closed (%d)', 'pnpc-pocket-service-desk'), absint($closed_count));
@@ -100,6 +120,14 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 				/* translators: %d: number of trashed tickets */
 				printf(esc_html__('Trash (%d)', 'pnpc-pocket-service-desk'), absint($trash_count));
 				?>
+			</a> |
+		</li>
+		<li>
+			<a href="?page=pnpc-service-desk&view=archived" <?php echo $is_archived_view ? 'class="current"' : ''; ?>>
+				<?php
+				/* translators: %d: number of archived tickets */
+				printf(esc_html__('Archived (%d)', 'pnpc-pocket-service-desk'), absint($archived_count));
+				?>
 			</a>
 		</li>
 	</ul>
@@ -113,11 +141,16 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 				<?php if ( $is_trash_view ) : ?>
 					<option value="restore"><?php esc_html_e('Restore', 'pnpc-pocket-service-desk'); ?></option>
 					<option value="delete"><?php esc_html_e('Delete Permanently', 'pnpc-pocket-service-desk'); ?></option>
+				<?php elseif ( $is_archived_view ) : ?>
+					<option value="restore_archive"><?php esc_html_e('Restore from Archive', 'pnpc-pocket-service-desk'); ?></option>
 				<?php elseif ( $is_review_view ) : ?>
 					<option value="approve_to_trash"><?php esc_html_e('Approve → Trash', 'pnpc-pocket-service-desk'); ?></option>
 					<option value="cancel_review"><?php esc_html_e('Restore (Cancel Request)', 'pnpc-pocket-service-desk'); ?></option>
 				<?php else : ?>
 					<option value="trash"><?php esc_html_e('Move to Trash', 'pnpc-pocket-service-desk'); ?></option>
+					<?php if ( isset( $status ) && 'closed' === $status && ! $is_trash_view && ! $is_review_view && ! $is_archived_view ) : ?>
+						<option value="archive"><?php esc_html_e('Move to Archive', 'pnpc-pocket-service-desk'); ?></option>
+					<?php endif; ?>
 				<?php endif; ?>
 			</select>
 			<input type="button" id="doaction" class="button action" value="<?php esc_attr_e('Apply', 'pnpc-pocket-service-desk'); ?>">
@@ -128,7 +161,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 
 	<table class="wp-list-table widefat fixed striped" id="pnpc-psd-tickets-table">
 		<thead>
-			<tr>
+						<tr class="pnpc-psd-ticket-row">
 	<?php if ( $can_bulk_actions ) : ?>
 				<td id="cb" class="manage-column column-cb check-column">
 					<label class="screen-reader-text" for="cb-select-all-1"><?php esc_html_e('Select All', 'pnpc-pocket-service-desk'); ?></label>
@@ -143,7 +176,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 					<?php esc_html_e('Subject', 'pnpc-pocket-service-desk'); ?>
 					<span class="pnpc-psd-sort-arrow"></span>
 				</th>
-				<?php if ( ! $is_trash_view && ! $is_review_view ) : ?>
+				<?php if ( ! $is_trash_view && ! $is_review_view && ! $is_archived_view ) : ?>
 				<th class="pnpc-psd-sortable" data-sort-type="text" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Customer', 'pnpc-pocket-service-desk'); ?>">
 					<?php esc_html_e('Customer', 'pnpc-pocket-service-desk'); ?>
 					<span class="pnpc-psd-sort-arrow"></span>
@@ -201,7 +234,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 		<tbody>
 			<?php 
 			// Separate active and closed tickets (only for main list view)
-			if (! empty($tickets) && ! $is_trash_view && ! $is_review_view) {
+			if (! empty($tickets) && ! $is_trash_view && ! $is_review_view && ! $is_archived_view) {
 				$active_tickets = array();
 				$closed_tickets = array();
 				
@@ -225,7 +258,37 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 			?>
 			
 			<?php if (! empty($tickets)) : ?>
-				<?php if ( $is_trash_view ) : ?>
+				<?php if ( $is_archived_view ) : ?>
+				<?php foreach ( $tickets as $ticket ) : ?>
+					<?php
+					$user = get_userdata( $ticket->user_id );
+					$assigned_user = $ticket->assigned_to ? get_userdata( $ticket->assigned_to ) : null;
+					$ticket_num_for_sort = (int) preg_replace('/[^0-9]/', '', $ticket->ticket_number);
+					$archived_at_raw = ! empty( $ticket->archived_at ) ? (string) $ticket->archived_at : '';
+					$archived_ts = $archived_at_raw ? strtotime( $archived_at_raw ) : 0;
+					?>
+					<tr class="pnpc-psd-ticket-row" data-sort-ticket-number="<?php echo esc_attr( $ticket_num_for_sort ); ?>" data-sort-text="<?php echo esc_attr( strtolower( (string) $ticket->subject ) ); ?>" data-sort-date="<?php echo esc_attr( $archived_ts ); ?>">
+						<?php if ( $can_bulk_actions ) : ?>
+						<th scope="row" class="check-column">
+							<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>"><?php printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?></label>
+							<input type="checkbox" name="ticket[]" id="cb-select-<?php echo absint($ticket->id); ?>" value="<?php echo absint($ticket->id); ?>">
+						</th>
+						<?php endif; ?>
+						<td><strong><?php echo esc_html( $ticket->ticket_number ); ?></strong></td>
+						<td><a href="<?php echo esc_url( admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id) ); ?>"><?php echo esc_html( $ticket->subject ); ?></a></td>
+						<td><?php echo esc_html( $user ? $user->display_name : '' ); ?></td>
+						<td><?php echo esc_html( ucwords( str_replace('-', ' ', (string) $ticket->status ) ) ); ?></td>
+						<td><?php echo esc_html( ucfirst( (string) $ticket->priority ) ); ?></td>
+						<td><?php echo esc_html( $assigned_user ? $assigned_user->display_name : __('Unassigned', 'pnpc-pocket-service-desk') ); ?></td>
+						<td><?php if ( $archived_at_raw ) { echo esc_html( function_exists('pnpc_psd_format_db_datetime_for_display') ? pnpc_psd_format_db_datetime_for_display( $archived_at_raw ) : date_i18n( get_option('date_format').' '.get_option('time_format'), $archived_ts ) ); } ?></td>
+						<td>
+							<a href="<?php echo esc_url( admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id) ); ?>" class="button button-small"><?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?></a>
+							<?php $restore_url = wp_nonce_url( admin_url('admin-post.php?action=pnpc_psd_restore_archived_ticket&ticket_id=' . absint($ticket->id)), 'pnpc_psd_restore_archived_ticket_' . absint($ticket->id) ); ?>
+							<a href="<?php echo esc_url( $restore_url ); ?>" class="button button-small"><?php esc_html_e('Restore', 'pnpc-pocket-service-desk'); ?></a>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			<?php elseif ( $is_trash_view ) : ?>
 					<?php // Trash view: render all tickets normally ?>
 					<?php foreach ($tickets as $ticket) : ?>
 						<?php
@@ -259,7 +322,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 						// Get timestamp for deleted at sorting
 						$deleted_timestamp = $deleted_at ? strtotime($deleted_at) : 0;
 						?>
-						<tr>
+						<tr class="pnpc-psd-ticket-row">
 							<?php if ( $can_bulk_actions ) : ?>
 							<th scope="row" class="check-column">
 								<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">
@@ -305,6 +368,19 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 								<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>" class="button button-small">
 									<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
 								</a>
+								<?php if ( $is_trash_view ) : ?>
+									<?php
+									// Allow single-item archiving directly from Trash.
+									$archive_url = wp_nonce_url(
+										admin_url('admin-post.php?action=pnpc_psd_archive_ticket&ticket_id=' . absint($ticket->id) . '&return_to=trash'),
+										'pnpc_psd_archive_ticket_' . absint($ticket->id)
+									);
+									?>
+									<a href="<?php echo esc_url( $archive_url ); ?>" class="button button-small"><?php esc_html_e('Archive', 'pnpc-pocket-service-desk'); ?></a>
+								<?php elseif ( isset($ticket->status) && 'closed' === strtolower((string)$ticket->status) ) : ?>
+									<?php $archive_url = wp_nonce_url( admin_url('admin-post.php?action=pnpc_psd_archive_ticket&ticket_id=' . absint($ticket->id)), 'pnpc_psd_archive_ticket_' . absint($ticket->id) ); ?>
+									<a href="<?php echo esc_url( $archive_url ); ?>" class="button button-small"><?php esc_html_e('Archive', 'pnpc-pocket-service-desk'); ?></a>
+								<?php endif; ?>
 							</td>
 						</tr>
 					<?php endforeach; ?>
@@ -320,7 +396,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 							$req_at = ! empty($ticket->pending_delete_at) ? (string) $ticket->pending_delete_at : '';
 							$req_timestamp = $req_at ? strtotime($req_at) : 0;
 						?>
-						<tr>
+						<tr class="pnpc-psd-ticket-row">
 							<?php if ( $can_bulk_actions ) : ?>
 							<th scope="row" class="check-column">
 								<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">
@@ -397,48 +473,17 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 						// Calculate fresh (initial page load)
 						$new_responses = 0;
 
-						if (! $is_trash_view && current_user_can('pnpc_psd_view_tickets')) {
-							$current_user_id = get_current_user_id();
-							
-							// Get last view timestamp for THIS agent
-							$last_view_meta = get_user_meta($current_user_id, 'pnpc_psd_ticket_last_view_' . intval($ticket->id), true);
-							
-							if (empty($last_view_meta)) {
-								// Agent has NEVER viewed this ticket
-								// The ticket itself is "new" to this agent
-								$new_responses = 1;
-							} else {
-								// Agent has viewed before - count NEW customer responses since then
-								$last_view_time = is_numeric($last_view_meta) 
-									? intval($last_view_meta) 
-									: strtotime($last_view_meta);
-								
-								// Get all responses for this ticket
-								$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id, array('orderby' => 'created_at', 'order' => 'ASC'));
-								
-								if (! empty($responses)) {
-									foreach ($responses as $response) {
-										// Skip agent's own responses
-										if (intval($response->user_id) === $current_user_id) {
-											continue;
-										}
-										
-										// Convert response timestamp to integer
-										$response_time = function_exists('pnpc_psd_mysql_to_wp_local_ts') 
-											? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) 
-											: intval(strtotime($response->created_at));
-										
-										// Count if response is AFTER last view
-										if ($response_time > $last_view_time) {
-											$new_responses++;
-										}
-									}
-								}
-							}
+						if ( ! $is_trash_view && current_user_can( 'pnpc_psd_view_tickets' ) ) {
+							// v1.5.0+: unread/activity tracking stored on the ticket row (role-level).
+							$customer_activity_raw = ! empty( $ticket->last_customer_activity_at ) ? (string) $ticket->last_customer_activity_at : (string) $ticket->created_at;
+							$staff_viewed_raw      = ! empty( $ticket->last_staff_viewed_at ) ? (string) $ticket->last_staff_viewed_at : '';
+							$customer_activity_ts  = ( '' !== $customer_activity_raw ) ? strtotime( $customer_activity_raw . ' UTC' ) : 0;
+							$staff_viewed_ts       = ( '' !== $staff_viewed_raw ) ? strtotime( $staff_viewed_raw . ' UTC' ) : 0;
+							$new_responses         = ( $customer_activity_ts > $staff_viewed_ts ) ? 1 : 0;
 						}
 					}
 					?>
-					<tr>
+					<tr class="pnpc-psd-ticket-row">
 						<?php if ( $can_bulk_actions ) : ?>
 						<th scope="row" class="check-column">
 							<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">
@@ -541,7 +586,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 						$created_timestamp = 0; // Fallback for invalid dates
 					}
 					?>
-					<tr class="pnpc-psd-ticket-closed">
+					<tr class="pnpc-psd-ticket-row pnpc-psd-ticket-closed">
 						<?php if ( $can_bulk_actions ) : ?>
 						<th scope="row" class="check-column">
 							<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">

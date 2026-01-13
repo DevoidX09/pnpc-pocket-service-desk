@@ -104,7 +104,7 @@ class PNPC_PSD_Admin
 				$this->plugin_name,
 				'pnpcPsdAdmin',
 				array(
-					'ajax_url' => admin_url('admin-ajax.php'),
+					'ajax_url' => admin_url('admin-ajax.php', 'relative'),
 					'nonce'    => wp_create_nonce('pnpc_psd_admin_nonce'),
 					'tickets_url' => admin_url('admin.php?page=pnpc-service-desk'),
 					'i18n' => array(
@@ -133,7 +133,7 @@ class PNPC_PSD_Admin
 				$this->plugin_name . '-realtime',
 				'pnpcPsdRealtime',
 				array(
-					'ajaxUrl'              => admin_url('admin-ajax.php'),
+					'ajaxUrl'              => admin_url('admin-ajax.php', 'relative'),
 					'nonce'                => wp_create_nonce('pnpc_psd_admin_nonce'),
 					'enableMenuBadge'      => '1' === $enable_menu_badge,
 					'enableAutoRefresh'    => '1' === $enable_auto_refresh,
@@ -243,6 +243,16 @@ class PNPC_PSD_Admin
 			array($this, 'display_ticket_detail_page')
 		);
 
+		
+		add_submenu_page(
+			'pnpc-service-desk',
+			esc_html__( 'Audit Log', 'pnpc-pocket-service-desk' ),
+			esc_html__( 'Audit Log', 'pnpc-pocket-service-desk' ),
+			'pnpc_psd_view_tickets',
+			'pnpc-service-desk-audit-log',
+			array( $this, 'display_audit_log_page' )
+		);
+
 		add_submenu_page(
 			'pnpc-service-desk',
 			__('Settings', 'pnpc-pocket-service-desk'),
@@ -271,6 +281,8 @@ class PNPC_PSD_Admin
 			$tickets = PNPC_PSD_Ticket::get_trashed($args);
 		} elseif ('review' === $view) {
 			$tickets = PNPC_PSD_Ticket::get_pending_delete($args);
+		} elseif ('archived' === $view) {
+			$tickets = PNPC_PSD_Ticket::get_archived($args);
 		} else {
 			$args['status'] = $status;
 			$tickets = PNPC_PSD_Ticket::get_all($args);
@@ -282,9 +294,23 @@ class PNPC_PSD_Admin
 		$closed_count      = PNPC_PSD_Ticket::get_count('closed');
 		$trash_count  = PNPC_PSD_Ticket::get_trashed_count();
 		$review_count = PNPC_PSD_Ticket::get_pending_delete_count();
+		$archived_count = method_exists('PNPC_PSD_Ticket','get_archived_count') ? PNPC_PSD_Ticket::get_archived_count() : 0;
 
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/tickets-list.php';
 	}
+
+	/**
+	 * Display the Audit Log admin page.
+	 */
+	public function display_audit_log_page() {
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		include PNPC_PSD_PLUGIN_DIR . 'admin/views/audit-log.php';
+	}
+
+
 
 	public function display_ticket_detail_page()
 	{
@@ -303,6 +329,9 @@ class PNPC_PSD_Admin
 
 		$current_user = wp_get_current_user();
 		if ($current_user && ! empty($current_user->ID)) {
+			if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
+				PNPC_PSD_Ticket::mark_staff_viewed( (int) $ticket_id );
+			}
 			update_user_meta(
 				(int) $current_user->ID,
 				'pnpc_psd_ticket_last_view_' . (int) $ticket_id,
@@ -359,6 +388,18 @@ class PNPC_PSD_Admin
 			)
 		);
 
+		// Notification switches (v1.1.0): allow tightening behavior without code edits.
+		register_setting( 'pnpc_psd_settings', 'pnpc_psd_notify_customer_on_create', array( 'type' => 'boolean', 'sanitize_callback' => 'absint', 'default' => 1 ) );
+		register_setting( 'pnpc_psd_settings', 'pnpc_psd_notify_staff_on_create', array( 'type' => 'boolean', 'sanitize_callback' => 'absint', 'default' => 1 ) );
+		register_setting( 'pnpc_psd_settings', 'pnpc_psd_notify_customer_on_staff_reply', array( 'type' => 'boolean', 'sanitize_callback' => 'absint', 'default' => 1 ) );
+		register_setting( 'pnpc_psd_settings', 'pnpc_psd_notify_staff_on_customer_reply', array( 'type' => 'boolean', 'sanitize_callback' => 'absint', 'default' => 1 ) );
+		register_setting( 'pnpc_psd_settings', 'pnpc_psd_notify_customer_on_close', array( 'type' => 'boolean', 'sanitize_callback' => 'absint', 'default' => 1 ) );
+		register_setting( 'pnpc_psd_settings', 'pnpc_psd_notify_from_name', array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field', 'default' => '' ) );
+		register_setting( 'pnpc_psd_settings', 'pnpc_psd_notify_from_email', array( 'type' => 'string', 'sanitize_callback' => 'sanitize_email', 'default' => '' ) );
+
+		// Attachment size limit in MB (v1.1.0). Clamped at runtime by plan.
+		register_setting( 'pnpc_psd_settings', 'pnpc_psd_max_attachment_mb', array( 'type' => 'integer', 'sanitize_callback' => 'pnpc_psd_sanitize_max_attachment_mb', 'default' => 5 ) );
+
 		register_setting('pnpc_psd_settings', 'pnpc_psd_auto_assign_tickets');
 		// Default agent assignment (staff user ID). 0 = no default.
 		register_setting(
@@ -370,7 +411,37 @@ class PNPC_PSD_Admin
 				'default'           => 0,
 			)
 		);
-		register_setting('pnpc_psd_settings', 'pnpc_psd_allowed_file_types');
+		// Allowed attachment types (MIME and/or extensions). Normalize and never store blank.
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_allowed_file_types',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'pnpc_psd_sanitize_allowed_file_types',
+				'default'           => 'image/jpeg,image/png,application/pdf',
+			)
+		);
+
+		// Public login behavior for shortcode pages (dashboard/create/my tickets).
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_public_login_mode',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'pnpc_psd_sanitize_public_login_mode',
+				'default'           => 'inline',
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_public_login_url',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'pnpc_psd_sanitize_public_login_url',
+				'default'           => '',
+			)
+		);
+
 
 		register_setting(
 			'pnpc_psd_settings',
@@ -739,6 +810,7 @@ class PNPC_PSD_Admin
 		}
 
 		$attachments = array();
+		$att_skipped = array();
 		if (! empty($_FILES) && isset($_FILES['attachments'])) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
 			if (function_exists('pnpc_psd_rearrange_files')) {
@@ -762,24 +834,108 @@ class PNPC_PSD_Admin
 				}
 			}
 
-			$allowed_mimes = get_option('pnpc_psd_allowed_file_types', 'image/jpeg,image/png,application/pdf');
-			$allowed_list = array_map('trim', explode(',', $allowed_mimes));
+			$allowed_list = function_exists( 'pnpc_psd_get_allowed_file_types_list' )
+				? pnpc_psd_get_allowed_file_types_list()
+				: array_map( 'trim', preg_split( '/[s,;]+/', (string) get_option( 'pnpc_psd_allowed_file_types', 'jpg,jpeg,png,gif,webp,pdf,txt,csv,doc,docx,xls,xlsx,zip' ) ) );
 
 			foreach ($files as $file) {
 				if (empty($file['name'])) {
 					continue;
 				}
-				if (! empty($file['type']) && ! in_array($file['type'], $allowed_list, true)) {
+				// Respect PHP upload error codes first.
+				if ( isset( $file['error'] ) && (int) $file['error'] !== UPLOAD_ERR_OK ) {
+					$att_skipped[] = array('file' => (string) $file['name'], 'reason' => 'php', 'code' => (int) $file['error']);
+					continue;
+				}
+				// Allowlist supports both MIME strings (image/png) and extensions (png).
+				$file_name = (string) $file['name'];
+				$file_ext  = strtolower((string) pathinfo($file_name, PATHINFO_EXTENSION));
+				$mime      = ! empty($file['type']) ? (string) $file['type'] : '';
+				if (! empty($file['tmp_name']) && function_exists('wp_check_filetype_and_ext')) {
+					$checked = wp_check_filetype_and_ext($file['tmp_name'], $file_name);
+					if (! empty($checked['type'])) {
+						$mime = (string) $checked['type'];
+					}
+				}
+				// Normalize common MIME aliases so allowlists don't unexpectedly reject standard files.
+				$mime_norm = strtolower( (string) $mime );
+				if ( 'image/jpg' === $mime_norm ) {
+					$mime_norm = 'image/jpeg';
+				}
+				if ( 'application/x-pdf' === $mime_norm ) {
+					$mime_norm = 'application/pdf';
+				}
+				$mime = $mime_norm;
+				$allowed_ok = false;
+				$ext_alias = array(
+					'jpg'  => array( 'jpg', 'jpeg', 'jpe' ),
+					'jpeg' => array( 'jpg', 'jpeg', 'jpe' ),
+					'jpe'  => array( 'jpg', 'jpeg', 'jpe' ),
+				);
+				foreach ($allowed_list as $allow_item) {
+					$allow_item = strtolower(trim((string) $allow_item));
+					if ('' === $allow_item) {
+						continue;
+					}
+					if (false !== strpos($allow_item, '/')) {
+						if (strtolower($mime) === $allow_item) {
+							$allowed_ok = true;
+							break;
+						}
+						if (substr($allow_item, -2) === '/*' && 0 === strpos(strtolower($mime), rtrim($allow_item, '*'))) {
+							$allowed_ok = true;
+							break;
+						}
+					} else {
+						if ( $file_ext && ( $file_ext === $allow_item || ( isset( $ext_alias[ $allow_item ] ) && in_array( $file_ext, $ext_alias[ $allow_item ], true ) ) ) ) {
+							$allowed_ok = true;
+							break;
+						}
+					}
+				}
+				// If the allowlist is MIME-only, accept well-known extensions that correspond to allowed MIME types.
+				if ( ! $allowed_ok && $file_ext ) {
+					$mime_to_exts = array(
+						'image/jpeg'      => array( 'jpg', 'jpeg', 'jpe' ),
+						'image/png'       => array( 'png' ),
+						'application/pdf' => array( 'pdf' ),
+						'image/gif'       => array( 'gif' ),
+						'image/webp'      => array( 'webp' ),
+					);
+					foreach ( (array) $allowed_list as $allow_item ) {
+						$allow_item = strtolower( trim( (string) $allow_item ) );
+						if ( isset( $mime_to_exts[ $allow_item ] ) && in_array( $file_ext, $mime_to_exts[ $allow_item ], true ) ) {
+							$allowed_ok = true;
+							break;
+						}
+					}
+				}
+				if (! $allowed_ok) {
+					$att_skipped[] = array(
+						'file'   => $file_name,
+						'reason' => 'type',
+						'mime'   => $mime,
+						'ext'    => $file_ext,
+						'allow'  => implode( ',', (array) $allowed_list ),
+					);
+					continue;
+				}
+				$max_bytes = function_exists( 'pnpc_psd_get_max_attachment_bytes' ) ? (int) pnpc_psd_get_max_attachment_bytes() : (5 * 1024 * 1024);
+				$server_max_bytes = function_exists( 'wp_max_upload_size' ) ? (int) wp_max_upload_size() : 0;
+				$effective_max_bytes = ( $server_max_bytes > 0 ) ? min( $max_bytes, $server_max_bytes ) : $max_bytes;
+				if ( isset( $file['size'] ) && (int) $file['size'] > $effective_max_bytes ) {
+					$att_skipped[] = array('file' => $file_name, 'reason' => 'size', 'size' => (int) $file['size'], 'max' => (int) $effective_max_bytes);
 					continue;
 				}
 				$move = wp_handle_upload($file, array('test_form' => false));
 				if (isset($move['error'])) {
+					$att_skipped[] = array('file' => $file_name, 'reason' => 'upload', 'msg' => (string) $move['error']);
 					continue;
 				}
 				$attachments[] = array(
 					'file_name'   => sanitize_file_name($file['name']),
 					'file_path'   => $move['url'],
-					'file_type'   => isset($file['type']) ? $file['type'] :  '',
+					'file_type'   => $mime,
 					'file_size'   => isset($file['size']) ? intval($file['size']) : 0,
 					'uploaded_by' => get_current_user_id(),
 				);
@@ -796,7 +952,49 @@ class PNPC_PSD_Admin
 		);
 
 		if ($response_id) {
-			wp_send_json_success(array('message' => __('Response added successfully.', 'pnpc-pocket-service-desk')));
+			$note = '';
+			if ( ! empty( $att_skipped ) ) {
+				$detail = '';
+				foreach ( (array) $att_skipped as $sk ) {
+					if ( isset( $sk['reason'] ) && 'size' === (string) $sk['reason'] && isset( $sk['max'] ) ) {
+						$max_human  = function_exists( 'pnpc_psd_format_filesize' ) ? pnpc_psd_format_filesize( (int) $sk['max'] ) : ( (int) $sk['max'] . ' bytes' );
+						$size_human = ( isset( $sk['size'] ) && function_exists( 'pnpc_psd_format_filesize' ) ) ? pnpc_psd_format_filesize( (int) $sk['size'] ) : '';
+						$detail = ' ' . sprintf( esc_html__( 'Max per file: %s.', 'pnpc-pocket-service-desk' ), $max_human );
+						if ( $size_human ) {
+							$detail .= ' ' . sprintf( esc_html__( 'File size was %s.', 'pnpc-pocket-service-desk' ), $size_human );
+						}
+						break;
+					}
+					if ( empty( $detail ) && isset( $sk['reason'] ) && 'type' === (string) $sk['reason'] ) {
+						if ( ! empty( $sk['mime'] ) ) {
+							$detail .= ' ' . sprintf( esc_html__( 'Detected type: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['mime'] ) );
+						}
+						if ( ! empty( $sk['ext'] ) ) {
+							$detail .= ' ' . sprintf( esc_html__( 'Extension: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['ext'] ) );
+						}
+						if ( ! empty( $sk['allow'] ) ) {
+							$detail .= ' ' . sprintf( esc_html__( 'Allowed: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['allow'] ) );
+						}
+						$detail = trim( $detail );
+					}
+					if ( empty( $detail ) && isset( $sk['reason'] ) && 'php' === (string) $sk['reason'] && isset( $sk['code'] ) ) {
+						$detail = ' ' . sprintf( esc_html__( 'Upload rejected by server (code %d).', 'pnpc-pocket-service-desk' ), (int) $sk['code'] );
+					}
+					if ( empty( $detail ) && isset( $sk['reason'] ) && 'upload' === (string) $sk['reason'] && ! empty( $sk['msg'] ) ) {
+						$detail = ' ' . esc_html( (string) $sk['msg'] );
+					}
+					if ( ! empty( $detail ) ) {
+						break;
+					}
+				}
+				$note = ' ' . sprintf(
+					/* translators: 1: number of attachments skipped, 2: detail */
+					esc_html__( 'Note: %1$d attachment(s) were skipped due to type/size/upload rules.%2$s', 'pnpc-pocket-service-desk' ),
+					count( $att_skipped ),
+					$detail
+				);
+			}
+			wp_send_json_success(array('message' => __('Response added successfully.', 'pnpc-pocket-service-desk') . $note));
 		}
 
 		wp_send_json_error(array('message' => __('Failed to add response.', 'pnpc-pocket-service-desk')));
@@ -844,12 +1042,25 @@ class PNPC_PSD_Admin
 			wp_send_json_error(array('message' => __('Invalid data. ', 'pnpc-pocket-service-desk')));
 		}
 
+		$old_ticket = PNPC_PSD_Ticket::get( $ticket_id );
+		$old_status = ( $old_ticket && isset( $old_ticket->status ) ) ? (string) $old_ticket->status : '';
+
 		$result = PNPC_PSD_Ticket::update(
 			$ticket_id,
 			array('status' => $status)
 		);
 
 		if ($result) {
+			// Treat staff status change as staff activity for unread tracking.
+			if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
+				PNPC_PSD_Ticket::update_activity_on_response( $ticket_id, true );
+			}
+
+			// Notify customer if a ticket is closed (configurable).
+			if ( 'closed' === $status && 'closed' !== $old_status && class_exists( 'PNPC_PSD_Notifications' ) ) {
+				PNPC_PSD_Notifications::ticket_closed( (int) $ticket_id, get_current_user_id() );
+			}
+
 			wp_send_json_success(array('message' => __('Ticket status updated successfully. ', 'pnpc-pocket-service-desk')));
 		} else {
 			wp_send_json_error(array('message' => __('Failed to update status.', 'pnpc-pocket-service-desk')));
@@ -930,6 +1141,50 @@ class PNPC_PSD_Admin
 		} else {
 			wp_send_json_error(array('message' => __('Failed to restore tickets.', 'pnpc-pocket-service-desk')));
 		}
+	}
+
+	public function ajax_bulk_archive_tickets()
+	{
+		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
+
+		if ( ! current_user_can('manage_options') ) {
+			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
+		}
+
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+		if ( empty($ticket_ids) ) {
+			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
+		}
+
+		$count = PNPC_PSD_Ticket::bulk_archive_closed($ticket_ids);
+		if ( $count > 0 ) {
+			$message = sprintf(_n('%d ticket moved to archive.', '%d tickets moved to archive.', $count, 'pnpc-pocket-service-desk'), $count);
+			wp_send_json_success(array('message' => $message, 'count' => $count));
+		}
+
+		wp_send_json_error(array('message' => __('No closed tickets were archived.', 'pnpc-pocket-service-desk')));
+	}
+
+	public function ajax_bulk_restore_archived_tickets()
+	{
+		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
+
+		if ( ! current_user_can('manage_options') ) {
+			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
+		}
+
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+		if ( empty($ticket_ids) ) {
+			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
+		}
+
+		$count = PNPC_PSD_Ticket::bulk_restore_from_archive($ticket_ids);
+		if ( $count > 0 ) {
+			$message = sprintf(_n('%d ticket restored from archive.', '%d tickets restored from archive.', $count, 'pnpc-pocket-service-desk'), $count);
+			wp_send_json_success(array('message' => $message, 'count' => $count));
+		}
+
+		wp_send_json_error(array('message' => __('No tickets were restored from archive.', 'pnpc-pocket-service-desk')));
 	}
 
 	/**
@@ -1039,14 +1294,32 @@ class PNPC_PSD_Admin
 			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
 		}
 
-		$count = PNPC_PSD_Ticket::bulk_approve_pending_delete_to_trash($ticket_ids);
+		// Guard: Only approve tickets that actually have a pending delete request.
+		$eligible_ids = array();
+		foreach ( $ticket_ids as $tid ) {
+			$ticket = PNPC_PSD_Ticket::get( $tid );
+			$pending_at = ( $ticket && isset( $ticket->pending_delete_at ) ) ? (string) $ticket->pending_delete_at : '';
+			if ( '' !== $pending_at ) {
+				$eligible_ids[] = absint( $tid );
+			}
+		}
+
+		if ( empty( $eligible_ids ) ) {
+			wp_send_json_error(array(
+				'message' => __('No tickets were approved. The selected ticket(s) do not appear to have a pending delete request (Review queue). Refresh the page and try again.', 'pnpc-pocket-service-desk'),
+			));
+		}
+
+		$count = PNPC_PSD_Ticket::bulk_approve_pending_delete_to_trash( $eligible_ids );
 		if ($count > 0) {
 			/* translators: %d: number of tickets */
 			$message = sprintf(_n('%d ticket moved to trash.', '%d tickets moved to trash.', $count, 'pnpc-pocket-service-desk'), $count);
 			wp_send_json_success(array('message' => $message, 'count' => $count));
 		}
 
-		wp_send_json_error(array('message' => __('Failed to approve tickets.', 'pnpc-pocket-service-desk')));
+		wp_send_json_error(array(
+			'message' => __('No tickets were approved. Please refresh the Review list and try again.', 'pnpc-pocket-service-desk'),
+		));
 	}
 
 	/**
@@ -1293,6 +1566,7 @@ class PNPC_PSD_Admin
 		$closed_count = PNPC_PSD_Ticket::get_count('closed');
 		$trash_count  = PNPC_PSD_Ticket::get_trashed_count();
 		$review_count = PNPC_PSD_Ticket::get_pending_delete_count();
+		$archived_count = method_exists('PNPC_PSD_Ticket','get_archived_count') ? PNPC_PSD_Ticket::get_archived_count() : 0;
 
 		wp_send_json_success(array(
 			'html' => $html,
@@ -1317,42 +1591,45 @@ class PNPC_PSD_Admin
 	 */
 	private function calculate_new_badge_count($ticket_id, $user_id)
 	{
-		// Get last view timestamp for this user
-		$last_view_meta = get_user_meta($user_id, 'pnpc_psd_ticket_last_view_' . intval($ticket_id), true);
-		
-		if (empty($last_view_meta)) {
-			// User has NEVER viewed this ticket
-			return 1; // The ticket itself is "new"
+		$ticket_id = absint( $ticket_id );
+		$user_id   = absint( $user_id );
+		if ( ! $ticket_id || ! $user_id || ! class_exists( 'PNPC_PSD_Ticket' ) ) {
+			return 0;
 		}
-		
-		// Convert to integer timestamp
-		$last_view_time = is_numeric($last_view_meta) 
-			? intval($last_view_meta) 
-			: strtotime($last_view_meta);
-		
-		// Get all responses for this ticket
-		$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket_id, array('orderby' => 'created_at', 'order' => 'ASC'));
-		
+
+		// v1.1.0+: Prefer deterministic, DB-backed role timestamps on the ticket row.
+		$ticket = PNPC_PSD_Ticket::get( $ticket_id );
+		if ( $ticket && ! empty( $ticket->last_customer_activity_at ) ) {
+			$customer_activity_raw = ! empty( $ticket->last_customer_activity_at ) ? (string) $ticket->last_customer_activity_at : (string) $ticket->created_at;
+			$staff_viewed_raw      = ! empty( $ticket->last_staff_viewed_at ) ? (string) $ticket->last_staff_viewed_at : '';
+			$customer_activity_ts  = ( '' !== $customer_activity_raw ) ? strtotime( $customer_activity_raw . ' UTC' ) : 0;
+			$staff_viewed_ts       = ( '' !== $staff_viewed_raw ) ? strtotime( $staff_viewed_raw . ' UTC' ) : 0;
+			return ( $customer_activity_ts > $staff_viewed_ts ) ? 1 : 0;
+		}
+
+		// Legacy fallback (should be hit only on very old DBs): user-meta based.
+		$last_view_meta = get_user_meta( $user_id, 'pnpc_psd_ticket_last_view_' . $ticket_id, true );
+		if ( empty( $last_view_meta ) ) {
+			return 1;
+		}
+		$last_view_time = is_numeric( $last_view_meta ) ? (int) $last_view_meta : (int) strtotime( (string) $last_view_meta );
+		if ( ! $last_view_time ) {
+			return 1;
+		}
+		$responses = class_exists( 'PNPC_PSD_Ticket_Response' ) ? PNPC_PSD_Ticket_Response::get_by_ticket( $ticket_id, array( 'orderby' => 'created_at', 'order' => 'ASC' ) ) : array();
 		$new_count = 0;
-		
-		if (!empty($responses)) {
-			foreach ($responses as $response) {
-				// Skip this user's own responses
-				if (intval($response->user_id) === intval($user_id)) {
+		if ( ! empty( $responses ) ) {
+			foreach ( $responses as $response ) {
+				if ( (int) $response->user_id === (int) $user_id ) {
 					continue;
 				}
-				
-				// Convert response timestamp
-				$response_time = strtotime($response->created_at);
-				
-				// Count if response is AFTER last view
-				if ($response_time > $last_view_time) {
+				$response_time = (int) strtotime( (string) $response->created_at );
+				if ( $response_time > $last_view_time ) {
 					$new_count++;
 				}
 			}
 		}
-		
-		return $new_count;
+		return (int) $new_count;
 	}
 
 	/**
@@ -1663,20 +1940,45 @@ class PNPC_PSD_Admin
 				$files = $_FILES['attachments'];
 				$file_count = count($files['name']);
 				
+				// Plan-aware size cap, additionally clamped by the server/WP upload cap.
+				$plan_max_bytes = function_exists( 'pnpc_psd_get_max_attachment_bytes' ) ? (int) pnpc_psd_get_max_attachment_bytes() : (5 * 1024 * 1024);
+				$server_max_bytes = function_exists( 'wp_max_upload_size' ) ? (int) wp_max_upload_size() : 0;
+				$effective_max_bytes = ( $server_max_bytes > 0 ) ? min( $plan_max_bytes, $server_max_bytes ) : $plan_max_bytes;
+
 				for ($i = 0; $i < $file_count; $i++) {
 					// Skip if no file
 					if (empty($files['name'][$i])) {
 						continue;
 					}
 					
-					// Check file size (5MB limit)
-					if ($files['size'][$i] > 5 * 1024 * 1024) {
+					// Respect PHP/WP upload error codes first; do not mislabel server rejections as "size" issues.
+					if ( isset( $files['error'][$i] ) && (int) $files['error'][$i] !== UPLOAD_ERR_OK ) {
 						add_settings_error(
 							'pnpc_psd_messages',
 							'pnpc_psd_message',
 							sprintf(
-								__('File "%s" exceeds 5MB limit and was skipped.', 'pnpc-pocket-service-desk'),
+								/* translators: 1: filename */
+								__('File "%1$s" could not be uploaded (server rejected the upload). Please confirm your server upload limits and try again.', 'pnpc-pocket-service-desk'),
 								$files['name'][$i]
+							),
+							'warning'
+						);
+						continue;
+					}
+
+					// Check file size (plan-aware cap clamped by server/WP max upload size).
+					if ( isset( $files['size'][$i] ) && (int) $files['size'][$i] > $effective_max_bytes ) {
+						$size_human = function_exists( 'pnpc_psd_format_filesize' ) ? pnpc_psd_format_filesize( (int) $files['size'][$i] ) : ( (int) $files['size'][$i] . ' bytes' );
+						$max_human  = function_exists( 'pnpc_psd_format_filesize' ) ? pnpc_psd_format_filesize( (int) $effective_max_bytes ) : ( (int) $effective_max_bytes . ' bytes' );
+						add_settings_error(
+							'pnpc_psd_messages',
+							'pnpc_psd_message',
+							sprintf(
+								/* translators: 1: filename, 2: file size, 3: max size */
+								__('File "%1$s" (%2$s) exceeds the maximum allowed size (%3$s) and was skipped.', 'pnpc-pocket-service-desk'),
+								$files['name'][$i],
+								$size_human,
+								$max_human
 							),
 							'warning'
 						);
@@ -1703,7 +2005,7 @@ class PNPC_PSD_Admin
 						
 						$att_data = array(
 							'ticket_id'   => absint($ticket_id),
-							'response_id' => null,
+							'response_id' => 0,
 							'file_name'   => sanitize_file_name($files['name'][$i]),
 							'file_path'   => esc_url_raw($upload['url']),
 							'file_type'   => sanitize_text_field($upload['type']),
@@ -1716,7 +2018,7 @@ class PNPC_PSD_Admin
 						$wpdb->insert(
 							$attachments_table,
 							$att_data,
-							array('%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s')
+							array('%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s')
 						);
 					}
 				}
@@ -1780,15 +2082,15 @@ class PNPC_PSD_Admin
 
 		$message = sprintf(
 			/* translators: 1: customer name, 2: ticket number, 3: subject, 4: priority, 5: description, 6: ticket URL, 7: staff name, 8: site name */
-			__('Hello %1$s,', 'pnpc-pocket-service-desk') . "\n\n" .
-			__('A support ticket has been created for you by our support team.', 'pnpc-pocket-service-desk') . "\n\n" .
-			__('Ticket Number: %2$s', 'pnpc-pocket-service-desk') . "\n" .
-			__('Subject: %3$s', 'pnpc-pocket-service-desk') . "\n" .
-			__('Priority: %4$s', 'pnpc-pocket-service-desk') . "\n\n" .
-			__('Description:', 'pnpc-pocket-service-desk') . "\n%5$s\n\n" .
-			__('You can view and respond to this ticket here:', 'pnpc-pocket-service-desk') . "\n%6$s\n\n" .
-			__('Created by: %7$s', 'pnpc-pocket-service-desk') . "\n\n" .
-			__('Thank you,', 'pnpc-pocket-service-desk') . "\n" .
+			__('Hello %1$s,', 'pnpc-pocket-service-desk') . "nn" .
+			__('A support ticket has been created for you by our support team.', 'pnpc-pocket-service-desk') . "nn" .
+			__('Ticket Number: %2$s', 'pnpc-pocket-service-desk') . "n" .
+			__('Subject: %3$s', 'pnpc-pocket-service-desk') . "n" .
+			__('Priority: %4$s', 'pnpc-pocket-service-desk') . "nn" .
+			__('Description:', 'pnpc-pocket-service-desk') . "n%5$snn" .
+			__('You can view and respond to this ticket here:', 'pnpc-pocket-service-desk') . "n%6$snn" .
+			__('Created by: %7$s', 'pnpc-pocket-service-desk') . "nn" .
+			__('Thank you,', 'pnpc-pocket-service-desk') . "n" .
 			__('%8$s Support Team', 'pnpc-pocket-service-desk'),
 			$customer->display_name,
 			$ticket->ticket_number,
@@ -1804,4 +2106,143 @@ class PNPC_PSD_Admin
 
 		return wp_mail($to, $subject, $message, $headers);
 	}
+
+
+
+	/**
+	 * Handle archiving a ticket from admin list.
+	 */
+	public function handle_archive_ticket() {
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( $_GET['ticket_id'] ) : 0;
+		if ( ! $ticket_id ) {
+			wp_die( esc_html__( 'Invalid ticket.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		check_admin_referer( 'pnpc_psd_archive_ticket_' . $ticket_id );
+
+		// Optional return target so single-item actions can originate from different list tabs (e.g., Trash).
+		$return_to = isset( $_GET['return_to'] ) ? sanitize_key( wp_unslash( $_GET['return_to'] ) ) : '';
+
+		if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
+			if ( 'trash' === $return_to && method_exists( 'PNPC_PSD_Ticket', 'archive_from_trash' ) ) {
+				PNPC_PSD_Ticket::archive_from_trash( $ticket_id );
+			} else {
+				PNPC_PSD_Ticket::archive( $ticket_id );
+			}
+		}
+
+		// $return_to already captured above.
+		$redirect  = admin_url( 'admin.php?page=pnpc-service-desk&status=closed' );
+		if ( $return_to ) {
+			switch ( $return_to ) {
+				case 'trash':
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&view=trash' );
+					break;
+				case 'review':
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&view=review' );
+					break;
+				case 'archived':
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&view=archived' );
+					break;
+				case 'all':
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk' );
+					break;
+				case 'closed':
+				default:
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&status=closed' );
+					break;
+			}
+		}
+
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	/**
+	 * Handle restoring an archived ticket.
+	 */
+	public function handle_restore_archived_ticket() {
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( $_GET['ticket_id'] ) : 0;
+		if ( ! $ticket_id ) {
+			wp_die( esc_html__( 'Invalid ticket.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		check_admin_referer( 'pnpc_psd_restore_archived_ticket_' . $ticket_id );
+
+		if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
+			PNPC_PSD_Ticket::restore_from_archive( $ticket_id );
+		}
+
+		wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk&view=archived' ) );
+		exit;
+	}
+
+	/**
+	 * Export tickets as a CSV.
+	 */
+	public function handle_export_tickets() {
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_die( esc_html__( 'You do not have permission to export tickets.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		check_admin_referer( 'pnpc_psd_export_tickets' );
+
+		$view = isset( $_GET['view'] ) ? sanitize_text_field( wp_unslash( $_GET['view'] ) ) : '';
+		$status = isset( $_GET['status'] ) ? sanitize_text_field( wp_unslash( $_GET['status'] ) ) : '';
+
+		$args = array(
+			'per_page' => 5000,
+			'page'     => 1,
+		);
+
+		if ( 'archived' === $view ) {
+			$tickets = method_exists( 'PNPC_PSD_Ticket', 'get_archived' ) ? PNPC_PSD_Ticket::get_archived( $args ) : array();
+		} elseif ( 'trash' === $view ) {
+			$tickets = PNPC_PSD_Ticket::get_trashed( $args );
+		} elseif ( 'review' === $view ) {
+			$tickets = PNPC_PSD_Ticket::get_pending_delete( $args );
+		} else {
+			if ( ! empty( $status ) ) {
+				$args['status'] = $status;
+			}
+			$args['include_archived'] = true;
+			$tickets = PNPC_PSD_Ticket::get_all( $args );
+		}
+
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename=pnpc-tickets-' . gmdate( 'Ymd-His' ) . '.csv' );
+
+		$out = fopen( 'php://output', 'w' );
+		fputcsv( $out, array( 'Ticket Number', 'Subject', 'Status', 'Priority', 'Customer', 'Assigned To', 'Created', 'Archived At', 'Deleted At' ) );
+
+		foreach ( (array) $tickets as $ticket ) {
+			$customer = ! empty( $ticket->user_id ) ? get_userdata( absint( $ticket->user_id ) ) : null;
+			$assigned = ! empty( $ticket->assigned_to ) ? get_userdata( absint( $ticket->assigned_to ) ) : null;
+
+			fputcsv( $out, array(
+				(string) ( $ticket->ticket_number ?? '' ),
+				(string) ( $ticket->subject ?? '' ),
+				(string) ( $ticket->status ?? '' ),
+				(string) ( $ticket->priority ?? '' ),
+				$customer ? (string) $customer->display_name : '',
+				$assigned ? (string) $assigned->display_name : '',
+				(string) ( $ticket->created_at ?? '' ),
+				(string) ( $ticket->archived_at ?? '' ),
+				(string) ( $ticket->deleted_at ?? '' ),
+			) );
+		}
+
+		fclose( $out );
+		exit;
+	}
+
 }
