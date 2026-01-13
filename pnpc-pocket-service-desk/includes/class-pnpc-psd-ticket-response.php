@@ -70,6 +70,13 @@ class PNPC_PSD_Ticket_Response
 		if ($result) {
 			$response_id = $wpdb->insert_id;
 
+			if ( class_exists( 'PNPC_PSD_Audit_Log' ) ) {
+				PNPC_PSD_Audit_Log::log( absint($data['ticket_id']), $is_staff ? 'staff_replied' : 'customer_replied', array(
+					'actor_id' => absint($data['user_id']),
+					'response_id' => absint($response_id),
+				) );
+			}
+
 			// Save attachments if provided (non-blocking)
 			if (! empty($data['attachments']) && is_array($data['attachments'])) {
 				foreach ($data['attachments'] as $att) {
@@ -84,11 +91,21 @@ class PNPC_PSD_Ticket_Response
 						'uploaded_by' => isset($att['uploaded_by']) ? absint($att['uploaded_by']) : absint(get_current_user_id()),
 						'created_at'  => $created_at_utc,
 					);
-					$wpdb->insert($attachments_table, $att_data, array('%d', '%d', '%s', '%s', '%d', '%d', '%s'));
+					// IMPORTANT: keep formats aligned with $att_data keys to avoid corrupting file_type/file_size.
+					$wpdb->insert(
+						$attachments_table,
+						$att_data,
+						array('%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s')
+					);
 				}
 			}
 
-			// Send notification email.
+			// Update ticket activity tracking (role-level) for unread indicators.
+			// Important: Do NOT rely on $data['is_staff_response'] because it is an input hint and
+			// may not be set by callers. Use the computed staff capability result instead.
+			if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
+				PNPC_PSD_Ticket::update_activity_on_response( absint( $data['ticket_id'] ), (bool) $is_staff );
+			}
 			self::send_response_notification($response_id);
 
 			return $response_id;
@@ -208,6 +225,12 @@ class PNPC_PSD_Ticket_Response
 	 */
 	private static function send_response_notification($response_id)
 	{
+		// v1.1.0+: central notification service.
+		if ( class_exists( 'PNPC_PSD_Notifications' ) ) {
+			PNPC_PSD_Notifications::response_created( (int) $response_id );
+			return;
+		}
+
 		$response = self::get($response_id);
 		if (! $response) {
 			return;

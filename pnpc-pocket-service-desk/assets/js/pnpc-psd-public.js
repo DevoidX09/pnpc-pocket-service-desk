@@ -146,27 +146,43 @@
 			});
 		}
 
-		$('#ticket-attachments').on('change', function(e) {
-			createFiles = Array.prototype.slice.call(e.target.files || []);
+		// Use delegated bindings so the create form can be re-rendered without losing handlers.
+		$(document).on('change', '#ticket-attachments', function(e) {
+			var $form = $(this).closest('form');
+			var createFiles = Array.prototype.slice.call(e.target.files || []);
 			if (createFiles.length > MAX_ATTACHMENTS) {
 				createFiles = createFiles.slice(0, MAX_ATTACHMENTS);
 			}
-			renderAttachmentList(createFiles, $('#pnpc-psd-attachments-list'), '#ticket-attachments');
+			// Persist per-form so the submit handler can read it and send files.
+			$form.data('pnpcCreateFiles', createFiles);
+			renderAttachmentList(createFiles, $form.find('.pnpc-psd-attachments-list'), '#ticket-attachments');
 		});
 
-		$('#pnpc-psd-create-ticket-form').on('submit', function(e) {
+		$(document).on('submit', '#pnpc-psd-create-ticket-form', function(e) {
 			e.preventDefault();
 			if (typeof pnpcPsdPublic === 'undefined') {
 				return;
 			}
 
-			var subject = $('#ticket-subject').val();
-			var description = $('#ticket-description').val();
-			var priority = $('#ticket-priority').val() || 'normal';
+			var $form = $(this);
+			if ($form.data('pnpcSubmitting')) {
+				return;
+			}
+			$form.data('pnpcSubmitting', 1);
+
+			// Use per-form createFiles to avoid conflicts when multiple shortcodes render on one page.
+			var createFiles = $form.data('pnpcCreateFiles') || [];
+
+
+
+			var subject = $form.find('[name="subject"]').val();
+			var description = $form.find('[name="description"]').val();
+			var priority = $form.find('[name="priority"]').val() || 'normal';
 			var $submitBtn = $(this).find('button[type="submit"]');
 
 			if (!subject.trim() || !description.trim()) {
-				showCreateMessage('error', 'Please fill in all required fields.');
+				showCreateMessage('error', 'Please fill in all required fields.', $form);
+				$form.data('pnpcSubmitting', 0);
 				return;
 			}
 
@@ -191,30 +207,38 @@
 				contentType: false,
 				success: function(result) {
 					if (result && result.success) {
-						showCreateMessage('success', result.data.message || 'Ticket created successfully.');
+						showCreateMessage('success', result.data.message || 'Ticket created successfully.', $form);
 						createFiles = [];
-						renderAttachmentList(createFiles, $('#pnpc-psd-attachments-list'), '#ticket-attachments');
-						$('#pnpc-psd-create-ticket-form')[0].reset();
+						$form.data('pnpcCreateFiles', createFiles);
+						renderAttachmentList(createFiles, $form.find('.pnpc-psd-attachments-list'), '#ticket-attachments');
+						$form[0].reset();
+						// Allow creating another ticket without leaving the page.
+						$submitBtn.prop('disabled', false);
 
 					} else if (result && result.data && result.data.message) {
-						showCreateMessage('error', result.data.message);
+						showCreateMessage('error', result.data.message, $form);
 						$submitBtn.prop('disabled', false);
 					} else {
 						var msg = (result && result.data && result.data.message) ? result.data.message : 'Failed to create ticket.';
-						showCreateMessage('error', msg);
+						showCreateMessage('error', msg, $form);
 						$submitBtn.prop('disabled', false);
 					}
 				},
 				error: function(xhr, status, err) {
 					console.error('pnpc-psd-public.js create ticket error', status, err, xhr && xhr.responseText);
-					showCreateMessage('error', 'Request failed. Please reload and try again.');
+					showCreateMessage('error', 'Request failed. Please reload and try again.', $form);
 					$submitBtn.prop('disabled', false);
+				},
+				complete: function() {
+					$submitBtn.prop('disabled', false);
+					$form.data('pnpcSubmitting', 0);
 				}
 			});
 		});
 
-		function showCreateMessage(type, message) {
-			var $messageDiv = $('#ticket-create-message');
+		function showCreateMessage(type, message, $scope) {
+			var $root = ($scope && $scope.length) ? $scope : $(document);
+			var $messageDiv = $root.find('.pnpc-psd-create-message').first();
 			if (!$messageDiv.length) {
 				return;
 			}

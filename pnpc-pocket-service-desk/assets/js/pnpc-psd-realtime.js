@@ -296,10 +296,7 @@
 	 * Restore state after refresh
 	 */
 	function restoreCurrentState() {
-		// Re-bind checkbox event handlers FIRST (critical for bulk actions)
-		rebindCheckboxHandlers();
-		
-		// Restore checkbox selections
+		// Restore checkbox selections FIRST (works immediately)
 		if (selectedTicketIds.length > 0) {
 			selectedTicketIds.forEach(function(ticketId) {
 				$('input[name="ticket[]"][value="' + ticketId + '"]').prop('checked', true);
@@ -332,31 +329,6 @@
 		setTimeout(function() {
 			$(window).scrollTop(currentScrollPosition);
 		}, 200);
-	}
-	
-	/**
-	 * Re-bind checkbox event handlers after AJAX refresh
-	 * Critical for bulk operations to work after refresh
-	 */
-	function rebindCheckboxHandlers() {
-		console.log('Re-binding checkbox handlers after refresh');
-		
-		// Remove old handlers to prevent duplicates (using namespaced events)
-		$('#cb-select-all-1').off('change.pnpc-refresh');
-		$('input[name="ticket[]"]').off('change.pnpc-refresh');
-		
-		// Re-bind "select all" checkbox
-		$('#cb-select-all-1').on('change.pnpc-refresh', function() {
-			var isChecked = $(this).is(':checked');
-			$('input[name="ticket[]"]').prop('checked', isChecked);
-			console.log('Select all toggled:', isChecked);
-		});
-		
-		// Re-bind individual checkboxes
-		$('input[name="ticket[]"]').on('change.pnpc-refresh', function() {
-			updateSelectAllCheckbox();
-			console.log('Checkbox changed:', $(this).val());
-		});
 	}
 
 	/**
@@ -509,15 +481,10 @@
 	 * Flash full-screen border to alert user of new tickets
 	 */
 	function flashScreenBorder(count) {
-		// Prevent multiple simultaneous flashes
-		if ($('body').hasClass('pnpc-psd-flash-active')) {
-			return;
-		}
+		// Create full-screen border overlay
+		var $overlay = $('<div class="pnpc-psd-screen-flash-overlay"></div>');
 		
-		// Add body class
-		$('body').addClass('pnpc-psd-flash-active');
-		
-		// Create notification text at top
+		// Add notification text
 		var ticketText = count === 1 
 			? (typeof pnpcPsdAdmin !== 'undefined' && pnpcPsdAdmin.i18n && pnpcPsdAdmin.i18n.new_ticket_singular 
 				? pnpcPsdAdmin.i18n.new_ticket_singular 
@@ -526,37 +493,22 @@
 				? pnpcPsdAdmin.i18n.new_tickets_plural 
 				: 'new tickets arrived');
 		
-		var $notification = $('<div class="pnpc-psd-screen-flash-notification">' + 
-			'<span class="dashicons dashicons-yes-alt"></span>' + 
-			ticketText + 
-			'</div>');
+		var $notification = $('<div class="pnpc-psd-screen-flash-notification">' + ticketText + '</div>');
 		
-		// Create border flash around the CONTENT AREA (not full screen)
-		var $contentBorder = $('<div class="pnpc-psd-content-border-flash"></div>');
+		$('body').append($overlay).append($notification);
 		
-		// Find the ticket list wrapper
-		var $wrapElement = $('.wrap');
-		
-		if ($wrapElement.length) {
-			// Wrap the content with border flash
-			$wrapElement.prepend($contentBorder);
-		}
-		
-		// Append notification to body
-		$('body').append($notification);
-		
-		// Remove after animation completes
+		// Remove after animation
 		setTimeout(function() {
-			$contentBorder.fadeOut(400, function() {
+			$overlay.fadeOut(500, function() {
 				$(this).remove();
 			});
-			$notification.fadeOut(400, function() {
+			$notification.fadeOut(500, function() {
 				$(this).remove();
 			});
-			
-			// Remove body class
-			$('body').removeClass('pnpc-psd-flash-active');
 		}, 3000);
+		
+		// Optional: Play notification sound
+		// playNotificationSound();
 	}
 
 	/**

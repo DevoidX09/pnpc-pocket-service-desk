@@ -31,9 +31,19 @@ if (isset($_GET['ticket_id']) && is_user_logged_in() && current_user_can('pnpc_p
 global $wpdb;
 $att_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 
-$ticket_attachments = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$att_table} WHERE ticket_id = %d AND (response_id IS NULL OR response_id = '') ORDER BY id ASC", $ticket->id));
+$ticket_attachments = $wpdb->get_results(
+	$wpdb->prepare(
+		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND (response_id IS NULL OR response_id = '' OR response_id = 0) ORDER BY id ASC",
+		$ticket->id
+	)
+);
 $response_attachments_map = array();
-$all_response_atts = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$att_table} WHERE ticket_id = %d AND response_id IS NOT NULL ORDER BY id ASC", $ticket->id));
+$all_response_atts = $wpdb->get_results(
+	$wpdb->prepare(
+		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND response_id IS NOT NULL AND response_id <> 0 ORDER BY id ASC",
+		$ticket->id
+	)
+);
 if ($all_response_atts) {
 	foreach ($all_response_atts as $ra) {
 		$response_attachments_map[intval($ra->response_id)][] = $ra;
@@ -337,6 +347,7 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 				<div style="margin-top:8px;">
 					<label for="admin-response-attachments"><?php esc_html_e('Attachments (optional)', 'pnpc-pocket-service-desk'); ?></label>
 					<input type="file" id="admin-response-attachments" name="attachments[]" multiple />
+					<div class="pnpc-psd-attachments-list" id="pnpc-psd-admin-response-attachments-list" style="margin-top:8px;"></div>
 				</div>
 				<div style="margin-top:8px;">
 					<button type="submit" class="button button-primary"><?php esc_html_e('Add Response', 'pnpc-pocket-service-desk'); ?></button>

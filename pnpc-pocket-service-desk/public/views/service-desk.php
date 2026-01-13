@@ -19,29 +19,50 @@ $closed_count = count(array_filter($tickets, function ($ticket) {
 	return 'closed' === $ticket->status;
 }));
 
-// Count how many open / in-progress tickets have new staff responses since the customer last viewed them.
+// Count how many *new staff responses* exist on open / in-progress tickets since the customer last viewed them.
+// We prefer v1.1.0+ role-level timestamps on the ticket row to avoid scanning responses when nothing changed.
 $updated_open_count = 0;
-if ($user_id) {
-	foreach ($tickets as $ticket) {
-		if ('open' !== $ticket->status && 'in-progress' !== $ticket->status) {
+if ( $user_id ) {
+	foreach ( $tickets as $ticket ) {
+		if ( 'open' !== $ticket->status && 'in-progress' !== $ticket->status ) {
 			continue;
 		}
-		$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
-		$last_view_raw  = get_user_meta($user_id, $last_view_key, true);
-		$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
 
-		$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
-		if (empty($responses)) {
-			continue;
-		}
-		foreach ($responses as $response) {
-			if ((int) $response->user_id === (int) $user_id) {
+		$customer_viewed_raw = ! empty( $ticket->last_customer_viewed_at ) ? (string) $ticket->last_customer_viewed_at : '';
+		$staff_activity_raw  = ! empty( $ticket->last_staff_activity_at ) ? (string) $ticket->last_staff_activity_at : '';
+
+		// If we have role-level timestamps and nothing has changed since the customer last viewed, skip any deeper work.
+		if ( '' !== $customer_viewed_raw && '' !== $staff_activity_raw ) {
+			$customer_viewed_ts = strtotime( $customer_viewed_raw . ' UTC' );
+			$staff_activity_ts  = strtotime( $staff_activity_raw . ' UTC' );
+			if ( $staff_activity_ts <= $customer_viewed_ts ) {
 				continue;
 			}
-			$resp_time = function_exists('pnpc_psd_mysql_to_wp_local_ts') ? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) : intval(strtotime($response->created_at));
-			if ($resp_time > $last_view_time) {
+		}
+
+		// Count new staff responses since the customer last viewed.
+		// Prefer the role-level viewed timestamp; fall back to legacy per-ticket user meta key.
+		$last_view_ts = 0;
+		if ( '' !== $customer_viewed_raw ) {
+			$last_view_ts = strtotime( $customer_viewed_raw . ' UTC' );
+		} else {
+			$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
+			$last_view_raw  = get_user_meta( $user_id, $last_view_key, true );
+			$last_view_ts   = $last_view_raw ? ( is_numeric( $last_view_raw ) ? (int) $last_view_raw : (int) strtotime( (string) $last_view_raw ) ) : 0;
+		}
+
+		$responses = PNPC_PSD_Ticket_Response::get_by_ticket( $ticket->id );
+		if ( empty( $responses ) ) {
+			continue;
+		}
+		foreach ( $responses as $response ) {
+			if ( (int) $response->user_id === (int) $user_id ) {
+				continue;
+			}
+			// Responses are stored in UTC (current_time('mysql', true)); compare as UTC.
+			$resp_time = (int) strtotime( (string) $response->created_at . ' UTC' );
+			if ( $resp_time > $last_view_ts ) {
 				$updated_open_count++;
-				break;
 			}
 		}
 	}

@@ -97,7 +97,8 @@ class PNPC_PSD_Activator {
 
 		// Set default options.
 		add_option( 'pnpc_psd_version', PNPC_PSD_VERSION );
-		add_option( 'pnpc_psd_db_version', '1.3.0' );
+		// Fresh installs start at 1.0.0 so migrations run consistently.
+		add_option( 'pnpc_psd_db_version', '1.0.0' );
 		add_option( 'pnpc_psd_ticket_counter', 1000 );
 
 		// Run database migration for existing installations.
@@ -133,6 +134,16 @@ class PNPC_PSD_Activator {
 		// Upgrade to 1.4.0 if needed.
 		if ( version_compare( $current_db_version, '1.4.0', '<' ) ) {
 			self::upgrade_to_1_4_0();
+		}
+
+		// Upgrade to 1.5.0 if needed (unread/activity tracking + attachment settings baseline).
+		if ( version_compare( $current_db_version, '1.5.0', '<' ) ) {
+			self::upgrade_to_1_5_0();
+		}
+
+		// Upgrade to 1.6.0 if needed (audit log, archiving, csv export scaffolding).
+		if ( version_compare( $current_db_version, '1.6.0', '<' ) ) {
+			self::upgrade_to_1_6_0();
 		}
 	}
 
@@ -254,6 +265,103 @@ class PNPC_PSD_Activator {
 		}
 
 		update_option( 'pnpc_psd_db_version', '1.4.0' );
+	}
+
+	/**
+	 * Add activity/unread tracking columns and backfill sane defaults.
+	 *
+	 * @since 1.5.0
+	 */
+	private static function upgrade_to_1_5_0() {
+		global $wpdb;
+		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		$columns = array(
+			'last_customer_activity_at' => "ALTER TABLE {$tickets_table} ADD COLUMN last_customer_activity_at datetime DEFAULT NULL",
+			'last_staff_activity_at'    => "ALTER TABLE {$tickets_table} ADD COLUMN last_staff_activity_at datetime DEFAULT NULL",
+			'last_customer_viewed_at'   => "ALTER TABLE {$tickets_table} ADD COLUMN last_customer_viewed_at datetime DEFAULT NULL",
+			'last_staff_viewed_at'      => "ALTER TABLE {$tickets_table} ADD COLUMN last_staff_viewed_at datetime DEFAULT NULL",
+		);
+
+		foreach ( $columns as $col => $sql ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$tickets_table} LIKE %s", $col ) );
+			if ( ! $exists ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$wpdb->query( $sql );
+			}
+		}
+
+		// Backfill: treat ticket creation as customer activity + customer viewed.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->query( "UPDATE {$tickets_table} SET last_customer_activity_at = COALESCE(last_customer_activity_at, created_at)" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->query( "UPDATE {$tickets_table} SET last_customer_viewed_at = COALESCE(last_customer_viewed_at, created_at)" );
+
+		// Default settings introduced in v1.1.0+.
+		if ( false === get_option( 'pnpc_psd_max_attachment_mb', false ) ) {
+			add_option( 'pnpc_psd_max_attachment_mb', 5 );
+		}
+		$bool_defaults = array(
+			'pnpc_psd_notify_customer_on_create'      => 1,
+			'pnpc_psd_notify_staff_on_create'         => 1,
+			'pnpc_psd_notify_customer_on_staff_reply' => 1,
+			'pnpc_psd_notify_staff_on_customer_reply' => 1,
+			'pnpc_psd_notify_customer_on_close'       => 1,
+		);
+		foreach ( $bool_defaults as $key => $val ) {
+			if ( false === get_option( $key, false ) ) {
+				add_option( $key, $val );
+			}
+		}
+		if ( false === get_option( 'pnpc_psd_notification_from_name', false ) ) {
+			add_option( 'pnpc_psd_notification_from_name', '' );
+		}
+		if ( false === get_option( 'pnpc_psd_notification_from_email', false ) ) {
+			add_option( 'pnpc_psd_notification_from_email', '' );
+		}
+
+		update_option( 'pnpc_psd_db_version', '1.5.0' );
+	}
+
+	/**
+	 * Add audit log table + archiving column.
+	 *
+	 * @since 1.6.0
+	 */
+	private static function upgrade_to_1_6_0() {
+		global $wpdb;
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$audit_table   = $wpdb->prefix . 'pnpc_psd_audit_log';
+
+		// Add archived_at column if missing.
+		$archived_exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$tickets_table} LIKE %s", 'archived_at' ) );
+		if ( ! $archived_exists ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->query( "ALTER TABLE {$tickets_table} ADD COLUMN archived_at datetime DEFAULT NULL AFTER deleted_at" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->query( "ALTER TABLE {$tickets_table} ADD KEY archived_at (archived_at)" );
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		$sql_audit = "CREATE TABLE {$audit_table} (
+			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			ticket_id bigint(20) UNSIGNED DEFAULT NULL,
+			actor_id bigint(20) UNSIGNED DEFAULT NULL,
+			action varchar(80) NOT NULL,
+			context longtext DEFAULT NULL,
+			created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+			PRIMARY KEY  (id),
+			KEY ticket_id (ticket_id),
+			KEY actor_id (actor_id),
+			KEY action (action),
+			KEY created_at (created_at)
+		) {$charset_collate};";
+		dbDelta( $sql_audit );
+
+		update_option( 'pnpc_psd_db_version', '1.6.0' );
 	}
 
 	/**

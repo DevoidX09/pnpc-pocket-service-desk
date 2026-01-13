@@ -109,7 +109,18 @@ class PNPC_PSD_Ticket
 
 			if (false !== $result) {
 				$ticket_id = (int) $wpdb->insert_id;
+				self::update_activity_on_create( $ticket_id );
 				self::send_ticket_created_notification($ticket_id);
+
+				if ( class_exists( 'PNPC_PSD_Audit_Log' ) ) {
+					PNPC_PSD_Audit_Log::log( $ticket_id, 'ticket_created', array(
+						'user_id' => absint( $insert_data['user_id'] ),
+						'assigned_to' => ! empty( $insert_data['assigned_to'] ) ? absint( $insert_data['assigned_to'] ) : 0,
+						'status' => (string) $insert_data['status'],
+						'priority' => (string) $insert_data['priority'],
+					) );
+				}
+
 				return $ticket_id;
 			}
 
@@ -178,6 +189,9 @@ class PNPC_PSD_Ticket
 			return false;
 		}
 
+		$old_ticket = self::get( $ticket_id );
+		$old_vals = is_object( $old_ticket ) ? (array) $old_ticket : array();
+
 		// Allowlist: only columns that should ever be changed via update().
 		$allowed = array(
 			'status'      => '%s',
@@ -219,6 +233,28 @@ class PNPC_PSD_Ticket
 			array( '%d' )
 		);
 
+		// Audit log for material changes (best-effort).
+		if ( false !== $result && class_exists( 'PNPC_PSD_Audit_Log' ) ) {
+			$actor = get_current_user_id();
+			$changed = array();
+			foreach ( array('status','priority','assigned_to','subject') as $k ) {
+				if ( array_key_exists( $k, $update_data ) ) {
+					$before = isset( $old_vals[ $k ] ) ? $old_vals[ $k ] : null;
+					$after  = $update_data[ $k ];
+					if ( 'assigned_to' === $k ) {
+						$before = empty( $before ) ? null : (int) $before;
+						$after  = empty( $after ) ? null : (int) $after;
+					}
+					if ( $before != $after ) {
+						$changed[ $k ] = array( 'from' => $before, 'to' => $after );
+					}
+				}
+			}
+			if ( ! empty( $changed ) ) {
+				PNPC_PSD_Audit_Log::log( $ticket_id, 'ticket_updated', array( 'actor_id' => $actor, 'changes' => $changed ) );
+			}
+		}
+
 		// $wpdb->update returns 0 when data is identical; treat as success.
 		return false !== $result;
 	}
@@ -246,6 +282,7 @@ class PNPC_PSD_Ticket
 			'limit'           => 50,
 			'offset'          => 0,
 			'include_trashed' => false,
+			'include_archived' => false,
 		);
 
 		$args = wp_parse_args($args, $defaults);
@@ -255,6 +292,11 @@ class PNPC_PSD_Ticket
 		// Exclude trashed tickets by default.
 		if (! $args['include_trashed']) {
 			$where .= ' AND deleted_at IS NULL';
+		}
+
+		// Exclude archived tickets by default.
+		if ( empty( $args['include_archived'] ) ) {
+			$where .= " AND archived_at IS NULL AND status <> 'archived'";
 		}
 
 		if (! empty($args['status'])) {
@@ -322,6 +364,7 @@ class PNPC_PSD_Ticket
 			'limit'           => 50,
 			'offset'          => 0,
 			'include_trashed' => false,
+			'include_archived' => false,
 			'include_pending_delete' => false,
 		);
 
@@ -332,6 +375,11 @@ class PNPC_PSD_Ticket
 		// Exclude trashed tickets by default.
 		if (! $args['include_trashed']) {
 			$where .= ' AND deleted_at IS NULL';
+		}
+
+		// Exclude archived tickets by default.
+		if ( empty( $args['include_archived'] ) ) {
+			$where .= " AND archived_at IS NULL AND status <> 'archived'";
 		}
 
 		// Exclude pending delete tickets by default (these belong in the Review queue).
@@ -439,6 +487,12 @@ class PNPC_PSD_Ticket
 	 */
 	private static function send_ticket_created_notification($ticket_id)
 	{
+		// v1.1.0+: central notification service.
+		if ( class_exists( 'PNPC_PSD_Notifications' ) ) {
+			PNPC_PSD_Notifications::ticket_created( (int) $ticket_id );
+			return;
+		}
+
 		$ticket = self::get($ticket_id);
 		if (! $ticket) {
 			return;
@@ -500,6 +554,97 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	}
 
 	/**
+	 * Detect whether v1.5.0 activity columns exist (cached).
+	 *
+	 * @return bool
+	 */
+	private static function has_activity_columns() {
+		static $has = null;
+		if ( null !== $has ) {
+			return (bool) $has;
+		}
+		global $wpdb;
+		$table = $wpdb->prefix . 'pnpc_psd_tickets';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$col = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$table} LIKE %s", 'last_customer_activity_at' ) );
+		$has = ( ! empty( $col ) );
+		return (bool) $has;
+	}
+
+	/**
+	 * Initialize activity tracking for a newly created ticket.
+	 */
+	public static function update_activity_on_create( $ticket_id ) {
+		$ticket_id = absint( $ticket_id );
+		if ( ! $ticket_id || ! self::has_activity_columns() ) {
+			return;
+		}
+		global $wpdb;
+		$table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$now = current_time( 'mysql', true );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->update(
+			$table,
+			array(
+				'last_customer_activity_at' => $now,
+				'last_customer_viewed_at'   => $now,
+				'last_staff_activity_at'    => null,
+				'last_staff_viewed_at'      => null,
+			),
+			array( 'id' => $ticket_id ),
+			array( '%s', '%s', '%s', '%s' ),
+			array( '%d' )
+		);
+	}
+
+	/**
+	 * Update activity tracking when a response is created.
+	 */
+	public static function update_activity_on_response( $ticket_id, $is_staff_response ) {
+		$ticket_id = absint( $ticket_id );
+		if ( ! $ticket_id || ! self::has_activity_columns() ) {
+			return;
+		}
+		global $wpdb;
+		$table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$now = current_time( 'mysql', true );
+		$fields = ( $is_staff_response ) ? array( 'last_staff_activity_at' => $now ) : array( 'last_customer_activity_at' => $now );
+		$fields['updated_at'] = $now;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->update( $table, $fields, array( 'id' => $ticket_id ) );
+	}
+
+	/**
+	 * Mark viewed for the customer side.
+	 */
+	public static function mark_customer_viewed( $ticket_id ) {
+		$ticket_id = absint( $ticket_id );
+		if ( ! $ticket_id || ! self::has_activity_columns() ) {
+			return;
+		}
+		global $wpdb;
+		$table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$now = current_time( 'mysql', true );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->update( $table, array( 'last_customer_viewed_at' => $now ), array( 'id' => $ticket_id ) );
+	}
+
+	/**
+	 * Mark viewed for the staff side.
+	 */
+	public static function mark_staff_viewed( $ticket_id ) {
+		$ticket_id = absint( $ticket_id );
+		if ( ! $ticket_id || ! self::has_activity_columns() ) {
+			return;
+		}
+		global $wpdb;
+		$table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$now = current_time( 'mysql', true );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->update( $table, array( 'last_staff_viewed_at' => $now ), array( 'id' => $ticket_id ) );
+	}
+
+	/**
 	 * Get ticket count by status.
 	 *
 	 * @since 1.0.0
@@ -516,13 +661,13 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$count = $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$table_name} WHERE status = %s AND deleted_at IS NULL AND pending_delete_at IS NULL",
+					"SELECT COUNT(*) FROM {$table_name} WHERE status = %s AND deleted_at IS NULL AND pending_delete_at IS NULL AND archived_at IS NULL AND status <> 'archived'",
 					$status
 				)
 			);
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NULL");
+			$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NULL AND archived_at IS NULL AND status <> 'archived'");
 		}
 
 		return absint($count);
@@ -597,13 +742,218 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	}
 
 	/**
-	 * Get tickets pending delete review (Review queue).
+	 * Get archived tickets.
 	 *
-	 * @since 1.4.0
+	 * Archived tickets are hidden from normal views but can be restored.
+	 *
+	 * @since 1.6.0
 	 * @param array $args Query arguments.
 	 * @return array
 	 */
-	public static function get_pending_delete($args = array())
+	public static function get_archived( $args = array() ) {
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		$defaults = array(
+			'orderby' => 'archived_at',
+			'order'   => 'DESC',
+			'limit'   => 50,
+			'offset'  => 0,
+		);
+		$args = wp_parse_args( $args, $defaults );
+
+		$allowed_orderby = array('id', 'ticket_number', 'created_at', 'updated_at', 'archived_at', 'status', 'priority');
+		if ( ! in_array( $args['orderby'], $allowed_orderby, true ) ) {
+			$args['orderby'] = 'archived_at';
+		}
+
+		$args['order'] = strtoupper( $args['order'] );
+		if ( ! in_array( $args['order'], array('ASC', 'DESC'), true ) ) {
+			$args['order'] = 'DESC';
+		}
+
+		$orderby = sanitize_sql_orderby( "{$args['orderby']} {$args['order']}" );
+		if ( false === $orderby ) {
+			$orderby = 'archived_at DESC';
+		}
+
+		$limit  = absint( $args['limit'] );
+		$offset = absint( $args['offset'] );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			"SELECT * FROM {$table_name} WHERE archived_at IS NOT NULL AND deleted_at IS NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
+		);
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Get count of archived tickets.
+	 *
+	 * @since 1.6.0
+	 * @return int
+	 */
+	public static function get_archived_count() {
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name} WHERE archived_at IS NOT NULL AND deleted_at IS NULL" );
+		return absint( $count );
+	}
+
+	/**
+	 * Archive a ticket (moves it out of normal lists without deleting).
+	 *
+	 * @since 1.6.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool
+	 */
+	public static function archive( $ticket_id ) {
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		$ticket_id = absint( $ticket_id );
+		if ( ! $ticket_id ) {
+			return false;
+		}
+
+		$ticket = self::get( $ticket_id );
+		if ( empty( $ticket ) || ! empty( $ticket->deleted_at ) ) {
+			return false;
+		}
+		// Archiving is intended for resolved tickets only.
+		// Be tolerant of historical capitalization / formatting.
+		$ticket_status = isset( $ticket->status ) ? sanitize_key( (string) $ticket->status ) : '';
+		if ( '' !== $ticket_status && 'closed' !== $ticket_status ) {
+			return false;
+		}
+
+		$now = function_exists( 'pnpc_psd_get_utc_mysql_datetime' ) ? pnpc_psd_get_utc_mysql_datetime() : current_time( 'mysql', true );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$res = $wpdb->update(
+			$table_name,
+			array(
+				'status'      => 'archived',
+				'archived_at' => $now,
+				'updated_at'  => $now,
+			),
+			array( 'id' => $ticket_id ),
+			array( '%s', '%s', '%s' ),
+			array( '%d' )
+		);
+
+		if ( false !== $res && class_exists( 'PNPC_PSD_Audit_Log' ) ) {
+			PNPC_PSD_Audit_Log::log( $ticket_id, 'ticket_archived', array( 'actor_id' => get_current_user_id() ) );
+		}
+		return false !== $res;
+	}
+
+	/**
+	 * Archive a ticket from the Trash view.
+	 *
+	 * Trash items are soft-deleted (deleted_at is set), and the standard archive()
+	 * path intentionally refuses to archive deleted tickets. This helper supports
+	 * the UX request to move a trashed ticket into Archive by restoring it first
+	 * (preserving delete history) and then archiving it.
+	 *
+	 * This is intentionally only callable from the explicit Trash action path.
+	 *
+	 * @since 1.6.1
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool
+	 */
+	public static function archive_from_trash( $ticket_id ) {
+		$ticket_id = absint( $ticket_id );
+		if ( ! $ticket_id ) {
+			return false;
+		}
+
+		$ticket = self::get( $ticket_id );
+		if ( empty( $ticket ) ) {
+			return false;
+		}
+
+		// Only support this for tickets that are currently in Trash.
+		if ( empty( $ticket->deleted_at ) ) {
+			return false;
+		}
+
+		// Restore first (preserves delete history + restores attachments/responses).
+		if ( ! self::restore( $ticket_id ) ) {
+			return false;
+		}
+
+		// Then archive. From the Trash action path, allow archiving regardless of
+		// prior status because the user explicitly requested retention rather than
+		// deletion.
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		$now        = function_exists( 'pnpc_psd_get_utc_mysql_datetime' ) ? pnpc_psd_get_utc_mysql_datetime() : current_time( 'mysql', true );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$res = $wpdb->update(
+			$table_name,
+			array(
+				'status'      => 'archived',
+				'archived_at' => $now,
+				'updated_at'  => $now,
+			),
+			array( 'id' => $ticket_id ),
+			array( '%s', '%s', '%s' ),
+			array( '%d' )
+		);
+
+		if ( false !== $res && class_exists( 'PNPC_PSD_Audit_Log' ) ) {
+			PNPC_PSD_Audit_Log::log( $ticket_id, 'ticket_archived', array( 'actor_id' => get_current_user_id() ) );
+		}
+		return false !== $res;
+	}
+
+	/**
+	 * Restore a ticket from archive.
+	 *
+	 * @since 1.6.0
+	 * @param int $ticket_id Ticket ID.
+	 * @return bool
+	 */
+	public static function restore_from_archive( $ticket_id ) {
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		$ticket_id = absint( $ticket_id );
+		if ( ! $ticket_id ) {
+			return false;
+		}
+
+		$now = function_exists( 'pnpc_psd_get_utc_mysql_datetime' ) ? pnpc_psd_get_utc_mysql_datetime() : current_time( 'mysql', true );
+
+		// Restore to closed by default (archiving intended for resolved items).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$res = $wpdb->update(
+			$table_name,
+			array(
+				'status'      => 'closed',
+				'archived_at' => null,
+				'updated_at'  => $now,
+			),
+			array( 'id' => $ticket_id ),
+			array( '%s', '%s', '%s' ),
+			array( '%d' )
+		);
+
+		if ( false !== $res && class_exists( 'PNPC_PSD_Audit_Log' ) ) {
+			PNPC_PSD_Audit_Log::log( $ticket_id, 'ticket_restored_from_archive', array( 'actor_id' => get_current_user_id() ) );
+		}
+		return false !== $res;
+	}
+
+		/**
+		 * Get tickets pending delete review (Review queue).
+		 *
+		 * @since 1.4.0
+		 * @param array $args Query arguments.
+		 * @return array Array of ticket objects.
+		 */
+		public static function get_pending_delete($args = array())
 	{
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
@@ -1080,6 +1430,48 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param array $ticket_ids Array of ticket IDs.
 	 * @return int Number of tickets deleted.
 	 */
+	
+	/**
+	 * Bulk archive closed tickets.
+	 *
+	 * @since 1.1.1.1
+	 * @param array $ticket_ids Ticket IDs.
+	 * @return int Number archived.
+	 */
+	public static function bulk_archive_closed( $ticket_ids ) {
+		$ticket_ids = array_filter( array_map( 'absint', (array) $ticket_ids ) );
+		if ( empty( $ticket_ids ) ) {
+			return 0;
+		}
+		$count = 0;
+		foreach ( $ticket_ids as $ticket_id ) {
+			if ( self::archive( $ticket_id ) ) {
+				$count++;
+			}
+		}
+		return $count;
+	}
+
+	/**
+	 * Bulk restore tickets from archive.
+	 *
+	 * @since 1.1.1.1
+	 * @param array $ticket_ids Ticket IDs.
+	 * @return int Number restored.
+	 */
+	public static function bulk_restore_from_archive( $ticket_ids ) {
+		$ticket_ids = array_filter( array_map( 'absint', (array) $ticket_ids ) );
+		if ( empty( $ticket_ids ) ) {
+			return 0;
+		}
+		$count = 0;
+		foreach ( $ticket_ids as $ticket_id ) {
+			if ( self::restore_from_archive( $ticket_id ) ) {
+				$count++;
+			}
+		}
+		return $count;
+	}
 	public static function bulk_delete_permanently($ticket_ids)
 	{
 		if (! is_array($ticket_ids) || empty($ticket_ids)) {

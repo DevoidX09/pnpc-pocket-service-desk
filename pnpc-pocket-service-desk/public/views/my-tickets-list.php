@@ -23,37 +23,18 @@ $viewer_id = get_current_user_id();
 			<?php
 			$response_count = PNPC_PSD_Ticket_Response::get_count($ticket->id);
 
-			// Get last view timestamp
-			$last_view_meta = get_user_meta($viewer_id, 'pnpc_psd_ticket_last_view_' . intval($ticket->id), true);
-
-			if (empty($last_view_meta)) {
-				// Never viewed
-				$new_responses = 1;
+			// v1.5.0+: unread/activity tracking stored on the ticket row (role-level).
+			// Fallback to legacy per-user meta if the new columns are not present.
+			$customer_viewed_raw = ! empty( $ticket->last_customer_viewed_at ) ? (string) $ticket->last_customer_viewed_at : '';
+			$staff_activity_raw  = ! empty( $ticket->last_staff_activity_at ) ? (string) $ticket->last_staff_activity_at : '';
+			if ( '' === $customer_viewed_raw ) {
+				$last_view_meta = get_user_meta($viewer_id, 'pnpc_psd_ticket_last_view_' . intval($ticket->id), true);
+				$customer_viewed_ts = $last_view_meta ? ( is_numeric($last_view_meta) ? intval($last_view_meta) : strtotime($last_view_meta) ) : 0;
 			} else {
-				$last_view_time = is_numeric($last_view_meta)
-					? intval($last_view_meta)
-					: strtotime($last_view_meta);
-
-				$new_responses = 0;
-				$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
-
-				if (! empty($responses)) {
-					foreach ($responses as $response) {
-						// Count staff responses only (not customer's own)
-						if (intval($response->user_id) === $viewer_id) {
-							continue;
-						}
-
-						$response_time = function_exists('pnpc_psd_mysql_to_wp_local_ts')
-							? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at))
-							: intval(strtotime($response->created_at));
-
-						if ($response_time > $last_view_time) {
-							$new_responses++;
-						}
-					}
-				}
+				$customer_viewed_ts = strtotime( $customer_viewed_raw . ' UTC' );
 			}
+			$staff_activity_ts = ( '' !== $staff_activity_raw ) ? strtotime( $staff_activity_raw . ' UTC' ) : 0;
+			$new_responses = ( $staff_activity_ts > $customer_viewed_ts ) ? 1 : 0;
 
 			// Build ticket detail URL:
 			$ticket_url = '';

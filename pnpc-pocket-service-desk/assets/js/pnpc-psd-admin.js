@@ -9,6 +9,47 @@
 		var ticketId = $ticketDetail.data('ticket-id');
 		var adminNonce = (typeof pnpcPsdAdmin !== 'undefined') ? pnpcPsdAdmin.nonce :  '';
 		var MESSAGE_TARGETS = ['pnpc-psd-admin-action-message', 'response-message', 'pnpc-psd-bulk-message'];
+		// ================================
+		// Attachments (Admin Response): preview + remove before send
+		// ================================
+		var adminResponseFiles = [];
+		var MAX_ATTACHMENTS = 10;
+
+		function renderAttachmentList(files, $list, $input) {
+			if (!$list || !$list.length) {
+				return;
+			}
+			$list.empty();
+			if (!files || !files.length) {
+				return;
+			}
+			files.forEach(function(file, idx) {
+				var $item = $('<div/>').addClass('pnpc-psd-attachment-item').css({marginBottom:'6px'});
+				$item.append($('<span/>').text(file.name + ' (' + Math.round(file.size / 1024) + ' KB)'));
+				var $remove = $('<button/>').attr('type', 'button').addClass('button').css({marginLeft: '8px'}).text('Remove');
+				$remove.on('click', function() {
+					files.splice(idx, 1);
+					if ($input && $input.length) {
+						// If nothing remains, clear input so user can re-select.
+						if (!files.length) {
+							$input.val('');
+						}
+					}
+					renderAttachmentList(files, $list, $input);
+				});
+				$item.append($remove);
+				$list.append($item);
+			});
+		}
+
+		$(document).on('change', '#admin-response-attachments', function(e) {
+			adminResponseFiles = Array.prototype.slice.call(e.target.files || []);
+			if (adminResponseFiles.length > MAX_ATTACHMENTS) {
+				adminResponseFiles = adminResponseFiles.slice(0, MAX_ATTACHMENTS);
+			}
+			renderAttachmentList(adminResponseFiles, $('#pnpc-psd-admin-response-attachments-list'), $('#admin-response-attachments'));
+		});
+
 
 		if (! adminNonce) {
 			return;
@@ -287,6 +328,12 @@
 			if (action === 'trash') {
 				confirmMessage = 'Are you sure you want to move ' + selectedTickets.length + ' ticket(s) to trash?';
 				ajaxAction = 'pnpc_psd_bulk_trash_tickets';
+			} else if (action === 'archive') {
+				confirmMessage = 'Move ' + selectedTickets.length + ' ticket(s) to archive?';
+				ajaxAction = 'pnpc_psd_bulk_archive_tickets';
+			} else if (action === 'restore_archive') {
+				confirmMessage = 'Restore ' + selectedTickets.length + ' ticket(s) from archive?';
+				ajaxAction = 'pnpc_psd_bulk_restore_archived_tickets';
 			} else if (action === 'restore') {
 				confirmMessage = 'Are you sure you want to restore ' + selectedTickets.length + ' ticket(s)?';
 				ajaxAction = 'pnpc_psd_bulk_restore_tickets';
@@ -319,20 +366,26 @@
 				success: function(result) {
 					if (result && result.success) {
 						showMessage('success', result.data.message, 'pnpc-psd-bulk-message');
-						// Ask realtime refresh script to pull fresh rows immediately (if loaded)
-						$(document).trigger('pnpc_psd_force_refresh');
-						$btn.prop('disabled', false).val('Apply');
-					} else if (result && result.data && result.data.message) {
+						// Reload so rows/tabs/counts reflect server state across ALL tabs.
+						setTimeout(function(){ window.location.reload(); }, 120);
+						return;
+					}
+
+					if (result && result.data && result.data.message) {
 						showMessage('error', result.data.message, 'pnpc-psd-bulk-message');
-						$btn.prop('disabled', false).val('Apply');
 					} else {
 						showMessage('error', 'Failed to perform bulk action.', 'pnpc-psd-bulk-message');
-						$btn.prop('disabled', false).val('Apply');
 					}
+
+					$btn.prop('disabled', false).val('Apply');
 				},
 				error: function(jqXHR, textStatus, errorThrown) {
 					console.error('pnpc-psd-admin.js bulk action AJAX error', textStatus, errorThrown);
 					showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-bulk-message');
+					$btn.prop('disabled', false).val('Apply');
+				},
+				complete: function() {
+					// Safety: ensure the button is re-enabled if we did not reload.
 					$btn.prop('disabled', false).val('Apply');
 				}
 			});
@@ -432,9 +485,9 @@
 				formData.append('response', response);
 
 				var fileInput = document.getElementById('admin-response-attachments');
-				if (fileInput && fileInput.files) {
-					for (var i = 0; i < fileInput.files.length; i++) {
-						formData.append('attachments[]', fileInput.files[i]);
+				if (adminResponseFiles && adminResponseFiles.length) {
+					for (var i = 0; i < adminResponseFiles.length; i++) {
+						formData.append('attachments[]', adminResponseFiles[i]);
 					}
 				}
 
@@ -451,6 +504,8 @@
 							if (fileInput) {
 								fileInput.value = '';
 							}
+							adminResponseFiles = [];
+							$('#pnpc-psd-admin-response-attachments-list').empty();
 							setTimeout(function() {
 								location.reload();
 							}, 900);
@@ -608,12 +663,7 @@
 				var html = '<strong>Files to upload:</strong><ul>';
 				for (var i = 0; i < files.length; i++) {
 					var size = (files[i].size / 1024 / 1024).toFixed(2);
-					var sizeClass = size > 5 ? 'style="color: red;"' : '';
-					html += '<li>' + files[i].name + ' (' + size + ' MB)';
-					if (size > 5) {
-						html += ' <span style="color: red;">- Exceeds 5MB limit!</span>';
-					}
-					html += '</li>';
+					html += '<li>' + files[i].name + ' (' + size + ' MB)</li>';
 				}
 				html += '</ul>';
 				$preview.html(html);

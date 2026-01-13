@@ -25,6 +25,10 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 ?>
 <div class="wrap pnpc-psd-settings">
 	<h1><?php esc_html_e( 'PNPC Pocket Service Desk Settings', 'pnpc-pocket-service-desk' ); ?></h1>
+	<?php if ( get_transient( 'pnpc_psd_agents_trimmed' ) ) : ?>
+		<?php delete_transient( 'pnpc_psd_agents_trimmed' ); ?>
+		<div class="notice notice-warning"><p><?php esc_html_e( 'Some enabled agents were automatically disabled to comply with your current plan limits. (Free supports up to 2 enabled agents.)', 'pnpc-pocket-service-desk' ); ?></p></div>
+	<?php endif; ?>
 
 	<h2 class="nav-tab-wrapper" style="margin-bottom: 16px;">
 		<?php foreach ( $tabs as $tab_key => $tab_label ) : ?>
@@ -62,14 +66,169 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 		<div class="pnpc-psd-settings-panel" id="pnpc-psd-tab-core" style="<?php echo esc_attr( $panel_style( 'core' ) ); ?>">
 
 			<h2><?php esc_html_e( 'Notifications', 'pnpc-pocket-service-desk' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'Control who receives emails and when. Per-agent overrides are configured in the Eligible Agents table below.', 'pnpc-pocket-service-desk' ); ?></p>
 			<table class="form-table">
 				<tr>
-					<th scope="row"><label for="pnpc_psd_email_notifications"><?php esc_html_e( 'Notification Email', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<th scope="row"><label for="pnpc_psd_email_notifications"><?php esc_html_e( 'Global Staff Notification Email', 'pnpc-pocket-service-desk' ); ?></label></th>
 					<td>
 						<input type="email" name="pnpc_psd_email_notifications" id="pnpc_psd_email_notifications" value="<?php echo esc_attr( get_option( 'pnpc_psd_email_notifications', '' ) ); ?>" class="regular-text" />
-						<p class="description"><?php esc_html_e( 'Enter the email address that should receive plugin notifications (one address).', 'pnpc-pocket-service-desk' ); ?></p>
+						<p class="description"><?php esc_html_e( 'Optional. If set, staff notifications will also be sent here (in addition to the assigned agent).', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
+				<tr>
+					<th scope="row"><label for="pnpc_psd_notify_from_name"><?php esc_html_e( 'From Name', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<td>
+						<input type="text" name="pnpc_psd_notify_from_name" id="pnpc_psd_notify_from_name" value="<?php echo esc_attr( get_option( 'pnpc_psd_notify_from_name', '' ) ); ?>" class="regular-text" />
+						<p class="description"><?php esc_html_e( 'Optional. If empty, WordPress default mailer settings are used.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="pnpc_psd_notify_from_email"><?php esc_html_e( 'From Email', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<td>
+						<input type="email" name="pnpc_psd_notify_from_email" id="pnpc_psd_notify_from_email" value="<?php echo esc_attr( get_option( 'pnpc_psd_notify_from_email', '' ) ); ?>" class="regular-text" />
+						<p class="description"><?php esc_html_e( 'Optional. Use a domain email address that is authorized by your SMTP provider.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+			</table>
+
+			<h3 style="margin-top:18px;"><?php esc_html_e( 'Notification Triggers', 'pnpc-pocket-service-desk' ); ?></h3>
+			<table class="form-table">
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Customer notifications', 'pnpc-pocket-service-desk' ); ?></th>
+					<td>
+						<label style="display:block;margin:2px 0;">
+							<input type="hidden" name="pnpc_psd_notify_customer_on_create" value="0" />
+							<input type="checkbox" name="pnpc_psd_notify_customer_on_create" value="1" <?php checked( 1, get_option( 'pnpc_psd_notify_customer_on_create', 1 ) ); ?> />
+							<?php esc_html_e( 'On ticket created', 'pnpc-pocket-service-desk' ); ?>
+						</label>
+						<label style="display:block;margin:2px 0;">
+							<input type="hidden" name="pnpc_psd_notify_customer_on_staff_reply" value="0" />
+							<input type="checkbox" name="pnpc_psd_notify_customer_on_staff_reply" value="1" <?php checked( 1, get_option( 'pnpc_psd_notify_customer_on_staff_reply', 1 ) ); ?> />
+							<?php esc_html_e( 'On staff reply', 'pnpc-pocket-service-desk' ); ?>
+						</label>
+						<label style="display:block;margin:2px 0;">
+							<input type="hidden" name="pnpc_psd_notify_customer_on_close" value="0" />
+							<input type="checkbox" name="pnpc_psd_notify_customer_on_close" value="1" <?php checked( 1, get_option( 'pnpc_psd_notify_customer_on_close', 1 ) ); ?> />
+							<?php esc_html_e( 'On ticket closed', 'pnpc-pocket-service-desk' ); ?>
+						</label>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Staff notifications', 'pnpc-pocket-service-desk' ); ?></th>
+					<td>
+						<label style="display:block;margin:2px 0;">
+							<input type="hidden" name="pnpc_psd_notify_staff_on_create" value="0" />
+							<input type="checkbox" name="pnpc_psd_notify_staff_on_create" value="1" <?php checked( 1, get_option( 'pnpc_psd_notify_staff_on_create', 1 ) ); ?> />
+							<?php esc_html_e( 'On ticket created', 'pnpc-pocket-service-desk' ); ?>
+						</label>
+						<label style="display:block;margin:2px 0;">
+							<input type="hidden" name="pnpc_psd_notify_staff_on_customer_reply" value="0" />
+							<input type="checkbox" name="pnpc_psd_notify_staff_on_customer_reply" value="1" <?php checked( 1, get_option( 'pnpc_psd_notify_staff_on_customer_reply', 1 ) ); ?> />
+							<?php esc_html_e( 'On customer reply', 'pnpc-pocket-service-desk' ); ?>
+						</label>
+					</td>
+				</tr>
+			</table>
+
+			
+			<h2><?php esc_html_e( 'Public Login', 'pnpc-pocket-service-desk' ); ?></h2>
+			<table class="form-table">
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Login prompt style', 'pnpc-pocket-service-desk' ); ?></th>
+					<td>
+						<?php $login_mode = (string) get_option( 'pnpc_psd_public_login_mode', 'inline' ); ?>
+						<select name="pnpc_psd_public_login_mode">
+							<option value="inline" <?php selected( $login_mode, 'inline' ); ?>><?php esc_html_e( 'Inline login form', 'pnpc-pocket-service-desk' ); ?></option>
+							<option value="link" <?php selected( $login_mode, 'link' ); ?>><?php esc_html_e( 'Login button link', 'pnpc-pocket-service-desk' ); ?></option>
+						</select>
+						<p class="description"><?php esc_html_e( 'Controls how the dashboard/create-ticket shortcodes prompt users when not logged in.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Custom login URL (optional)', 'pnpc-pocket-service-desk' ); ?></th>
+					<td>
+						<?php $login_url = (string) get_option( 'pnpc_psd_public_login_url', '' ); ?>
+						<input type="url" name="pnpc_psd_public_login_url" value="<?php echo esc_attr( $login_url ); ?>" class="regular-text" placeholder="<?php echo esc_attr( wp_login_url() ); ?>" />
+						<p class="description"><?php esc_html_e( 'If set, the “Login button link” mode will use this URL and append redirect_to back to the service desk page.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+			</table>
+
+<h2><?php esc_html_e( 'Attachments', 'pnpc-pocket-service-desk' ); ?></h2>
+			<table class="form-table">
+				<tr>
+					<th scope="row"><label for="pnpc_psd_max_attachment_mb"><?php esc_html_e( 'Max attachment size (MB)', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<td>
+					<?php $effective_mb = function_exists( 'pnpc_psd_get_max_attachment_mb' ) ? (int) pnpc_psd_get_max_attachment_mb() : (int) get_option( 'pnpc_psd_max_attachment_mb', 5 ); ?>
+					<input type="number" min="1" step="1" name="pnpc_psd_max_attachment_mb" id="pnpc_psd_max_attachment_mb" value="<?php echo esc_attr( $effective_mb ); ?>" class="small-text" />
+						<p class="description">
+							<?php
+							$free_cap = 5;
+							$pro_cap  = 20;
+							printf(
+								esc_html__( 'Recommended: %1$dMB for Free and up to %2$dMB for Pro. Your plan may clamp this value automatically.', 'pnpc-pocket-service-desk' ),
+								(int) $free_cap,
+								(int) $pro_cap
+							);
+							?>
+						</p>
+					</td>
+				</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Allowed attachment formats', 'pnpc-pocket-service-desk' ); ?></th>
+						<td>
+							<?php
+							$raw_allowed = get_option( 'pnpc_psd_allowed_file_types', '' );
+							$raw_allowed = is_string( $raw_allowed ) ? trim( $raw_allowed ) : '';
+							$defaults_ext = array( 'jpg','jpeg','png','gif','webp','pdf','txt','csv','doc','docx','xls','xlsx','zip' );
+							$parts = $raw_allowed ? preg_split( '/[\s,;]+/', $raw_allowed ) : $defaults_ext;
+							$parts = is_array( $parts ) ? array_filter( array_map( 'strtolower', array_map( 'trim', $parts ) ) ) : $defaults_ext;
+							// Map common MIME defaults to extensions for display (backwards compatible with older installs).
+							$mime_map = array(
+								'image/jpeg' => array('jpg','jpeg','jpe'),
+								'image/png'  => array('png'),
+								'image/gif'  => array('gif'),
+								'image/webp' => array('webp'),
+								'application/pdf' => array('pdf'),
+							);
+							$selected = array();
+							foreach ( (array) $parts as $it ) {
+								$it = strtolower( trim( (string) $it ) );
+								if ( '' === $it ) { continue; }
+								if ( false !== strpos( $it, '/' ) && isset( $mime_map[ $it ] ) ) {
+									$selected = array_merge( $selected, (array) $mime_map[ $it ] );
+								} else {
+									$selected[] = $it;
+								}
+							}
+							$selected = array_values( array_unique( array_filter( $selected ) ) );
+							$common = array(
+								'jpg'  => __( 'JPG images', 'pnpc-pocket-service-desk' ),
+								'jpeg' => __( 'JPEG images', 'pnpc-pocket-service-desk' ),
+								'png'  => __( 'PNG images', 'pnpc-pocket-service-desk' ),
+								'gif'  => __( 'GIF images', 'pnpc-pocket-service-desk' ),
+								'webp' => __( 'WebP images', 'pnpc-pocket-service-desk' ),
+								'pdf'  => __( 'PDF documents', 'pnpc-pocket-service-desk' ),
+								'txt'  => __( 'Text (.txt)', 'pnpc-pocket-service-desk' ),
+								'csv'  => __( 'CSV (.csv)', 'pnpc-pocket-service-desk' ),
+								'doc'  => __( 'Word (.doc)', 'pnpc-pocket-service-desk' ),
+								'docx' => __( 'Word (.docx)', 'pnpc-pocket-service-desk' ),
+								'xls'  => __( 'Excel (.xls)', 'pnpc-pocket-service-desk' ),
+								'xlsx' => __( 'Excel (.xlsx)', 'pnpc-pocket-service-desk' ),
+								'zip'  => __( 'ZIP archives', 'pnpc-pocket-service-desk' ),
+							);
+							?>
+							<fieldset>
+								<?php foreach ( $common as $ext => $label ) : ?>
+									<label style="display:inline-block;min-width:180px;margin:2px 10px 2px 0;">
+										<input type="checkbox" name="pnpc_psd_allowed_file_types[]" value="<?php echo esc_attr( $ext ); ?>" <?php checked( in_array( $ext, $selected, true ) ); ?> />
+										<?php echo esc_html( $label ); ?>
+									</label>
+								<?php endforeach; ?>
+							</fieldset>
+							<p class="description"><?php esc_html_e( 'These defaults cover common WordPress uploads. Your server and security plugins may further restrict uploads.', 'pnpc-pocket-service-desk' ); ?></p>
+						</td>
+					</tr>
 			</table>
 
 			<h2><?php esc_html_e( 'Ticket Assignment', 'pnpc-pocket-service-desk' ); ?></h2>
@@ -104,6 +263,18 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 
 			<h3 style="margin-top:18px;"><?php esc_html_e( 'Eligible Agents', 'pnpc-pocket-service-desk' ); ?></h3>
 			<p class="description"><?php esc_html_e( 'Select which internal users can be assigned tickets. Optionally override the notification email per agent. If you do not configure agents here, all staff roles (Admin/Manager/Agent) remain assignable (backwards compatible).', 'pnpc-pocket-service-desk' ); ?></p>
+			<?php if ( function_exists( 'pnpc_psd_get_max_agents_limit' ) ) : ?>
+				<?php $agent_limit = (int) pnpc_psd_get_max_agents_limit(); ?>
+				<p class="description" style="margin-top:4px;">
+					<?php
+					if ( $agent_limit > 0 ) {
+						printf( esc_html__( 'Plan limit: up to %d enabled agents (Free). Extra enabled users will be automatically disabled on save.', 'pnpc-pocket-service-desk' ), (int) $agent_limit );
+					} else {
+						esc_html_e( 'Plan limit: unlimited enabled agents (Pro).', 'pnpc-pocket-service-desk' );
+					}
+					?>
+				</p>
+			<?php endif; ?>
 
 			<?php
 			$agents_cfg         = get_option( 'pnpc_psd_agents', array() );

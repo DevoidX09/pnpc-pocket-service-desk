@@ -16,18 +16,33 @@ if (! defined('ABSPATH')) {
 }
 
 /**
- * Mark ticket as viewed by customer
+ * Mark ticket as viewed (customer or staff) to clear unread indicators.
+ *
+ * Newer builds track unread/activity on the ticket row (role-level). Historically we also
+ * stored a per-user last-view meta key; we keep that for backward compatibility.
  */
-if (isset($_GET['ticket_id']) && is_user_logged_in()) {
+if ( isset( $_GET['ticket_id'] ) && is_user_logged_in() ) {
 	$current_user_id = get_current_user_id();
-	$ticket_id = absint($_GET['ticket_id']);
-	
-	if ($ticket_id > 0) {
+	$ticket_id       = absint( $_GET['ticket_id'] );
+
+	if ( $ticket_id > 0 ) {
+		// Back-compat: per-user last view timestamp (used by older UI pieces).
 		update_user_meta(
 			$current_user_id,
 			'pnpc_psd_ticket_last_view_' . $ticket_id,
-			current_time('timestamp')
+			current_time( 'timestamp' )
 		);
+
+		// Primary: role-level tracking on the ticket row.
+		if ( class_exists( 'PNPC_PSD_Ticket' ) && isset( $ticket ) && ! empty( $ticket->id ) ) {
+			$owner_id = isset( $ticket->user_id ) ? (int) $ticket->user_id : 0;
+			$viewer_id = (int) $current_user_id;
+			if ( $owner_id && $owner_id === $viewer_id ) {
+				PNPC_PSD_Ticket::mark_customer_viewed( (int) $ticket_id );
+			} elseif ( current_user_can( 'pnpc_psd_view_tickets' ) ) {
+				PNPC_PSD_Ticket::mark_staff_viewed( (int) $ticket_id );
+			}
+		}
 	}
 }
 
@@ -40,12 +55,23 @@ if ($helpers && file_exists($helpers)) {
 global $wpdb;
 $att_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 
-// Ticket-level attachments (response_id NULL)
-$ticket_attachments = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$att_table} WHERE ticket_id = %d AND (response_id IS NULL OR response_id = '') ORDER BY id ASC", $ticket->id));
+// Ticket-level attachments (response_id NULL/empty/0) and not deleted.
+// NOTE: Earlier builds incorrectly persisted ticket-level attachments with response_id=0.
+$ticket_attachments = $wpdb->get_results(
+	$wpdb->prepare(
+		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND (response_id IS NULL OR response_id = '' OR response_id = 0) ORDER BY id ASC",
+		$ticket->id
+	)
+);
 
 // Response attachments keyed by response_id
 $response_attachments_map = array();
-$all_response_atts = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$att_table} WHERE ticket_id = %d AND response_id IS NOT NULL ORDER BY id ASC", $ticket->id));
+$all_response_atts = $wpdb->get_results(
+	$wpdb->prepare(
+		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND response_id IS NOT NULL AND response_id <> 0 ORDER BY id ASC",
+		$ticket->id
+	)
+);
 if ($all_response_atts) {
 	foreach ($all_response_atts as $ra) {
 		$response_attachments_map[intval($ra->response_id)][] = $ra;
@@ -179,6 +205,41 @@ if (empty($dashboard_url)) {
 					<label for="response-attachments"><?php esc_html_e('Attachments (optional)', 'pnpc-pocket-service-desk'); ?></label>
 					<input type="file" id="response-attachments" name="attachments[]" multiple />
 					<div id="pnpc-psd-response-attachments-list" style="margin-top:8px;"></div>
+							<?php
+								$allowed_items = function_exists( 'pnpc_psd_get_allowed_file_types_list' ) ? pnpc_psd_get_allowed_file_types_list() : array();
+								$mime_to_ext = array(
+									'image/jpeg' => array( 'jpg', 'jpeg' ),
+									'image/png'  => array( 'png' ),
+									'image/gif'  => array( 'gif' ),
+									'image/webp' => array( 'webp' ),
+									'application/pdf' => array( 'pdf' ),
+								);
+								$exts = array();
+								foreach ( (array) $allowed_items as $it ) {
+									$it = strtolower( trim( (string) $it ) );
+									if ( '' === $it ) { continue; }
+									if ( false !== strpos( $it, '/' ) && isset( $mime_to_ext[ $it ] ) ) {
+										$exts = array_merge( $exts, (array) $mime_to_ext[ $it ] );
+									} else {
+										$exts[] = preg_replace( '/[^a-z0-9]/', '', $it );
+									}
+								}
+								$exts = array_values( array_unique( array_filter( $exts ) ) );
+								if ( empty( $exts ) ) {
+									$exts = array( 'jpg', 'jpeg', 'png', 'pdf' );
+								}
+								sort( $exts );
+								$max_mb = function_exists( 'pnpc_psd_get_max_attachment_mb' ) ? (int) pnpc_psd_get_max_attachment_mb() : 5;
+							?>
+							<p class="pnpc-psd-help-text">
+								<?php
+								printf(
+									esc_html__( 'Allowed formats: %1$s. Max size per file: %2$dMB (server limits may apply).', 'pnpc-pocket-service-desk' ),
+									esc_html( implode( ', ', $exts ) ),
+									(int) $max_mb
+								);
+								?>
+							</p>
 				</div>
 
 				<div class="pnpc-psd-form-group">

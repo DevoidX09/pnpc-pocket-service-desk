@@ -33,6 +33,7 @@ class PNPC_PSD
 		require_once PNPC_PSD_PLUGIN_DIR . 'public/class-pnpc-psd-public.php';
 		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-ticket.php';
 		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-ticket-response.php';
+		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-audit-log.php';
 
 		$this->loader = new PNPC_PSD_Loader();
 	}
@@ -61,6 +62,8 @@ class PNPC_PSD
 		// Danger Zone delete requests now go through the Review queue.
 		$this->loader->add_action('wp_ajax_pnpc_psd_request_delete_with_reason', $plugin_admin, 'ajax_request_delete_with_reason');
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_restore_tickets', $plugin_admin, 'ajax_bulk_restore_tickets');
+				$this->loader->add_action('wp_ajax_pnpc_psd_bulk_archive_tickets', $plugin_admin, 'ajax_bulk_archive_tickets');
+				$this->loader->add_action('wp_ajax_pnpc_psd_bulk_restore_archived_tickets', $plugin_admin, 'ajax_bulk_restore_archived_tickets');
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_delete_permanently_tickets', $plugin_admin, 'ajax_bulk_delete_permanently_tickets');
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_approve_review_tickets', $plugin_admin, 'ajax_bulk_approve_review_tickets');
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_cancel_review_tickets', $plugin_admin, 'ajax_bulk_cancel_review_tickets');
@@ -68,6 +71,11 @@ class PNPC_PSD
 		// Real-time update AJAX handlers
 		$this->loader->add_action('wp_ajax_pnpc_psd_get_new_ticket_count', $plugin_admin, 'ajax_get_new_ticket_count');
 		$this->loader->add_action('wp_ajax_pnpc_psd_refresh_ticket_list', $plugin_admin, 'ajax_refresh_ticket_list');
+
+		// Admin-post handlers (non-AJAX): archive/restore + CSV export.
+		$this->loader->add_action('admin_post_pnpc_psd_archive_ticket', $plugin_admin, 'handle_archive_ticket');
+		$this->loader->add_action('admin_post_pnpc_psd_restore_archived_ticket', $plugin_admin, 'handle_restore_archived_ticket');
+		$this->loader->add_action('admin_post_pnpc_psd_export_tickets', $plugin_admin, 'handle_export_tickets');
 	}
 
 	private function define_public_hooks()

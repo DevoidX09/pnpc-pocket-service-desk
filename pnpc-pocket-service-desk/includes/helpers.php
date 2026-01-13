@@ -529,10 +529,15 @@ if ( ! function_exists( 'pnpc_psd_sync_roles_caps' ) ) {
 			'pnpc_psd_assign_tickets'     => true,
 		);
 
-		$manager_caps = $agent_caps + array(
-			'pnpc_psd_delete_tickets'   => true,
-			'pnpc_psd_manage_settings'  => true,
-		);
+		// Manager is a Pro-unlocked role in the long-term plan.
+		// In Free, the role exists for forward compatibility, but elevated caps stay disabled.
+		$manager_caps = $agent_caps;
+		if ( function_exists( 'pnpc_psd_is_pro' ) && pnpc_psd_is_pro() ) {
+			$manager_caps = $manager_caps + array(
+				'pnpc_psd_delete_tickets'  => true,
+				'pnpc_psd_manage_settings' => true,
+			);
+		}
 
 		// Roles: Agent.
 		$agent_role = get_role( 'pnpc_psd_agent' );
@@ -553,8 +558,19 @@ if ( ! function_exists( 'pnpc_psd_sync_roles_caps' ) ) {
 			$manager_role = get_role( 'pnpc_psd_manager' );
 		}
 		if ( $manager_role ) {
-			foreach ( $manager_caps as $cap => $grant ) {
+			// Always ensure baseline staff caps.
+			foreach ( $agent_caps as $cap => $grant ) {
 				if ( $grant ) { $manager_role->add_cap( $cap ); }
+			}
+			// Toggle elevated caps based on plan.
+			$elevated = array( 'pnpc_psd_delete_tickets', 'pnpc_psd_manage_settings' );
+			$enable_elevated = ( function_exists( 'pnpc_psd_is_pro' ) && pnpc_psd_is_pro() );
+			foreach ( $elevated as $cap ) {
+				if ( $enable_elevated ) {
+					$manager_role->add_cap( $cap );
+				} else {
+					$manager_role->remove_cap( $cap );
+				}
 			}
 		}
 
@@ -609,6 +625,29 @@ if ( ! function_exists( 'pnpc_psd_sanitize_agents_option' ) ) {
 				'enabled'     => $enabled ? 1 : 0,
 				'notify_email'=> $email,
 			);
+		}
+
+		// Enforce plan limits (Free vs Pro). Free is intentionally small.
+		$limit = function_exists( 'pnpc_psd_get_max_agents_limit' ) ? (int) pnpc_psd_get_max_agents_limit() : 2;
+		if ( $limit > 0 ) {
+			$enabled_ids = array();
+			foreach ( $out as $uid => $row ) {
+				if ( ! empty( $row['enabled'] ) ) {
+					$enabled_ids[] = (int) $uid;
+				}
+			}
+			sort( $enabled_ids );
+			if ( count( $enabled_ids ) > $limit ) {
+				$keep = array_slice( $enabled_ids, 0, $limit );
+				$keep = array_fill_keys( $keep, true );
+				foreach ( $out as $uid => $row ) {
+					if ( ! empty( $row['enabled'] ) && ! isset( $keep[ (int) $uid ] ) ) {
+						$out[ (int) $uid ]['enabled'] = 0;
+					}
+				}
+				// Optional: record that we trimmed the list (for admin notice).
+				set_transient( 'pnpc_psd_agents_trimmed', 1, 60 );
+			}
 		}
 
 		return $out;
@@ -683,3 +722,214 @@ if ( ! function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
 		return ( $u && ! empty( $u->user_email ) ) ? (string) $u->user_email : '';
 	}
 }
+
+/**
+ * Determine whether this installation is running the Pro build.
+ *
+ * Pro is enabled if any of the following are true:
+ * - Constant PNPC_PSD_IS_PRO is defined and truthy.
+ * - Option pnpc_psd_plan is set to 'pro'.
+ * - Filter 'pnpc_psd_is_pro' returns true.
+ *
+ * @return bool
+ */
+if ( ! function_exists( 'pnpc_psd_is_pro' ) ) {
+	function pnpc_psd_is_pro() {
+		$is_pro = false;
+		if ( defined( 'PNPC_PSD_IS_PRO' ) && PNPC_PSD_IS_PRO ) {
+			$is_pro = true;
+		}
+		$plan = (string) get_option( 'pnpc_psd_plan', 'free' );
+		if ( 'pro' === strtolower( $plan ) ) {
+			$is_pro = true;
+		}
+		/**
+		 * Allow themes/addons to declare Pro status.
+		 */
+		$is_pro = (bool) apply_filters( 'pnpc_psd_is_pro', $is_pro );
+		return $is_pro;
+	}
+}
+
+/**
+ * Get the max number of eligible agents allowed by plan.
+ *
+ * Free: 2
+ * Pro : unlimited (0)
+ *
+ * @return int 0 = unlimited.
+ */
+if ( ! function_exists( 'pnpc_psd_get_max_agents_limit' ) ) {
+	function pnpc_psd_get_max_agents_limit() {
+		return pnpc_psd_is_pro() ? 0 : 2;
+	}
+}
+
+/**
+ * Get max attachment size in megabytes for current plan.
+ *
+ * Free default: 5MB
+ * Pro  default: 20MB
+ *
+ * Stored setting (pnpc_psd_max_attachment_mb) is clamped by plan defaults.
+ *
+ * @return int
+ */
+if ( ! function_exists( 'pnpc_psd_get_max_attachment_mb' ) ) {
+	function pnpc_psd_get_max_attachment_mb() {
+		$default = pnpc_psd_is_pro() ? 20 : 5;
+		$min     = 1;
+		$max     = pnpc_psd_is_pro() ? 20 : 5;
+		$raw     = absint( get_option( 'pnpc_psd_max_attachment_mb', $default ) );
+		$raw     = max( $min, $raw );
+		$raw     = min( $max, $raw );
+		return (int) $raw;
+	}
+}
+
+/**
+ * Sanitize max attachment size (MB) and clamp by plan.
+ *
+ * This ensures the stored option reflects the effective plan limit, avoiding UI confusion.
+ *
+ * @param mixed $value Raw value.
+ * @return int
+ */
+if ( ! function_exists( 'pnpc_psd_sanitize_max_attachment_mb' ) ) {
+	function pnpc_psd_sanitize_max_attachment_mb( $value ) {
+		$val = absint( $value );
+		$val = max( 1, $val );
+		$cap = pnpc_psd_is_pro() ? 20 : 5;
+		$val = min( $cap, $val );
+		return (int) $val;
+	}
+}
+
+/**
+ * Get max attachment size in bytes.
+ *
+ * @return int
+ */
+if ( ! function_exists( 'pnpc_psd_get_max_attachment_bytes' ) ) {
+	function pnpc_psd_get_max_attachment_bytes() {
+		$mb = pnpc_psd_get_max_attachment_mb();
+		return (int) ( $mb * 1024 * 1024 );
+	}
+}
+
+/**
+ * Get the allowed attachment types list.
+ *
+ * Historically this option has been saved in a few formats (comma-separated,
+ * whitespace-separated, semicolon-separated). If the setting is blank or
+ * contains only delimiters, fall back to safe defaults so attachments do not
+ * silently stop working.
+ *
+ * @return string[] Lowercased allowed types/extensions.
+ */
+if ( ! function_exists( 'pnpc_psd_get_allowed_file_types_list' ) ) {
+	function pnpc_psd_get_allowed_file_types_list() {
+		$default_raw = 'jpg,jpeg,png,gif,webp,pdf,txt,csv,doc,docx,xls,xlsx,zip';
+		$raw         = (string) get_option( 'pnpc_psd_allowed_file_types', $default_raw );
+		$raw         = trim( (string) $raw );
+		if ( '' === $raw ) {
+			$raw = $default_raw;
+		}
+
+		// Split on commas, semicolons, and whitespace (including newlines/tabs).
+		$parts = preg_split( '/[\s,;]+/', $raw );
+		if ( ! is_array( $parts ) ) {
+			$parts = array();
+		}
+		$parts = array_map( 'trim', $parts );
+		$parts = array_filter(
+			$parts,
+			function ( $v ) {
+				return '' !== trim( (string) $v );
+			}
+		);
+		$parts = array_map(
+			function ( $v ) {
+				return strtolower( (string) $v );
+			},
+			$parts
+		);
+		$parts = array_values( array_unique( $parts ) );
+
+		// If the list is still effectively empty, force defaults.
+		if ( empty( $parts ) ) {
+			$parts = array( 'jpg','jpeg','png','gif','webp','pdf','txt','csv','doc','docx','xls','xlsx','zip' );
+		}
+
+		return $parts;
+	}
+}
+
+/**
+ * Sanitize allowed attachment types setting.
+ *
+ * Stores a normalized comma-separated list, and never stores an empty value
+ * (to prevent attachments from being silently blocked later).
+ *
+ * @param mixed $value Raw setting.
+ * @return string
+ */
+if ( ! function_exists( 'pnpc_psd_sanitize_allowed_file_types' ) ) {
+	function pnpc_psd_sanitize_allowed_file_types( $value ) {
+		if ( is_array( $value ) ) {
+			$raw = implode( ',', array_map( 'strval', $value ) );
+		} else {
+			$raw = is_string( $value ) ? $value : '';
+		}
+		$items = preg_split( '/[\s,;]+/', (string) $raw );
+		if ( ! is_array( $items ) ) {
+			$items = array();
+		}
+		$items = array_map( 'trim', $items );
+		$items = array_filter(
+			$items,
+			function ( $v ) {
+				return '' !== trim( (string) $v );
+			}
+		);
+		$items = array_map(
+			function ( $v ) {
+				return strtolower( (string) $v );
+			},
+			$items
+		);
+		$items = array_values( array_unique( $items ) );
+		if ( empty( $items ) ) {
+			$items = array( 'jpg','jpeg','png','gif','webp','pdf','txt','csv','doc','docx','xls','xlsx','zip' );
+		}
+		return implode( ',', $items );
+	}
+}
+
+
+if ( ! function_exists( 'pnpc_psd_sanitize_public_login_mode' ) ) {
+	/**
+	 * Sanitize public login mode.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	function pnpc_psd_sanitize_public_login_mode( $value ) {
+		$value = is_string( $value ) ? strtolower( trim( $value ) ) : 'inline';
+		return in_array( $value, array( 'inline', 'link' ), true ) ? $value : 'inline';
+	}
+}
+
+if ( ! function_exists( 'pnpc_psd_sanitize_public_login_url' ) ) {
+	/**
+	 * Sanitize public login URL (optional).
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	function pnpc_psd_sanitize_public_login_url( $value ) {
+		$value = is_string( $value ) ? trim( $value ) : '';
+		return $value ? esc_url_raw( $value ) : '';
+	}
+}
+
