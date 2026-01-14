@@ -88,7 +88,8 @@
 				data: {
 					action: 'pnpc_psd_refresh_my_tickets',
 					nonce: pnpcPsdPublic.nonce,
-					tab: ($('#pnpc-psd-my-tickets').length ? ($('#pnpc-psd-my-tickets').attr('data-tab') || 'open') : 'open')
+					tab: ($('#pnpc-psd-my-tickets').length ? ($('#pnpc-psd-my-tickets').attr('data-tab') || 'open') : 'open'),
+					sort: ($('#pnpc-psd-my-tickets').length ? ($('#pnpc-psd-my-tickets').attr('data-sort') || 'latest') : 'latest')
 				},
 				success: function(result) {
 					if (result && result.success && result.data && typeof result.data.html === 'string') {

@@ -14,6 +14,11 @@
 	padding: 20px;
 }
 
+/* Profile settings layout: center the two-column grid within the shortcode container. */
+.pnpc-psd-profile-settings .pnpc-psd-profile-grid{
+	justify-content: center;
+}
+
 .pnpc-psd-create-ticket h2,
 .pnpc-psd-my-tickets h2,
 .pnpc-psd-ticket-detail h2,
@@ -484,6 +489,7 @@
 	display:flex;
 	gap:16px;
 	flex-wrap:wrap;
+	justify-content:center;
 }
 
 .pnpc-psd-services .pnpc-psd-service-item{

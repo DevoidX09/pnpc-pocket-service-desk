@@ -11,8 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Tabs: keep all fields in a single form to avoid partial-submission resets.
-$active_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'core';
-$page_slug  = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : 'pnpc-service-desk-settings';
+$active_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'core'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tab selection.
+$page_slug  = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : 'pnpc-service-desk-settings'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page slug.
 $tabs       = array(
 	'core'      => __( 'Core Setup', 'pnpc-pocket-service-desk' ),
 	'experience'=> __( 'Experience', 'pnpc-pocket-service-desk' ),
@@ -241,7 +241,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 						$default_agent_id = absint( get_option( 'pnpc_psd_default_agent_user_id', 0 ) );
 						$staff_users      = get_users(
 							array(
-								'role__in' => array( 'administrator', 'pnpc_psd_manager', 'pnpc_psd_agent' ),
+								'role__in' => ( ( function_exists( 'pnpc_psd_enable_manager_role' ) && pnpc_psd_enable_manager_role() ) ? array( 'administrator', 'pnpc_psd_manager', 'pnpc_psd_agent' ) : array( 'administrator', 'pnpc_psd_agent' ) ),
 								'orderby'  => 'display_name',
 								'order'    => 'ASC',
 							)
@@ -316,7 +316,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 							</td>
 							<td>
 								<strong><?php echo esc_html( $staff->display_name ); ?></strong>
-								<br><span class="description"><?php echo esc_html( $staff->user_email ); ?><?php echo ' (#' . esc_html( (string) $uid ) . ')'; ?></span>
+								<br><span class="description"><?php echo esc_html( $staff->user_email ); ?><?php echo esc_html( sprintf( /* translators: %d is the WordPress user ID. */ __( ' (#%d)', 'pnpc-pocket-service-desk' ), (int) $uid ) ); ?></span>
 							</td>
 							<td><?php echo esc_html( $roles ); ?></td>
 							<td>
@@ -482,7 +482,8 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 						<p class="description"><?php esc_html_e( 'If enabled, the Services shortcode will show general published products to viewers (unless user-specific products are enabled).', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
-				<tr>
+				<?php if ( function_exists( 'pnpc_psd_is_pro_active' ) && pnpc_psd_is_pro_active() ) : ?>
+<tr>
 					<th scope="row"><?php esc_html_e( 'Enable User-specific Products (Pro)', 'pnpc-pocket-service-desk' ); ?></th>
 					<td>
 						<label>
@@ -493,6 +494,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 						<p class="description"><?php esc_html_e( 'When enabled, the Services block will show only products explicitly allocated to the viewing user (user-specific takes precedence).', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
+<?php endif; ?>
 			</table>
 
 		</div>

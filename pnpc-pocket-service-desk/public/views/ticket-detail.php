@@ -23,7 +23,7 @@ if (! defined('ABSPATH')) {
  */
 if ( isset( $_GET['ticket_id'] ) && is_user_logged_in() ) {
 	$current_user_id = get_current_user_id();
-	$ticket_id       = absint( $_GET['ticket_id'] );
+	$ticket_id       = absint( wp_unslash( $_GET['ticket_id'] ) );
 
 	if ( $ticket_id > 0 ) {
 		// Back-compat: per-user last view timestamp (used by older UI pieces).
@@ -125,7 +125,7 @@ if (empty($dashboard_url)) {
 			<ul>
 				<?php foreach ($ticket_attachments as $att) : ?>
 					<li>
-						<a href="<?php echo esc_url($att->file_path); ?>" target="_blank" rel="noopener noreferrer">
+						<a href="<?php echo esc_url( pnpc_psd_get_attachment_download_url( $att->id, $ticket_id, false ) ); ?>" target="_blank" rel="noopener noreferrer">
 							<?php echo esc_html($att->file_name); ?>
 						</a>
 						<small class="pnpc-psd-attachment-meta">
@@ -156,7 +156,7 @@ if (empty($dashboard_url)) {
 				$resp_ts = function_exists('pnpc_psd_mysql_to_wp_local_ts') ? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) : intval(strtotime($response->created_at));
 				$atts_for_response = isset($response_attachments_map[intval($response->id)]) ? $response_attachments_map[intval($response->id)] : array();
 				?>
-				<div class="pnpc-psd-response <?php echo $is_staff ? 'pnpc-psd-response-staff' : 'pnpc-psd-response-customer'; ?>">
+				<div class="pnpc-psd-response <?php echo esc_attr( $is_staff ? 'pnpc-psd-response-staff' : 'pnpc-psd-response-customer' ); ?>">
 					<div class="pnpc-psd-response-header">
 						<div class="pnpc-psd-response-author">
 							<strong><?php echo $response_user ? esc_html($response_user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></strong>
@@ -178,7 +178,7 @@ if (empty($dashboard_url)) {
 							<ul>
 								<?php foreach ($atts_for_response as $ra) : ?>
 									<li>
-										<a href="<?php echo esc_url($ra->file_path); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($ra->file_name); ?></a>
+										<a href="<?php echo esc_url( pnpc_psd_get_attachment_download_url( $ra->id, $ticket_id, false ) ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($ra->file_name); ?></a>
 										<small> (<?php echo esc_html(function_exists('pnpc_psd_format_filesize') ? pnpc_psd_format_filesize($ra->file_size) : size_format(intval($ra->file_size))); ?>)</small>
 									</li>
 								<?php endforeach; ?>

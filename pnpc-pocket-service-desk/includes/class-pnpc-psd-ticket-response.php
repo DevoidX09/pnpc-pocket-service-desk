@@ -85,7 +85,7 @@ class PNPC_PSD_Ticket_Response
 						'ticket_id'   => absint($data['ticket_id']),
 						'response_id' => intval($response_id),
 						'file_name'   => sanitize_file_name(isset($att['file_name']) ? $att['file_name'] : basename($att['file_path'])),
-						'file_path'   => isset($att['file_path']) ? esc_url_raw($att['file_path']) : '',
+						'file_path'   => isset($att['file_path']) ? sanitize_text_field((string) $att['file_path']) : '',
 						'file_type'   => isset($att['file_type']) ? sanitize_text_field($att['file_type']) : '',
 						'file_size'   => isset($att['file_size']) ? intval($att['file_size']) : 0,
 						'uploaded_by' => isset($att['uploaded_by']) ? absint($att['uploaded_by']) : absint(get_current_user_id()),

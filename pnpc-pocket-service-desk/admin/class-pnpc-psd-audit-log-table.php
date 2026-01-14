@@ -225,7 +225,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 		$per_page = (int) apply_filters( 'pnpc_psd_audit_log_per_page', 25 );
 		$per_page = max( 5, min( 200, $per_page ) );
 
-		$paged = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+		$paged = isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1;
 
 		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
 		$order   = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'desc';
@@ -308,8 +308,8 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 */
 	protected function get_filters() {
 		$action   = isset( $_GET['audit_action'] ) ? sanitize_text_field( wp_unslash( $_GET['audit_action'] ) ) : '';
-		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( $_GET['ticket_id'] ) : 0;
-		$actor_id  = isset( $_GET['actor_id'] ) ? absint( $_GET['actor_id'] ) : 0;
+		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( wp_unslash( $_GET['ticket_id'] ) ) : 0;
+		$actor_id  = isset( $_GET['actor_id'] ) ? absint( wp_unslash( $_GET['actor_id'] ) ) : 0;
 
 		return array(
 			'action'    => $action,

@@ -16,7 +16,7 @@ if (! defined('ABSPATH')) {
  */
 if (isset($_GET['ticket_id']) && is_user_logged_in() && current_user_can('pnpc_psd_view_tickets')) {
 	$current_user_id = get_current_user_id();
-	$ticket_id = absint($_GET['ticket_id']);
+	$ticket_id = absint( wp_unslash( $_GET['ticket_id'] ) );
 	
 	if ($ticket_id > 0) {
 		// Store current timestamp as "last viewed" for this agent
@@ -72,7 +72,7 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 <div class="wrap pnpc-psd-ticket-detail" id="pnpc-psd-ticket-detail" data-ticket-id="<?php echo esc_attr($ticket->id); ?>">
 	<div class="pnpc-psd-ticket-detail-header">
 		<div class="pnpc-psd-breadcrumb">
-			<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk')); ?>">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-tickets' ) ); ?>">
 				<?php esc_html_e('All Tickets', 'pnpc-pocket-service-desk'); ?>
 			</a>
 			<span class="separator"> &raquo; </span>
@@ -80,11 +80,11 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 		</div>
 		
 		<div class="pnpc-psd-quick-nav">
-			<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk')); ?>" class="button">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-tickets' ) ); ?>" class="button">
 				<span class="dashicons dashicons-arrow-left-alt2"></span>
 				<?php esc_html_e('Back to All Tickets', 'pnpc-pocket-service-desk'); ?>
 			</a>
-			<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk&status=open')); ?>" class="button">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-tickets&status=open' ) ); ?>" class="button">
 				<?php esc_html_e('Open Tickets', 'pnpc-pocket-service-desk'); ?>
 			</a>
 		</div>
@@ -119,6 +119,12 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 				<p>
 					<?php esc_html_e('Status:', 'pnpc-pocket-service-desk'); ?>
 					<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>"><?php echo esc_html(ucfirst($ticket->status)); ?></span>
+				</p>
+				<p>
+					<?php esc_html_e( 'Priority:', 'pnpc-pocket-service-desk' ); ?>
+					<span class="pnpc-psd-priority pnpc-psd-priority-<?php echo esc_attr( (string) $ticket->priority ); ?>">
+						<?php echo esc_html( ucfirst( (string) $ticket->priority ) ); ?>
+					</span>
 				</p>
 				<p>
 					<?php esc_html_e('Assigned to:', 'pnpc-pocket-service-desk'); ?>
@@ -162,6 +168,39 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 					<button type="button" class="button" id="pnpc-psd-status-button"><?php esc_html_e('Update Status', 'pnpc-pocket-service-desk'); ?></button>
 				</div>
 			<?php endif; ?>
+
+			<?php if ( current_user_can( 'pnpc_psd_assign_tickets' ) || current_user_can( 'manage_options' ) ) : ?>
+				<?php
+				$priority_opts = array(
+					'low'    => __( 'Low', 'pnpc-pocket-service-desk' ),
+					'normal' => __( 'Normal', 'pnpc-pocket-service-desk' ),
+					'high'   => __( 'High', 'pnpc-pocket-service-desk' ),
+					'urgent' => __( 'Urgent', 'pnpc-pocket-service-desk' ),
+				);
+				$redirect_to = add_query_arg(
+					array(
+						'page'      => 'pnpc-service-desk-ticket',
+						'ticket_id' => absint( $ticket->id ),
+					),
+					admin_url( 'admin.php' )
+				);
+				?>
+				<form class="pnpc-psd-field" method="post" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
+					<input type="hidden" name="page" value="pnpc-service-desk-ticket" />
+					<input type="hidden" name="ticket_id" value="<?php echo esc_attr( absint( $ticket->id ) ); ?>" />
+					<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect_to ); ?>" />
+					<?php wp_nonce_field( 'pnpc_psd_update_ticket_priority', 'pnpc_psd_update_priority_nonce' ); ?>
+					<label for="pnpc-psd-priority-select"><?php esc_html_e( 'Priority', 'pnpc-pocket-service-desk' ); ?></label>
+					<select id="pnpc-psd-priority-select" name="priority">
+						<?php foreach ( $priority_opts as $p_key => $p_label ) : ?>
+							<option value="<?php echo esc_attr( $p_key ); ?>" <?php selected( (string) $ticket->priority, (string) $p_key ); ?>>
+								<?php echo esc_html( $p_label ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<button type="submit" class="button"><?php esc_html_e( 'Update Priority', 'pnpc-pocket-service-desk' ); ?></button>
+				</form>
+			<?php endif; ?>
 		</div>
 	</div>
 
@@ -185,7 +224,8 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 			<?php foreach ($ticket_attachments as $att) : ?>
 				<?php
 				$file_size = intval($att->file_size);
-				$file_url = esc_url($att->file_path);
+				$file_url = esc_url( pnpc_psd_get_attachment_download_url( $att->id, $ticket->id, true ) );
+				$download_url = esc_url( pnpc_psd_get_attachment_download_url( $att->id, $ticket->id, false ) );
 				$file_name = esc_html($att->file_name);
 				$file_ext = strtolower(pathinfo($att->file_name, PATHINFO_EXTENSION));
 				$file_type = pnpc_psd_get_attachment_type($file_ext);
@@ -195,8 +235,8 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 				
 				<div class="pnpc-psd-attachment pnpc-psd-attachment-<?php echo esc_attr($file_type); ?>">
 					<?php if ($file_type === 'image' && $can_preview) : ?>
-						<img src="<?php echo $file_url; ?>" 
-							 alt="<?php echo $file_name; ?>" 
+						<img src="<?php echo esc_url( $file_url ); ?>" 
+							 alt="<?php echo esc_attr( $file_name ); ?>" 
 							 class="pnpc-psd-attachment-thumbnail">
 					<?php else : ?>
 						<div class="pnpc-psd-attachment-icon">
@@ -205,7 +245,7 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 					<?php endif; ?>
 					
 					<div class="pnpc-psd-attachment-info">
-						<strong><?php echo $file_name; ?></strong>
+						<strong><?php echo esc_html( $file_name ); ?></strong>
 						<span class="pnpc-psd-attachment-meta">
 							<?php echo esc_html($file_size_formatted); ?> · <?php echo esc_html(strtoupper($file_ext)); ?>
 						</span>
@@ -227,13 +267,13 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 						<?php if ($can_preview && in_array($file_type, array('image', 'pdf'), true)) : ?>
 							<button type="button" class="pnpc-psd-view-attachment button" 
 									data-type="<?php echo esc_attr($file_type); ?>" 
-									data-url="<?php echo $file_url; ?>"
-									data-filename="<?php echo $file_name; ?>">
+									data-url="<?php echo esc_url( $file_url ); ?>"
+									data-filename="<?php echo esc_attr( $file_name ); ?>">
 								<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
 							</button>
 						<?php endif; ?>
 						
-						<a href="<?php echo $file_url; ?>" 
+						<a href="<?php echo esc_url( $download_url ); ?>" 
 						   download 
 						   class="button <?php echo ! $can_preview ? 'button-primary' : ''; ?>">
 							<?php esc_html_e('Download', 'pnpc-pocket-service-desk'); ?>
@@ -254,7 +294,7 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 			$is_staff = intval($r->is_staff_response) === 1;
 			$atts_for_response = isset($response_attachments_map[intval($r->id)]) ? $response_attachments_map[intval($r->id)] : array();
 			?>
-			<div class="pnpc-psd-response <?php echo $is_staff ? 'pnpc-psd-response-staff' : 'pnpc-psd-response-customer'; ?>">
+			<div class="pnpc-psd-response <?php echo esc_attr( $is_staff ? 'pnpc-psd-response-staff' : 'pnpc-psd-response-customer' ); ?>">
 				<div class="pnpc-psd-response-header">
 					<strong><?php echo $responder ? esc_html($responder->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></strong>
 					<span class="pnpc-psd-response-date">
@@ -271,7 +311,8 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 						<?php foreach ($atts_for_response as $ra) : ?>
 							<?php
 							$file_size = intval($ra->file_size);
-							$file_url = esc_url($ra->file_path);
+							$file_url = esc_url( pnpc_psd_get_attachment_download_url( $ra->id, $ticket->id, true ) );
+							$download_url = esc_url( pnpc_psd_get_attachment_download_url( $ra->id, $ticket->id, false ) );
 							$file_name = esc_html($ra->file_name);
 							$file_ext = strtolower(pathinfo($ra->file_name, PATHINFO_EXTENSION));
 							$file_type = pnpc_psd_get_attachment_type($file_ext);
@@ -281,8 +322,8 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 							
 							<div class="pnpc-psd-attachment pnpc-psd-attachment-<?php echo esc_attr($file_type); ?>">
 								<?php if ($file_type === 'image' && $can_preview) : ?>
-									<img src="<?php echo $file_url; ?>" 
-										 alt="<?php echo $file_name; ?>" 
+									<img src="<?php echo esc_url( $file_url ); ?>" 
+										 alt="<?php echo esc_attr( $file_name ); ?>" 
 										 class="pnpc-psd-attachment-thumbnail">
 								<?php else : ?>
 									<div class="pnpc-psd-attachment-icon">
@@ -291,7 +332,7 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 								<?php endif; ?>
 								
 								<div class="pnpc-psd-attachment-info">
-									<strong><?php echo $file_name; ?></strong>
+									<strong><?php echo esc_html( $file_name ); ?></strong>
 									<span class="pnpc-psd-attachment-meta">
 										<?php echo esc_html($file_size_formatted); ?> · <?php echo esc_html(strtoupper($file_ext)); ?>
 									</span>
@@ -313,13 +354,13 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 									<?php if ($can_preview && in_array($file_type, array('image', 'pdf'), true)) : ?>
 										<button type="button" class="pnpc-psd-view-attachment button" 
 												data-type="<?php echo esc_attr($file_type); ?>" 
-												data-url="<?php echo $file_url; ?>"
-												data-filename="<?php echo $file_name; ?>">
+												data-url="<?php echo esc_url( $file_url ); ?>"
+												data-filename="<?php echo esc_attr( $file_name ); ?>">
 											<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
 										</button>
 									<?php endif; ?>
 									
-									<a href="<?php echo $file_url; ?>" 
+									<a href="<?php echo esc_url( $download_url ); ?>" 
 									   download 
 									   class="button <?php echo ! $can_preview ? 'button-primary' : ''; ?>">
 										<?php esc_html_e('Download', 'pnpc-pocket-service-desk'); ?>

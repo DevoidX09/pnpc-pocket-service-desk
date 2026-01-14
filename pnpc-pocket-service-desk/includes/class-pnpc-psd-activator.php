@@ -106,6 +106,14 @@ class PNPC_PSD_Activator {
 
 		// Flush rewrite rules.
 		flush_rewrite_rules();
+
+		// First-run setup wizard prompt (non-destructive).
+		$dash_id = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
+		if ( $dash_id <= 0 || 'trash' === get_post_status( $dash_id ) ) {
+			update_option( 'pnpc_psd_needs_setup_wizard', 1 );
+			update_option( 'pnpc_psd_setup_notice_dismissed', 0 );
+		}
+
 	}
 
 	/**
@@ -585,19 +593,22 @@ class PNPC_PSD_Activator {
 			)
 		);
 
-		// Add Service Desk Manager role (has all agent capabilities plus more).
-		add_role(
-			'pnpc_psd_manager',
-			__( 'Service Desk Manager', 'pnpc-pocket-service-desk' ),
-			array(
-				'read'                        => true,
-				'pnpc_psd_view_tickets'       => true,
-				'pnpc_psd_respond_to_tickets' => true,
-				'pnpc_psd_assign_tickets'     => true,
-				'pnpc_psd_delete_tickets'     => true,
-				'pnpc_psd_manage_settings'    => true,
-			)
-		);
+		// Add Service Desk Manager role (Pro-only; enabled by add-on via filter).
+		$enable_manager = (bool) apply_filters( 'pnpc_psd_enable_manager_role', false );
+		if ( $enable_manager ) {
+			add_role(
+				'pnpc_psd_manager',
+				__( 'Service Desk Manager', 'pnpc-pocket-service-desk' ),
+				array(
+					'read'                        => true,
+					'pnpc_psd_view_tickets'       => true,
+					'pnpc_psd_respond_to_tickets' => true,
+					'pnpc_psd_assign_tickets'     => true,
+					'pnpc_psd_delete_tickets'     => true,
+					'pnpc_psd_manage_settings'    => true,
+				)
+			);
+		}
 
 		// Add capabilities to administrator.
 		$admin_role = get_role( 'administrator' );

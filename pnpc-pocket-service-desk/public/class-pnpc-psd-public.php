@@ -206,10 +206,15 @@ ob_start();
 		if (! is_user_logged_in()) {
 			return $this->render_login_gate( function_exists('pnpc_psd_get_my_tickets_url') ? pnpc_psd_get_my_tickets_url() : home_url('/') );
 		}
-$current_user = wp_get_current_user();
-		$tab          = isset($_GET['pnpc_psd_tab']) ? sanitize_key(wp_unslash($_GET['pnpc_psd_tab'])) : 'open';
+		$current_user = wp_get_current_user();
+		$tab          = isset( $_GET['pnpc_psd_tab'] ) ? sanitize_key( wp_unslash( $_GET['pnpc_psd_tab'] ) ) : 'open'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tab selection.
 		if (! in_array($tab, array('open', 'closed'), true)) {
 			$tab = 'open';
+		}
+
+		$sort = isset( $_GET['pnpc_psd_sort'] ) ? sanitize_key( wp_unslash( $_GET['pnpc_psd_sort'] ) ) : 'latest'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only sort parameter.
+		if ( ! in_array( $sort, array( 'latest', 'newest', 'oldest', 'unread' ), true ) ) {
+			$sort = 'latest';
 		}
 
 		$ticket_args = array();
@@ -219,7 +224,56 @@ $current_user = wp_get_current_user();
 			$ticket_args['exclude_statuses'] = array('closed');
 		}
 
+		// Default to most recent activity; user may switch to oldest/newest.
+		if ( 'oldest' === $sort ) {
+			$ticket_args['orderby'] = 'created_at';
+			$ticket_args['order']   = 'ASC';
+		} elseif ( 'newest' === $sort ) {
+			$ticket_args['orderby'] = 'created_at';
+			$ticket_args['order']   = 'DESC';
+		} elseif ( 'unread' === $sort ) {
+			$ticket_args['orderby'] = 'updated_at';
+			$ticket_args['order']   = 'DESC';
+		} else {
+			$ticket_args['orderby'] = 'updated_at';
+			$ticket_args['order']   = 'DESC';
+		}
+
 		$tickets = PNPC_PSD_Ticket::get_by_user($current_user->ID, $ticket_args);
+
+		if ( 'unread' === $sort && ! empty( $tickets ) ) {
+			$unread = array();
+			$read   = array();
+
+			// Compute "unread" the same way the list template does (role-level columns when present, else per-user meta fallback).
+			foreach ( (array) $tickets as $t ) {
+				$customer_viewed_raw = ! empty( $t->last_customer_viewed_at ) ? (string) $t->last_customer_viewed_at : '';
+				$staff_activity_raw  = ! empty( $t->last_staff_activity_at ) ? (string) $t->last_staff_activity_at : '';
+
+				if ( '' === $customer_viewed_raw ) {
+					$last_view_meta = get_user_meta( $current_user->ID, 'pnpc_psd_ticket_last_view_' . intval( $t->id ), true );
+					$customer_viewed_ts = $last_view_meta ? ( is_numeric( $last_view_meta ) ? intval( $last_view_meta ) : strtotime( (string) $last_view_meta ) ) : 0;
+				} else {
+					$customer_viewed_ts = strtotime( $customer_viewed_raw . ' UTC' );
+				}
+
+				if ( '' !== $staff_activity_raw ) {
+					$staff_activity_ts = strtotime( $staff_activity_raw . ' UTC' );
+				} else {
+					// Best-effort fallback: treat the ticket updated time as "latest activity".
+					$staff_activity_ts = ! empty( $t->updated_at ) ? strtotime( (string) $t->updated_at . ' UTC' ) : 0;
+				}
+
+				$is_unread = ( $staff_activity_ts > $customer_viewed_ts );
+
+				if ( $is_unread ) {
+					$unread[] = $t;
+				} else {
+					$read[] = $t;
+				}
+			}
+			$tickets = array_merge( $unread, $read );
+		}
 
 		ob_start();
 		include PNPC_PSD_PLUGIN_DIR . 'public/views/my-tickets.php';
@@ -231,7 +285,7 @@ $current_user = wp_get_current_user();
 		if (! is_user_logged_in()) {
 			return $this->render_login_gate( function_exists('pnpc_psd_get_my_tickets_url') ? pnpc_psd_get_my_tickets_url() : home_url('/') );
 		}
-$ticket_id = isset($_GET['ticket_id']) ? absint($_GET['ticket_id']) : 0;
+$ticket_id = isset( $_GET['ticket_id'] ) ? absint( wp_unslash( $_GET['ticket_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only ticket selection.
 		if (! $ticket_id) {
 			return '<p>' . esc_html__('Invalid ticket ID.', 'pnpc-pocket-service-desk') . '</p>';
 		}
@@ -256,7 +310,6 @@ $ticket_id = isset($_GET['ticket_id']) ? absint($_GET['ticket_id']) : 0;
 			if (function_exists('pnpc_psd_debug_log')) {
 				pnpc_psd_debug_log('render_ticket_detail', $log_data);
 			} else {
-				error_log('pnpc-psd-debug: ' . print_r($log_data, true));
 			}
 		}
 
@@ -289,7 +342,7 @@ ob_start();
 	{
 		$atts = shortcode_atts(array('limit' => 4), (array) $atts, 'pnpc_services');
 		$pnpc_psd_services_limit = max( 1, absint( $atts['limit'] ) );
-		$pnpc_psd_services_page  = isset( $_GET['psd_services_page'] ) ? max( 1, absint( $_GET['psd_services_page'] ) ) : 1;
+		$pnpc_psd_services_page  = isset( $_GET['psd_services_page'] ) ? max( 1, absint( wp_unslash( $_GET['psd_services_page'] ) ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination parameter.
 		ob_start();
 		include PNPC_PSD_PLUGIN_DIR . 'public/views/services.php';
 		return ob_get_clean();
@@ -350,6 +403,10 @@ ob_start();
 
 		if (! is_user_logged_in()) {
 			$__pnpc_json_error( __('You must be logged in. ', 'pnpc-pocket-service-desk') );
+		}
+
+		if ( ! current_user_can( 'pnpc_psd_create_tickets' ) ) {
+			$__pnpc_json_error( __( 'Permission denied.', 'pnpc-pocket-service-desk' ) );
 		}
 
 		$current_user = wp_get_current_user();
@@ -470,7 +527,7 @@ ob_start();
 				}
 				$attachments[] = array(
 					'file_name' => sanitize_file_name($file['name']),
-					'file_path' => $move['url'],
+					'file_path' => $move['file'],
 					'file_type' => $mime,
 					'file_size' => isset($file['size']) ? intval($file['size']) : 0,
 					'uploaded_by' => $current_user->ID,
@@ -488,7 +545,9 @@ ob_start();
 		if (! $ticket_id) {
 			global $wpdb;
 			$error_detail = $wpdb->last_error ?  ' DB error: ' . $wpdb->last_error : '';
-			error_log('pnpc-psd:  ajax_create_ticket failed to insert ticket.' . $error_detail);
+			if ( function_exists( 'pnpc_psd_debug_log' ) ) {
+				pnpc_psd_debug_log( 'ajax_create_ticket_failed', $error_detail );
+			}
 			$__pnpc_json_error( __('Failed to create ticket.  Please try again or contact support.', 'pnpc-pocket-service-desk') );
 		}
 
@@ -513,7 +572,7 @@ ob_start();
 							// Ticket-level attachment (response_id=0). Using NULL here can fail under strict SQL modes.
 							'response_id'  => 0,
 							'file_name'    => sanitize_file_name( $att_name ),
-							'file_path'    => esc_url_raw( $att_url ),
+							'file_path'    => sanitize_text_field( $att_url ),
 							'file_type'    => isset( $att['file_type'] ) ? sanitize_text_field( (string) $att['file_type'] ) : '',
 							'file_size'    => isset( $att['file_size'] ) ? absint( $att['file_size'] ) : 0,
 							'uploaded_by'  => isset( $att['uploaded_by'] ) ? absint( $att['uploaded_by'] ) : absint( $current_user->ID ),
@@ -594,6 +653,24 @@ ob_start();
 
 	public function ajax_respond_to_ticket()
 	{
+		// Defensive: ensure no stray output (notices/warnings) corrupts JSON responses for AJAX callers.
+		$__pnpc_ob_started = false;
+		if ( 0 === ob_get_level() ) {
+			$__pnpc_ob_started = true;
+			ob_start();
+		}
+		$__pnpc_json_error = function( $message ) use ( &$__pnpc_ob_started ) {
+			if ( $__pnpc_ob_started && ob_get_length() ) {
+				ob_clean();
+			}
+			wp_send_json_error( array( 'message' => $message ) );
+		};
+		$__pnpc_json_success = function( $payload ) use ( &$__pnpc_ob_started ) {
+			if ( $__pnpc_ob_started && ob_get_length() ) {
+				ob_clean();
+			}
+			wp_send_json_success( $payload );
+		};
 		$nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
 		if (! wp_verify_nonce($nonce, 'pnpc_psd_public_nonce') && ! wp_verify_nonce($nonce, 'pnpc_psd_admin_nonce')) {
 			$__pnpc_json_error( __('Security check failed.  Please refresh and try again.', 'pnpc-pocket-service-desk') );
@@ -603,7 +680,11 @@ ob_start();
 			$__pnpc_json_error( __('You must be logged in. ', 'pnpc-pocket-service-desk') );
 		}
 
-		$ticket_id = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
+		if ( ! current_user_can( 'pnpc_psd_view_own_tickets' ) && ! current_user_can( 'pnpc_psd_respond_to_tickets' ) ) {
+			$__pnpc_json_error( __( 'Permission denied.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		$ticket_id = isset($_POST['ticket_id']) ? absint( wp_unslash( $_POST['ticket_id'] ) ) : 0;
 		$response  = isset($_POST['response']) ? wp_kses_post(wp_unslash($_POST['response'])) : '';
 
 		if (! $ticket_id || empty($response)) {
@@ -727,7 +808,7 @@ ob_start();
 				}
 				$attachments[] = array(
 					'file_name'   => sanitize_file_name($file['name']),
-					'file_path'   => $move['url'],
+					'file_path'   => $move['file'],
 					'file_type'   => $mime,
 					'file_size'   => isset($file['size']) ? intval($file['size']) : 0,
 					'uploaded_by' => $viewer_id,
@@ -866,10 +947,19 @@ ob_start();
 			wp_send_json_error(array('message' => __('You must be logged in.', 'pnpc-pocket-service-desk')));
 		}
 
+		if ( ! current_user_can( 'pnpc_psd_view_own_tickets' ) && ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'pnpc-pocket-service-desk' ) ) );
+		}
+
 		$current_user = wp_get_current_user();
 		$tab          = isset($_POST['tab']) ? sanitize_key(wp_unslash($_POST['tab'])) : 'open';
 		if (! in_array($tab, array('open', 'closed'), true)) {
 			$tab = 'open';
+		}
+
+		$sort = isset( $_POST['sort'] ) ? sanitize_key( wp_unslash( $_POST['sort'] ) ) : 'latest';
+		if ( ! in_array( $sort, array( 'latest', 'newest', 'oldest', 'unread' ), true ) ) {
+			$sort = 'latest';
 		}
 
 		$ticket_args = array();
@@ -879,7 +969,55 @@ ob_start();
 			$ticket_args['exclude_statuses'] = array('closed');
 		}
 
+		if ( 'oldest' === $sort ) {
+			$ticket_args['orderby'] = 'created_at';
+			$ticket_args['order']   = 'ASC';
+		} elseif ( 'newest' === $sort ) {
+			$ticket_args['orderby'] = 'created_at';
+			$ticket_args['order']   = 'DESC';
+		} elseif ( 'unread' === $sort ) {
+			$ticket_args['orderby'] = 'updated_at';
+			$ticket_args['order']   = 'DESC';
+		} else {
+			$ticket_args['orderby'] = 'updated_at';
+			$ticket_args['order']   = 'DESC';
+		}
+
 		$tickets = PNPC_PSD_Ticket::get_by_user($current_user->ID, $ticket_args);
+
+		if ( 'unread' === $sort && ! empty( $tickets ) ) {
+			$unread = array();
+			$read   = array();
+
+			// Compute "unread" the same way the list template does (role-level columns when present, else per-user meta fallback).
+			foreach ( (array) $tickets as $t ) {
+				$customer_viewed_raw = ! empty( $t->last_customer_viewed_at ) ? (string) $t->last_customer_viewed_at : '';
+				$staff_activity_raw  = ! empty( $t->last_staff_activity_at ) ? (string) $t->last_staff_activity_at : '';
+
+				if ( '' === $customer_viewed_raw ) {
+					$last_view_meta = get_user_meta( $current_user->ID, 'pnpc_psd_ticket_last_view_' . intval( $t->id ), true );
+					$customer_viewed_ts = $last_view_meta ? ( is_numeric( $last_view_meta ) ? intval( $last_view_meta ) : strtotime( (string) $last_view_meta ) ) : 0;
+				} else {
+					$customer_viewed_ts = strtotime( $customer_viewed_raw . ' UTC' );
+				}
+
+				if ( '' !== $staff_activity_raw ) {
+					$staff_activity_ts = strtotime( $staff_activity_raw . ' UTC' );
+				} else {
+					// Best-effort fallback: treat the ticket updated time as "latest activity".
+					$staff_activity_ts = ! empty( $t->updated_at ) ? strtotime( (string) $t->updated_at . ' UTC' ) : 0;
+				}
+
+				$is_unread = ( $staff_activity_ts > $customer_viewed_ts );
+
+				if ( $is_unread ) {
+					$unread[] = $t;
+				} else {
+					$read[] = $t;
+				}
+			}
+			$tickets = array_merge( $unread, $read );
+		}
 
 		ob_start();
 		include PNPC_PSD_PLUGIN_DIR . 'public/views/my-tickets-list.php';
@@ -899,7 +1037,7 @@ ob_start();
 			wp_send_json_error(array('message' => __('You must be logged in.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_id = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
+		$ticket_id = isset($_POST['ticket_id']) ? absint( wp_unslash( $_POST['ticket_id'] ) ) : 0;
 		if (! $ticket_id) {
 			wp_send_json_error(array('message' => __('Invalid ticket ID.', 'pnpc-pocket-service-desk')));
 		}
@@ -907,6 +1045,10 @@ ob_start();
 		$ticket = PNPC_PSD_Ticket::get($ticket_id);
 		if (! $ticket) {
 			wp_send_json_error(array('message' => __('Ticket not found.', 'pnpc-pocket-service-desk')));
+		}
+
+		if ( ! current_user_can( 'pnpc_psd_view_own_tickets' ) && ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'pnpc-pocket-service-desk' ) ) );
 		}
 
 		$current_user = wp_get_current_user();

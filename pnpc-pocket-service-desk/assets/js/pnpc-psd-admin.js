@@ -263,6 +263,48 @@
 		}
 
 		// Bulk actions functionality
+
+// Helpers: update tab counts + remove selected rows without full reload.
+function pnpcPsdUpdateTabCounts(counts) {
+	if (!counts) { return; }
+	// Update counts in subsubsub tabs: text like "Open (3)"
+	$('.subsubsub a').each(function(){
+		var $a = $(this);
+		var href = $a.attr('href') || '';
+		var key = '';
+		// Determine key based on href query params
+		if (href.indexOf('view=trash') !== -1) { key = 'trash'; }
+		else if (href.indexOf('view=review') !== -1) { key = 'review'; }
+		else if (href.indexOf('view=archived') !== -1) { key = 'archived'; }
+		else if (href.indexOf('status=open') !== -1) { key = 'open'; }
+		else if (href.indexOf('status=in-progress') !== -1) { key = 'in-progress'; }
+		else if (href.indexOf('status=waiting') !== -1) { key = 'waiting'; }
+		else if (href.indexOf('status=closed') !== -1) { key = 'closed'; }
+		else { key = 'all'; }
+		if (typeof counts[key] === 'undefined') { return; }
+		var label = $a.clone().children().remove().end().text();
+		label = $.trim(label);
+		// Strip existing (n)
+		label = label.replace(/\s*\(\d+\)\s*$/, '');
+		$a.find('.count').remove();
+		$a.text(label + ' ').append($('<span class="count"/>').text('(' + counts[key] + ')'));
+	});
+}
+
+function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
+	if (!selectedIds || !selectedIds.length) { return; }
+	var $table = $('#pnpc-psd-tickets-table');
+	selectedIds.forEach(function(id){
+		$table.find('input[name="ticket[]"][value="' + id + '"]').closest('tr').remove();
+	});
+	// Clear select-all
+	$('#cb-select-all-1').prop('checked', false);
+	// Show empty state if no rows remain (excluding header)
+	var remaining = $table.find('tbody tr').length;
+	if (remaining === 0) {
+		$table.find('tbody').append('<tr class="no-items"><td class="colspanchange" colspan="999">No tickets found.</td></tr>');
+	}
+}
 		var $bulkActionSelector = $('#bulk-action-selector-top');
 		var $applyButton = $('#doaction');
 
@@ -304,7 +346,7 @@
 			var $btn = $(this);
 			// Bulk action selector lives next to the clicked button
 			var $actionsWrap = $btn.closest('.bulkactions');
-			var $selector = $actionsWrap.length ? $actionsWrap.find('select[name="action"]') : $('#bulk-action-selector-top');
+			var $selector = $actionsWrap.length ? $actionsWrap.find('select[name="action"], select[name="action2"]') : $('#bulk-action-selector-top');
 
 			var action = $selector.length ? $selector.val() : '-1';
 			if (action === '-1') {
@@ -366,8 +408,20 @@
 				success: function(result) {
 					if (result && result.success) {
 						showMessage('success', result.data.message, 'pnpc-psd-bulk-message');
-						// Reload so rows/tabs/counts reflect server state across ALL tabs.
-						setTimeout(function(){ window.location.reload(); }, 120);
+						// Remove rows immediately for responsiveness.
+						pnpcPsdRemoveSelectedTicketRows(selectedTickets);
+						if (result.data && result.data.counts) { pnpcPsdUpdateTabCounts(result.data.counts); }
+
+						// Reload back to the same tab so counts + pagination are consistent (matches prior behavior).
+						try {
+							var url = new URL(window.location.href);
+							url.searchParams.set('page', 'pnpc-service-desk-tickets');
+							window.location = url.toString();
+						} catch (e) {
+							window.location = (typeof pnpcPsdAdmin !== 'undefined' && pnpcPsdAdmin.tickets_url) ? pnpcPsdAdmin.tickets_url : window.location.href;
+						}
+
+						$btn.prop('disabled', false).val('Apply');
 						return;
 					}
 
@@ -592,7 +646,7 @@
 							deleteReasonModal.hide();
 							// Redirect to the All Tickets tab after a successful delete request.
 							// All Tickets is the default view for the ticket list page.
-							window.location.href = (pnpcPsdAdmin.tickets_url ? pnpcPsdAdmin.tickets_url : 'admin.php?page=pnpc-service-desk');
+							window.location.href = (pnpcPsdAdmin.tickets_url ? pnpcPsdAdmin.tickets_url : 'admin.php?page=pnpc-service-desk-tickets');
 						} else {
 							$('#pnpc-psd-delete-error-message')
 								.text('Error: ' + response.data.message)

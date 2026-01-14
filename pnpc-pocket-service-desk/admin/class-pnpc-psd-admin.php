@@ -22,18 +22,67 @@ class PNPC_PSD_Admin
 		$this->plugin_name = $plugin_name;
 		$this->version     = $version;
 
+		// Plugin row links (Plugins screen).
+		add_filter( 'plugin_action_links_' . PNPC_PSD_PLUGIN_BASENAME, array( $this, 'add_plugin_action_links' ) );
+
 		if (is_admin()) {
+			// One-time setup wizard prompt if the customer dashboard page is not configured.
+			add_action( 'admin_notices', array( $this, 'maybe_show_setup_wizard_notice' ) );
+
 			// For non-admin service desk staff, keep wp-admin access but limit menus to reduce confusion.
 			add_action('admin_menu', array($this, 'restrict_non_admin_menus'), 999);
-			add_action('show_user_profile', array($this, 'render_user_allocated_products_field'));
-			add_action('edit_user_profile', array($this, 'render_user_allocated_products_field'));
+			if ( function_exists( 'pnpc_psd_is_pro_active' ) && pnpc_psd_is_pro_active() ) {
+				add_action( 'show_user_profile', array( $this, 'render_user_allocated_products_field' ) );
+				add_action( 'edit_user_profile', array( $this, 'render_user_allocated_products_field' ) );
 
-			add_action('personal_options_update', array($this, 'save_user_allocated_products'));
-			add_action('edit_user_profile_update', array($this, 'save_user_allocated_products'));
-
+				add_action( 'personal_options_update', array( $this, 'save_user_allocated_products' ) );
+				add_action( 'edit_user_profile_update', array( $this, 'save_user_allocated_products' ) );
+			}
 			add_action('admin_init', array($this, 'register_settings'));
 			add_action('admin_init', array($this, 'process_admin_create_ticket'));
+			add_action('admin_init', array($this, 'process_admin_update_ticket_priority'));
 		}
+	}
+
+	/**
+	 * Process admin ticket priority updates from the ticket detail screen.
+	 *
+	 * This is intentionally non-AJAX to keep behavior stable and reviewer-friendly.
+	 *
+	 * @return void
+	 */
+	public function process_admin_update_ticket_priority() {
+		if ( ! isset( $_POST['pnpc_psd_update_priority_nonce'] ) ) {
+			return;
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( $_POST['pnpc_psd_update_priority_nonce'] ) );
+		if ( ! wp_verify_nonce( $nonce, 'pnpc_psd_update_ticket_priority' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		if ( ! current_user_can( 'pnpc_psd_assign_tickets' ) && ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Permission denied.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		$ticket_id = isset( $_POST['ticket_id'] ) ? absint( wp_unslash( $_POST['ticket_id'] ) ) : 0;
+		$priority  = isset( $_POST['priority'] ) ? sanitize_key( wp_unslash( $_POST['priority'] ) ) : 'normal';
+		$allowed   = array( 'low', 'normal', 'high', 'urgent' );
+		if ( ! in_array( $priority, $allowed, true ) ) {
+			$priority = 'normal';
+		}
+
+		$redirect = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : '';
+		if ( empty( $redirect ) ) {
+			$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets' );
+		}
+
+		if ( $ticket_id && class_exists( 'PNPC_PSD_Ticket' ) ) {
+			PNPC_PSD_Ticket::update( $ticket_id, array( 'priority' => $priority ) );
+		}
+
+		wp_safe_redirect( $redirect );
+		exit;
 	}
 
 
@@ -106,7 +155,7 @@ class PNPC_PSD_Admin
 				array(
 					'ajax_url' => admin_url('admin-ajax.php', 'relative'),
 					'nonce'    => wp_create_nonce('pnpc_psd_admin_nonce'),
-					'tickets_url' => admin_url('admin.php?page=pnpc-service-desk'),
+					'tickets_url' => admin_url( 'admin.php?page=pnpc-service-desk-tickets' ),
 					'i18n' => array(
 						'new_ticket_singular' => __('1 new ticket arrived', 'pnpc-pocket-service-desk'),
 						'new_tickets_plural' => __('new tickets arrived', 'pnpc-pocket-service-desk'),
@@ -188,7 +237,8 @@ class PNPC_PSD_Admin
 
 	public function add_plugin_admin_menu()
 	{
-		$open_count = 0;
+		$all_count      = PNPC_PSD_Ticket::get_count();
+				$open_count = 0;
 		if (class_exists('PNPC_PSD_Ticket')) {
 			$open_count  = (int) PNPC_PSD_Ticket::get_count('open');
 			$open_count += (int) PNPC_PSD_Ticket::get_count('in-progress');
@@ -211,9 +261,28 @@ class PNPC_PSD_Admin
 			$menu_title,
 			'pnpc_psd_view_tickets',
 			'pnpc-service-desk',
-			array($this, 'display_tickets_page'),
+			array($this, 'display_dashboard_page'),
 			'dashicons-tickets',
 			30
+		);
+
+		add_submenu_page(
+			'pnpc-service-desk',
+			esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' ),
+			esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' ),
+			'pnpc_psd_view_tickets',
+			'pnpc-service-desk',
+			array( $this, 'display_dashboard_page' )
+		);
+
+
+		add_submenu_page(
+			'pnpc-service-desk',
+			esc_html__( 'Setup Wizard', 'pnpc-pocket-service-desk' ),
+			esc_html__( 'Setup Wizard', 'pnpc-pocket-service-desk' ),
+			'pnpc_psd_manage_settings',
+			'pnpc-service-desk-setup',
+			array( $this, 'display_setup_wizard_page' )
 		);
 
 		add_submenu_page(
@@ -221,7 +290,7 @@ class PNPC_PSD_Admin
 			__('All Tickets', 'pnpc-pocket-service-desk'),
 			__('All Tickets', 'pnpc-pocket-service-desk'),
 			'pnpc_psd_view_tickets',
-			'pnpc-service-desk',
+			'pnpc-service-desk-tickets',
 			array($this, 'display_tickets_page')
 		);
 
@@ -263,7 +332,171 @@ class PNPC_PSD_Admin
 		);
 	}
 
-	public function display_tickets_page()
+	
+	/**
+	 * Add quick links on the Plugins screen.
+	 *
+	 * @param array $links Existing links.
+	 * @return array
+	 */
+	public function add_plugin_action_links( $links ) {
+		$dashboard = admin_url( 'admin.php?page=pnpc-service-desk-tickets' );
+		$settings  = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
+
+		$custom = array(
+			'<a href="' . esc_url( $dashboard ) . '">' . esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' ) . '</a>',
+			'<a href="' . esc_url( $settings ) . '">' . esc_html__( 'Settings', 'pnpc-pocket-service-desk' ) . '</a>',
+		);
+
+		return array_merge( $custom, (array) $links );
+	}
+
+	/**
+	 * Display the Service Desk dashboard (admin landing screen).
+	 *
+	 * @return void
+	 */
+	public function display_dashboard_page() {
+		$stats = $this->get_dashboard_stats();
+		include plugin_dir_path( __FILE__ ) . 'views/dashboard.php';
+	}
+
+	/**
+	 * Display the setup wizard page.
+	 *
+	 * Wizard creates or links the Support Dashboard page and provides header/menu linking guidance.
+	 *
+	 * @return void
+	 */
+	public function display_setup_wizard_page() {
+		if ( ! current_user_can( 'pnpc_psd_manage_settings' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		$step = isset( $_GET['step'] ) ? sanitize_key( wp_unslash( $_GET['step'] ) ) : 'start';
+
+		// Handle POST actions.
+		if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['pnpc_psd_setup_nonce'] ) ) {
+			check_admin_referer( 'pnpc_psd_setup_wizard', 'pnpc_psd_setup_nonce' );
+
+			$mode   = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : '';
+			$editor = isset( $_POST['editor'] ) ? sanitize_key( wp_unslash( $_POST['editor'] ) ) : 'diy';
+
+			update_option( 'pnpc_psd_setup_editor', $editor, false );
+
+			if ( 'create' === $mode ) {
+				$title = isset( $_POST['page_title'] ) ? sanitize_text_field( wp_unslash( $_POST['page_title'] ) ) : esc_html__( 'Support Dashboard', 'pnpc-pocket-service-desk' );
+				$slug  = isset( $_POST['page_slug'] ) ? sanitize_title( wp_unslash( $_POST['page_slug'] ) ) : 'dashboard';
+
+				$content = "[pnpc_profile_settings]\n\n[pnpc_service_desk]\n\n[pnpc_create_ticket]\n\n[pnpc_services]\n\n[pnpc_my_tickets]\n";
+
+				$postarr = array(
+					'post_type'    => 'page',
+					'post_status'  => 'publish',
+					'post_title'   => $title,
+					'post_name'    => $slug,
+					'post_content' => $content,
+				);
+
+				$page_id = wp_insert_post( $postarr, true );
+
+				if ( is_wp_error( $page_id ) ) {
+					update_option( 'pnpc_psd_setup_error', $page_id->get_error_message(), false );
+					wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=start' ) );
+					exit;
+				}
+
+				update_option( 'pnpc_psd_dashboard_page_id', (int) $page_id, false );
+				update_option( 'pnpc_psd_setup_completed_at', time(), false );
+
+				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=done' ) );
+				exit;
+
+			} elseif ( 'use_existing' === $mode ) {
+				$page_id = isset( $_POST['existing_page_id'] ) ? absint( wp_unslash( $_POST['existing_page_id'] ) ) : 0;
+				if ( $page_id > 0 ) {
+					update_option( 'pnpc_psd_dashboard_page_id', (int) $page_id, false );
+					update_option( 'pnpc_psd_setup_completed_at', time(), false );
+					wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=done' ) );
+					exit;
+				}
+			}
+		}
+
+		$dashboard_page_id = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
+		$dashboard_page    = $dashboard_page_id ? get_post( $dashboard_page_id ) : null;
+
+		// Fallback candidate by common slug.
+		$dashboard_slug_candidate = get_page_by_path( 'dashboard' );
+
+		$editor = (string) get_option( 'pnpc_psd_setup_editor', 'diy' );
+
+		include plugin_dir_path( __FILE__ ) . 'views/setup-wizard.php';
+	}
+
+	/**
+	 * Get basic ticket statistics for the dashboard.
+	 *
+	 * Uses created_at for "opened" counts and updated_at for "closed" counts (status='closed').
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function get_dashboard_stats() {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$now_ts = current_time( 'timestamp' );
+
+		// Period starts (local WP timezone).
+		$week_start  = strtotime( 'monday this week', $now_ts );
+		$month_start = strtotime( date( 'Y-m-01 00:00:00', $now_ts ) );
+		$year_start  = strtotime( date( 'Y-01-01 00:00:00', $now_ts ) );
+
+				$week_start_dt  = date( 'Y-m-d H:i:s', $week_start );
+		$month_start_dt = date( 'Y-m-d H:i:s', $month_start );
+		$year_start_dt  = date( 'Y-m-d H:i:s', $year_start );
+
+		$now_dt = current_time( 'mysql' );
+
+		$opened_week  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND created_at >= %s AND created_at <= %s", $week_start_dt, $now_dt ) );
+		$opened_month = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND created_at >= %s AND created_at <= %s", $month_start_dt, $now_dt ) );
+		$opened_year  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND created_at >= %s AND created_at <= %s", $year_start_dt, $now_dt ) );
+
+		// Status values should be stored as lowercase keys, but some legacy rows may contain mixed case.
+		// Use LOWER(status) to produce correct counts without requiring data migrations.
+		$closed_week  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND LOWER(status) = 'closed' AND updated_at >= %s AND updated_at <= %s", $week_start_dt, $now_dt ) );
+		$closed_month = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND LOWER(status) = 'closed' AND updated_at >= %s AND updated_at <= %s", $month_start_dt, $now_dt ) );
+		$closed_year  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND LOWER(status) = 'closed' AND updated_at >= %s AND updated_at <= %s", $year_start_dt, $now_dt ) );
+
+		$open_total   = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND LOWER(status) <> 'closed'" );
+		$closed_total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND LOWER(status) = 'closed'" );
+
+		$completion_rate = 0.0;
+		$denom = ( $open_total + $closed_total );
+		if ( $denom > 0 ) {
+			$completion_rate = round( ( $closed_total / $denom ) * 100, 1 );
+		}
+
+		return array(
+			'opened' => array(
+				'week'  => $opened_week,
+				'month' => $opened_month,
+				'year'  => $opened_year,
+			),
+			'closed' => array(
+				'week'  => $closed_week,
+				'month' => $closed_month,
+				'year'  => $closed_year,
+			),
+			'total' => array(
+				'open'   => $open_total,
+				'closed' => $closed_total,
+			),
+			'completion_rate' => $completion_rate,
+		);
+	}
+
+public function display_tickets_page()
 	{
 		if (! current_user_can('pnpc_psd_view_tickets')) {
 			wp_die(esc_html__('You do not have permission to access this page.', 'pnpc-pocket-service-desk'));
@@ -296,6 +529,7 @@ class PNPC_PSD_Admin
 		$review_count = PNPC_PSD_Ticket::get_pending_delete_count();
 		$archived_count = method_exists('PNPC_PSD_Ticket','get_archived_count') ? PNPC_PSD_Ticket::get_archived_count() : 0;
 
+		$all_count = (int) $open_count + (int) $in_progress_count + (int) $waiting_count + (int) $closed_count;
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/tickets-list.php';
 	}
 
@@ -318,7 +552,7 @@ class PNPC_PSD_Admin
 			wp_die(esc_html__('You do not have permission to access this page.', 'pnpc-pocket-service-desk'));
 		}
 
-		$ticket_id = isset($_GET['ticket_id']) ? absint($_GET['ticket_id']) : 0;
+		$ticket_id = isset($_GET['ticket_id']) ? absint( wp_unslash( $_GET['ticket_id'] ) ) : 0;
 
 		if (! $ticket_id) {
 			wp_die(esc_html__('Invalid ticket ID.', 'pnpc-pocket-service-desk'));
@@ -349,7 +583,7 @@ class PNPC_PSD_Admin
 			? pnpc_psd_get_assignable_agents()
 			: get_users(
 				array(
-					'role__in' => array('administrator', 'pnpc_psd_agent', 'pnpc_psd_manager'),
+					'role__in' => ( ( function_exists( 'pnpc_psd_enable_manager_role' ) && pnpc_psd_enable_manager_role() ) ? array( 'administrator', 'pnpc_psd_agent', 'pnpc_psd_manager' ) : array( 'administrator', 'pnpc_psd_agent' ) ),
 				)
 			);
 
@@ -776,7 +1010,7 @@ class PNPC_PSD_Admin
 			return;
 		}
 
-		$posted = (array) $_POST['pnpc_psd_allocated_products'];
+		$posted = (array) wp_unslash( $_POST['pnpc_psd_allocated_products'] );
 		$ids = array_filter(array_map('absint', $posted));
 		$ids = array_values(array_unique($ids));
 
@@ -797,7 +1031,7 @@ class PNPC_PSD_Admin
 			wp_send_json_error(array('message' => __('Permission denied. ', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_id = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
+		$ticket_id = isset($_POST['ticket_id']) ? absint( wp_unslash( $_POST['ticket_id'] ) ) : 0;
 		$response  = isset($_POST['response']) ? wp_kses_post(wp_unslash($_POST['response'])) : '';
 
 		if (! $ticket_id || empty($response)) {
@@ -934,7 +1168,7 @@ class PNPC_PSD_Admin
 				}
 				$attachments[] = array(
 					'file_name'   => sanitize_file_name($file['name']),
-					'file_path'   => $move['url'],
+					'file_path'   => $move['file'],
 					'file_type'   => $mime,
 					'file_size'   => isset($file['size']) ? intval($file['size']) : 0,
 					'uploaded_by' => get_current_user_id(),
@@ -1008,8 +1242,8 @@ class PNPC_PSD_Admin
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_id   = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
-		$assigned_to = isset($_POST['assigned_to']) ? absint($_POST['assigned_to']) : 0;
+		$ticket_id   = isset($_POST['ticket_id']) ? absint( wp_unslash( $_POST['ticket_id'] ) ) : 0;
+		$assigned_to = isset($_POST['assigned_to']) ? absint( wp_unslash( $_POST['assigned_to'] ) ) : 0;
 
 		if (! $ticket_id) {
 			wp_send_json_error(array('message' => __('Invalid data.', 'pnpc-pocket-service-desk')));
@@ -1035,7 +1269,7 @@ class PNPC_PSD_Admin
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_id = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
+		$ticket_id = isset($_POST['ticket_id']) ? absint( wp_unslash( $_POST['ticket_id'] ) ) : 0;
 		$status    = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : '';
 
 		if (! $ticket_id || empty($status)) {
@@ -1076,7 +1310,7 @@ class PNPC_PSD_Admin
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_id = isset($_POST['ticket_id']) ? absint($_POST['ticket_id']) : 0;
+		$ticket_id = isset($_POST['ticket_id']) ? absint( wp_unslash( $_POST['ticket_id'] ) ) : 0;
 
 		if (! $ticket_id) {
 			wp_send_json_error(array('message' => __('Invalid data. ', 'pnpc-pocket-service-desk')));
@@ -1111,7 +1345,7 @@ class PNPC_PSD_Admin
 		if ($count > 0) {
 			/* translators: %d: number of tickets */
 			$message = sprintf(_n('%d ticket moved to trash.', '%d tickets moved to trash.', $count, 'pnpc-pocket-service-desk'), $count);
-			wp_send_json_success(array('message' => $message, 'count' => $count));
+			wp_send_json_success(array('message' => $message, 'count' => $count, 'counts' => $this->get_ticket_tab_counts()));
 		} else {
 			wp_send_json_error(array('message' => __('Failed to move tickets to trash.', 'pnpc-pocket-service-desk')));
 		}
@@ -1137,7 +1371,7 @@ class PNPC_PSD_Admin
 		if ($count > 0) {
 			/* translators: %d: number of tickets */
 			$message = sprintf(_n('%d ticket restored.', '%d tickets restored.', $count, 'pnpc-pocket-service-desk'), $count);
-			wp_send_json_success(array('message' => $message, 'count' => $count));
+			wp_send_json_success(array('message' => $message, 'count' => $count, 'counts' => $this->get_ticket_tab_counts()));
 		} else {
 			wp_send_json_error(array('message' => __('Failed to restore tickets.', 'pnpc-pocket-service-desk')));
 		}
@@ -1159,7 +1393,7 @@ class PNPC_PSD_Admin
 		$count = PNPC_PSD_Ticket::bulk_archive_closed($ticket_ids);
 		if ( $count > 0 ) {
 			$message = sprintf(_n('%d ticket moved to archive.', '%d tickets moved to archive.', $count, 'pnpc-pocket-service-desk'), $count);
-			wp_send_json_success(array('message' => $message, 'count' => $count));
+			wp_send_json_success(array('message' => $message, 'count' => $count, 'counts' => $this->get_ticket_tab_counts()));
 		}
 
 		wp_send_json_error(array('message' => __('No closed tickets were archived.', 'pnpc-pocket-service-desk')));
@@ -1181,7 +1415,7 @@ class PNPC_PSD_Admin
 		$count = PNPC_PSD_Ticket::bulk_restore_from_archive($ticket_ids);
 		if ( $count > 0 ) {
 			$message = sprintf(_n('%d ticket restored from archive.', '%d tickets restored from archive.', $count, 'pnpc-pocket-service-desk'), $count);
-			wp_send_json_success(array('message' => $message, 'count' => $count));
+			wp_send_json_success(array('message' => $message, 'count' => $count, 'counts' => $this->get_ticket_tab_counts()));
 		}
 
 		wp_send_json_error(array('message' => __('No tickets were restored from archive.', 'pnpc-pocket-service-desk')));
@@ -1314,7 +1548,7 @@ class PNPC_PSD_Admin
 		if ($count > 0) {
 			/* translators: %d: number of tickets */
 			$message = sprintf(_n('%d ticket moved to trash.', '%d tickets moved to trash.', $count, 'pnpc-pocket-service-desk'), $count);
-			wp_send_json_success(array('message' => $message, 'count' => $count));
+			wp_send_json_success(array('message' => $message, 'count' => $count, 'counts' => $this->get_ticket_tab_counts()));
 		}
 
 		wp_send_json_error(array(
@@ -1344,7 +1578,7 @@ class PNPC_PSD_Admin
 		if ($count > 0) {
 			/* translators: %d: number of tickets */
 			$message = sprintf(_n('%d ticket restored.', '%d tickets restored.', $count, 'pnpc-pocket-service-desk'), $count);
-			wp_send_json_success(array('message' => $message, 'count' => $count));
+			wp_send_json_success(array('message' => $message, 'count' => $count, 'counts' => $this->get_ticket_tab_counts()));
 		}
 
 		wp_send_json_error(array('message' => __('Failed to restore tickets.', 'pnpc-pocket-service-desk')));
@@ -1370,7 +1604,7 @@ class PNPC_PSD_Admin
 		if ($count > 0) {
 			/* translators: %d: number of tickets */
 			$message = sprintf(_n('%d ticket permanently deleted.', '%d tickets permanently deleted.', $count, 'pnpc-pocket-service-desk'), $count);
-			wp_send_json_success(array('message' => $message, 'count' => $count));
+			wp_send_json_success(array('message' => $message, 'count' => $count, 'counts' => $this->get_ticket_tab_counts()));
 		} else {
 			wp_send_json_error(array('message' => __('Failed to delete tickets permanently.', 'pnpc-pocket-service-desk')));
 		}
@@ -1454,7 +1688,7 @@ class PNPC_PSD_Admin
 
 		$status = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : '';
 		$view   = isset($_POST['view']) ? sanitize_text_field(wp_unslash($_POST['view'])) : '';
-		$paged  = isset($_POST['paged']) ? absint($_POST['paged']) : 1;
+		$paged  = isset($_POST['paged']) ? absint( wp_unslash( $_POST['paged'] ) ) : 1;
 		$current_user_id = get_current_user_id();
 
 		$args = array(
@@ -1484,8 +1718,7 @@ class PNPC_PSD_Admin
 			}
 		}
 		
-		// Pass pagination info to view
-		$_GET['paged'] = $paged;
+		// Pass pagination info to view (use local $paged; avoid mutating superglobals)
 
 		// Generate HTML for ticket rows
 		ob_start();
@@ -1882,7 +2115,7 @@ class PNPC_PSD_Admin
 		}
 
 		// Validate and sanitize input
-		$customer_id = isset($_POST['customer_id']) ? absint($_POST['customer_id']) : 0;
+		$customer_id = isset($_POST['customer_id']) ? absint( wp_unslash( $_POST['customer_id'] ) ) : 0;
 		$subject = isset($_POST['subject']) ? sanitize_text_field(wp_unslash($_POST['subject'])) : '';
 		$description = isset($_POST['description']) ? sanitize_textarea_field(wp_unslash($_POST['description'])) : '';
 		$priority = isset($_POST['priority']) ? sanitize_text_field(wp_unslash($_POST['priority'])) : 'normal';
@@ -2007,7 +2240,7 @@ class PNPC_PSD_Admin
 							'ticket_id'   => absint($ticket_id),
 							'response_id' => 0,
 							'file_name'   => sanitize_file_name($files['name'][$i]),
-							'file_path'   => esc_url_raw($upload['url']),
+							'file_path'   => sanitize_text_field($upload['file']),
 							'file_type'   => sanitize_text_field($upload['type']),
 							'file_size'   => intval($files['size'][$i]),
 							'uploaded_by' => get_current_user_id(),
@@ -2039,6 +2272,7 @@ class PNPC_PSD_Admin
 
 			// Redirect to ticket detail
 			wp_redirect(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket_id));
+			exit;
 			exit;
 		} else {
 			add_settings_error(
@@ -2117,7 +2351,7 @@ class PNPC_PSD_Admin
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pnpc-pocket-service-desk' ) );
 		}
 
-		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( $_GET['ticket_id'] ) : 0;
+		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( wp_unslash( $_GET['ticket_id'] ) ) : 0;
 		if ( ! $ticket_id ) {
 			wp_die( esc_html__( 'Invalid ticket.', 'pnpc-pocket-service-desk' ) );
 		}
@@ -2136,24 +2370,24 @@ class PNPC_PSD_Admin
 		}
 
 		// $return_to already captured above.
-		$redirect  = admin_url( 'admin.php?page=pnpc-service-desk&status=closed' );
+		$redirect  = admin_url( 'admin.php?page=pnpc-service-desk-tickets&status=closed' );
 		if ( $return_to ) {
 			switch ( $return_to ) {
 				case 'trash':
-					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&view=trash' );
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=trash' );
 					break;
 				case 'review':
-					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&view=review' );
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=review' );
 					break;
 				case 'archived':
-					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&view=archived' );
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=archived' );
 					break;
 				case 'all':
-					$redirect = admin_url( 'admin.php?page=pnpc-service-desk' );
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets' );
 					break;
 				case 'closed':
 				default:
-					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&status=closed' );
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets&status=closed' );
 					break;
 			}
 		}
@@ -2170,7 +2404,7 @@ class PNPC_PSD_Admin
 			wp_die( esc_html__( 'You do not have permission to perform this action.', 'pnpc-pocket-service-desk' ) );
 		}
 
-		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( $_GET['ticket_id'] ) : 0;
+		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( wp_unslash( $_GET['ticket_id'] ) ) : 0;
 		if ( ! $ticket_id ) {
 			wp_die( esc_html__( 'Invalid ticket.', 'pnpc-pocket-service-desk' ) );
 		}
@@ -2181,7 +2415,7 @@ class PNPC_PSD_Admin
 			PNPC_PSD_Ticket::restore_from_archive( $ticket_id );
 		}
 
-		wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk&view=archived' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=archived' ) );
 		exit;
 	}
 
@@ -2243,6 +2477,91 @@ class PNPC_PSD_Admin
 
 		fclose( $out );
 		exit;
+	}
+
+
+	/**
+	 * Show a one-time setup wizard prompt after activation, if dashboard is not configured.
+	 *
+	 * @return void
+	 */
+	public function maybe_show_setup_wizard_notice() {
+		if ( ! current_user_can( 'pnpc_psd_manage_settings' ) ) {
+			return;
+		}
+		// Only show on wp-admin screens (avoid ajax).
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			return;
+		}
+
+		// Admin hygiene: avoid showing the setup notice across unrelated wp-admin pages.
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( $screen ) {
+			$screen_id = isset( $screen->id ) ? (string) $screen->id : '';
+			$base      = isset( $screen->base ) ? (string) $screen->base : '';
+			$allowed   = ( false !== strpos( $screen_id, 'pnpc-service-desk' ) ) || ( 'dashboard' === $base );
+			if ( ! $allowed ) {
+				return;
+			}
+		}
+
+
+		$dash_id     = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
+		$needs_setup = (int) get_option( 'pnpc_psd_needs_setup_wizard', 0 );
+		$dismissed   = (int) get_option( 'pnpc_psd_setup_notice_dismissed', 0 );
+
+		if ( $dismissed ) {
+			return;
+		}
+
+
+		// If a dashboard page is already configured and exists, stop prompting.
+		if ( $dash_id > 0 && 'trash' !== get_post_status( $dash_id ) ) {
+			if ( $needs_setup ) {
+				update_option( 'pnpc_psd_needs_setup_wizard', 0 );
+			}
+			return;
+		}
+
+		// If no dashboard is configured, prompt the admin. We do not require the activation flag,
+		// because plugins are often updated in-place without re-running activation hooks.
+		if ( ! $needs_setup ) {
+			update_option( 'pnpc_psd_needs_setup_wizard', 1 );
+		}
+		$needs_setup = 1;
+
+		$dismiss_url = wp_nonce_url( add_query_arg( array( 'pnpc_psd_dismiss_setup' => 1 ) ), 'pnpc_psd_dismiss_setup' );
+		$wizard_url  = admin_url( 'admin.php?page=pnpc-service-desk-setup' );
+
+		// Handle dismiss.
+		if ( isset( $_GET['pnpc_psd_dismiss_setup'] ) && check_admin_referer( 'pnpc_psd_dismiss_setup' ) ) {
+			update_option( 'pnpc_psd_setup_notice_dismissed', 1 );
+			return;
+		}
+
+		echo '<div class="notice notice-info is-dismissible">';
+		echo '<p><strong>' . esc_html__( 'Service Desk setup is almost done.', 'pnpc-pocket-service-desk' ) . '</strong> ' . esc_html__( 'Run the Setup Wizard to create or link your customer dashboard page.', 'pnpc-pocket-service-desk' ) . '</p>';
+		echo '<p><a class="button button-primary" href="' . esc_url( $wizard_url ) . '">' . esc_html__( 'Run Setup Wizard', 'pnpc-pocket-service-desk' ) . '</a> ';
+		echo '<a class="button" href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss', 'pnpc-pocket-service-desk' ) . '</a></p>';
+		echo '</div>';
+	}
+
+	/**
+	 * Get counts for admin list tabs.
+	 *
+	 * @return array<string,int>
+	 */
+	private function get_ticket_tab_counts() {
+		$counts = array();
+		$counts['all']         = PNPC_PSD_Ticket::get_count('');
+		$counts['open']        = PNPC_PSD_Ticket::get_count('open');
+		$counts['in-progress'] = PNPC_PSD_Ticket::get_count('in-progress');
+		$counts['waiting']     = PNPC_PSD_Ticket::get_count('waiting');
+		$counts['closed']      = PNPC_PSD_Ticket::get_count('closed');
+		$counts['review']      = PNPC_PSD_Ticket::get_pending_delete_count();
+		$counts['trash']       = PNPC_PSD_Ticket::get_trashed_count();
+		$counts['archived']    = PNPC_PSD_Ticket::get_archived_count();
+		return $counts;
 	}
 
 }

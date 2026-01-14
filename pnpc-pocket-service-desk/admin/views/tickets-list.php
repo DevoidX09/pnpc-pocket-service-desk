@@ -11,7 +11,7 @@ if (! defined('ABSPATH')) {
 	exit;
 }
 
-$current_view = isset($_GET['view']) ? sanitize_text_field(wp_unslash($_GET['view'])) : '';
+$current_view = isset( $_GET['view'] ) ? sanitize_text_field( wp_unslash( $_GET['view'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view parameter.
 $is_trash_view = ('trash' === $current_view);
 $is_review_view = ('review' === $current_view);
 $is_archived_view = ('archived' === $current_view);
@@ -28,7 +28,7 @@ if (!isset($badge_counts)) {
 
 // Pagination setup
 $per_page = get_option('pnpc_psd_tickets_per_page', 20);
-$current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
+$current_page = isset( $paged ) ? max( 1, absint( $paged ) ) : ( isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination parameter.
 $total_tickets = count($tickets);
 $total_pages = ceil($total_tickets / $per_page);
 $offset = ($current_page - 1) * $per_page;
@@ -39,7 +39,7 @@ $tickets_paginated = array_slice($tickets, $offset, $per_page);
 // Build pagination links helper function
 if (!function_exists('pnpc_psd_get_pagination_link')) {
 	function pnpc_psd_get_pagination_link($page) {
-		$args = $_GET;
+		$args = isset( $_GET ) ? (array) wp_unslash( $_GET ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Building pagination links from current query vars.
 		$args['paged'] = $page;
 		return add_query_arg($args, admin_url('admin.php'));
 	}
@@ -69,64 +69,82 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 
 
 	<ul class="subsubsub">
-		<li>
-			<a href="?page=pnpc-service-desk" <?php echo empty($status) && ! $is_trash_view && ! $is_review_view && ! $is_archived_view ? 'class="current"' : ''; ?>>
-				<?php esc_html_e('All', 'pnpc-pocket-service-desk'); ?>
+		<?php
+		$base_url  = admin_url( 'admin.php' );
+		$base_args = array( 'page' => 'pnpc-service-desk-tickets' );
+
+		$all_url      = add_query_arg( $base_args, $base_url );
+		$open_url     = add_query_arg( array_merge( $base_args, array( 'status' => 'open' ) ), $base_url );
+		$inprog_url   = add_query_arg( array_merge( $base_args, array( 'status' => 'in-progress' ) ), $base_url );
+		$waiting_url  = add_query_arg( array_merge( $base_args, array( 'status' => 'waiting' ) ), $base_url );
+		$closed_url   = add_query_arg( array_merge( $base_args, array( 'status' => 'closed' ) ), $base_url );
+		$review_url   = add_query_arg( array_merge( $base_args, array( 'view' => 'review' ) ), $base_url );
+		$trash_url    = add_query_arg( array_merge( $base_args, array( 'view' => 'trash' ) ), $base_url );
+		$archived_url = add_query_arg( array_merge( $base_args, array( 'view' => 'archived' ) ), $base_url );
+
+		$is_all_view = ( ! $is_review_view && ! $is_trash_view && ! $is_archived_view && ( empty( $status ) || 'all' === $status ) );
+		?>
+		<li class="all">
+			<a href="<?php echo esc_url( $all_url ); ?>" <?php echo $is_all_view ? 'class="current"' : ''; ?>>
+				<?php
+				/* translators: %d: number of tickets */
+				printf( esc_html__( 'All (%d)', 'pnpc-pocket-service-desk' ), absint( $all_count ) );
+				?>
 			</a> |
 		</li>
-		<li>
-			<a href="?page=pnpc-service-desk&status=open" <?php echo 'open' === $status && ! $is_trash_view && ! $is_review_view && ! $is_archived_view ? 'class="current"' : ''; ?>>
+		<li class="open">
+			<a href="<?php echo esc_url( $open_url ); ?>" <?php echo ( 'open' === $status && ! $is_review_view && ! $is_trash_view && ! $is_archived_view ) ? 'class="current"' : ''; ?>>
 				<?php
 				/* translators: %d: number of open tickets */
-				printf(esc_html__('Open (%d)', 'pnpc-pocket-service-desk'), absint($open_count));
+				printf( esc_html__( 'Open (%d)', 'pnpc-pocket-service-desk' ), absint( $open_count ) );
 				?>
 			</a> |
 		</li>
-		<li>
-			<a href="?page=pnpc-service-desk&status=in-progress" <?php echo 'in-progress' === $status && ! $is_trash_view && ! $is_review_view && ! $is_archived_view ? 'class="current"' : ''; ?>>
+		<li class="in-progress">
+			<a href="<?php echo esc_url( $inprog_url ); ?>" <?php echo ( 'in-progress' === $status && ! $is_review_view && ! $is_trash_view && ! $is_archived_view ) ? 'class="current"' : ''; ?>>
 				<?php
 				/* translators: %d: number of in-progress tickets */
-				printf(esc_html__('In-Progress (%d)', 'pnpc-pocket-service-desk'), absint($in_progress_count));
+				printf( esc_html__( 'In Progress (%d)', 'pnpc-pocket-service-desk' ), absint( $in_progress_count ) );
 				?>
 			</a> |
 		</li>
-		<li>
-			<a href="?page=pnpc-service-desk&status=waiting" <?php echo 'waiting' === $status && ! $is_trash_view && ! $is_review_view && ! $is_archived_view ? 'class="current"' : ''; ?>>
+		<li class="waiting">
+			<a href="<?php echo esc_url( $waiting_url ); ?>" <?php echo ( 'waiting' === $status && ! $is_review_view && ! $is_trash_view && ! $is_archived_view ) ? 'class="current"' : ''; ?>>
 				<?php
 				/* translators: %d: number of waiting tickets */
-				printf(esc_html__('Waiting (%d)', 'pnpc-pocket-service-desk'), absint($waiting_count));
+				printf( esc_html__( 'Waiting (%d)', 'pnpc-pocket-service-desk' ), absint( $waiting_count ) );
 				?>
 			</a> |
 		</li>
-		<li>
-			<a href="?page=pnpc-service-desk&status=closed" <?php echo 'closed' === $status && ! $is_trash_view && ! $is_review_view && ! $is_archived_view ? 'class="current"' : ''; ?>>
+		<li class="closed">
+			<a href="<?php echo esc_url( $closed_url ); ?>" <?php echo ( 'closed' === $status && ! $is_review_view && ! $is_trash_view && ! $is_archived_view ) ? 'class="current"' : ''; ?>>
 				<?php
 				/* translators: %d: number of closed tickets */
-				printf(esc_html__('Closed (%d)', 'pnpc-pocket-service-desk'), absint($closed_count));
+				printf( esc_html__( 'Closed (%d)', 'pnpc-pocket-service-desk' ), absint( $closed_count ) );
 				?>
 			</a> |
 		</li>
-		<li>
-			<a href="?page=pnpc-service-desk&view=review" <?php echo $is_review_view ? 'class="current"' : ''; ?>>
+		<li class="review">
+			<a href="<?php echo esc_url( $review_url ); ?>" <?php echo $is_review_view ? 'class="current"' : ''; ?>>
 				<?php
-				/* translators: %d: number of tickets pending review */
-				printf(esc_html__('Review (%d)', 'pnpc-pocket-service-desk'), absint($review_count));
+				/* translators: %d: number of review tickets */
+				printf( esc_html__( 'Review (%d)', 'pnpc-pocket-service-desk' ), absint( $review_count ) );
 				?>
 			</a> |
 		</li>
-		<li>
-			<a href="?page=pnpc-service-desk&view=trash" <?php echo $is_trash_view ? 'class="current"' : ''; ?>>
+		<li class="trash">
+			<a href="<?php echo esc_url( $trash_url ); ?>" <?php echo $is_trash_view ? 'class="current"' : ''; ?>>
 				<?php
 				/* translators: %d: number of trashed tickets */
-				printf(esc_html__('Trash (%d)', 'pnpc-pocket-service-desk'), absint($trash_count));
+				printf( esc_html__( 'Trash (%d)', 'pnpc-pocket-service-desk' ), absint( $trash_count ) );
 				?>
 			</a> |
 		</li>
-		<li>
-			<a href="?page=pnpc-service-desk&view=archived" <?php echo $is_archived_view ? 'class="current"' : ''; ?>>
+		<li class="archived">
+			<a href="<?php echo esc_url( $archived_url ); ?>" <?php echo $is_archived_view ? 'class="current"' : ''; ?>>
 				<?php
 				/* translators: %d: number of archived tickets */
-				printf(esc_html__('Archived (%d)', 'pnpc-pocket-service-desk'), absint($archived_count));
+				printf( esc_html__( 'Archived (%d)', 'pnpc-pocket-service-desk' ), absint( $archived_count ) );
 				?>
 			</a>
 		</li>
@@ -201,7 +219,28 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 					<?php esc_html_e('New', 'pnpc-pocket-service-desk'); ?>
 					<span class="pnpc-psd-sort-arrow"></span>
 				</th>
-				<?php elseif ( $is_trash_view ) : ?>
+				<?php elseif ( $is_archived_view ) : ?>
+				<th class="pnpc-psd-sortable" data-sort-type="text" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Customer', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Customer', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="status" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Status', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Status', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="priority" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Priority', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Priority', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="text" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Assigned To', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Assigned To', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+				<th class="pnpc-psd-sortable" data-sort-type="date" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Archived Date', 'pnpc-pocket-service-desk'); ?>">
+					<?php esc_html_e('Archived At', 'pnpc-pocket-service-desk'); ?>
+					<span class="pnpc-psd-sort-arrow"></span>
+				</th>
+<?php elseif ( $is_trash_view ) : ?>
 				<th class="pnpc-psd-sortable" data-sort-type="text" data-sort-order="" role="button" tabindex="0" aria-label="<?php esc_attr_e('Sort by Delete Reason', 'pnpc-pocket-service-desk'); ?>">
 					<?php esc_html_e('Delete Reason', 'pnpc-pocket-service-desk'); ?>
 					<span class="pnpc-psd-sort-arrow"></span>
@@ -271,7 +310,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 						<?php if ( $can_bulk_actions ) : ?>
 						<th scope="row" class="check-column">
 							<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>"><?php printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?></label>
-							<input type="checkbox" name="ticket[]" id="cb-select-<?php echo absint($ticket->id); ?>" value="<?php echo absint($ticket->id); ?>">
+							<input type="checkbox" name="ticket[]" id="cb-select-<?php echo esc_attr( absint( $ticket->id ) ); ?>" value="<?php echo esc_attr( absint( $ticket->id ) ); ?>">
 						</th>
 						<?php endif; ?>
 						<td><strong><?php echo esc_html( $ticket->ticket_number ); ?></strong></td>
@@ -331,10 +370,10 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 									printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number));
 									?>
 								</label>
-								<input type="checkbox" name="ticket[]" id="cb-select-<?php echo absint($ticket->id); ?>" value="<?php echo absint($ticket->id); ?>">
+								<input type="checkbox" name="ticket[]" id="cb-select-<?php echo esc_attr( absint( $ticket->id ) ); ?>" value="<?php echo esc_attr( absint( $ticket->id ) ); ?>">
 							</th>
 							<?php endif; ?>
-							<td data-sort-value="<?php echo absint($ticket_num_for_sort); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
+							<td data-sort-value="<?php echo esc_attr( absint($ticket_num_for_sort) ); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
 							<td data-sort-value="<?php echo esc_attr(strtolower($ticket->subject)); ?>">
 								<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
 									<?php echo esc_html($ticket->subject); ?>
@@ -351,7 +390,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 							<td data-sort-value="<?php echo esc_attr(strtolower($deleted_by_user ? $deleted_by_user->display_name : 'zzz_unknown')); ?>">
 								<?php echo $deleted_by_user ? esc_html($deleted_by_user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?>
 							</td>
-							<td data-sort-value="<?php echo absint($deleted_timestamp); ?>">
+							<td data-sort-value="<?php echo esc_attr( absint($deleted_timestamp) ); ?>">
 								<?php
 								if ($deleted_at) {
 									if (function_exists('pnpc_psd_format_db_datetime_for_display')) {
@@ -405,10 +444,10 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 									printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number));
 									?>
 								</label>
-								<input type="checkbox" name="ticket[]" id="cb-select-<?php echo absint($ticket->id); ?>" value="<?php echo absint($ticket->id); ?>">
+								<input type="checkbox" name="ticket[]" id="cb-select-<?php echo esc_attr( absint( $ticket->id ) ); ?>" value="<?php echo esc_attr( absint( $ticket->id ) ); ?>">
 							</th>
 							<?php endif; ?>
-							<td data-sort-value="<?php echo absint($ticket_num_for_sort); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
+							<td data-sort-value="<?php echo esc_attr( absint($ticket_num_for_sort) ); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
 							<td data-sort-value="<?php echo esc_attr(strtolower($ticket->subject)); ?>">
 								<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
 									<?php echo esc_html($ticket->subject); ?>
@@ -420,7 +459,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 							<td data-sort-value="<?php echo esc_attr(strtolower($req_by_user ? $req_by_user->display_name : 'zzz_unknown')); ?>">
 								<?php echo $req_by_user ? esc_html($req_by_user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?>
 							</td>
-							<td data-sort-value="<?php echo absint($req_timestamp); ?>">
+							<td data-sort-value="<?php echo esc_attr( absint($req_timestamp) ); ?>">
 								<?php
 								if ($req_at) {
 									if (function_exists('pnpc_psd_format_db_datetime_for_display')) {
@@ -492,10 +531,10 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 								printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number));
 								?>
 							</label>
-							<input type="checkbox" name="ticket[]" id="cb-select-<?php echo absint($ticket->id); ?>" value="<?php echo absint($ticket->id); ?>">
+							<input type="checkbox" name="ticket[]" id="cb-select-<?php echo esc_attr( absint( $ticket->id ) ); ?>" value="<?php echo esc_attr( absint( $ticket->id ) ); ?>">
 						</th>
 						<?php endif; ?>
-						<td data-sort-value="<?php echo absint($ticket_num_for_sort); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
+						<td data-sort-value="<?php echo esc_attr( absint($ticket_num_for_sort) ); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
 						<td data-sort-value="<?php echo esc_attr(strtolower($ticket->subject)); ?>">
 							<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
 								<?php echo esc_html($ticket->subject); ?>
@@ -507,18 +546,18 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 							<?php endif; ?>
 						</td>
 						<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
-						<td data-sort-value="<?php echo absint($status_sort_value); ?>">
+						<td data-sort-value="<?php echo esc_attr( absint($status_sort_value) ); ?>">
 							<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>">
 								<?php echo esc_html(ucfirst($ticket->status)); ?>
 							</span>
 						</td>
-						<td data-sort-value="<?php echo absint($priority_sort_value); ?>">
+						<td data-sort-value="<?php echo esc_attr( absint($priority_sort_value) ); ?>">
 							<span class="pnpc-psd-priority pnpc-psd-priority-<?php echo esc_attr($ticket->priority); ?>">
 								<?php echo esc_html(ucfirst($ticket->priority)); ?>
 							</span>
 						</td>
 						<td data-sort-value="<?php echo esc_attr(strtolower($assigned_user ? $assigned_user->display_name : 'zzz_unassigned')); ?>"><?php echo $assigned_user ? esc_html($assigned_user->display_name) : esc_html__('Unassigned', 'pnpc-pocket-service-desk'); ?></td>
-						<td data-sort-value="<?php echo absint($created_timestamp); ?>">
+						<td data-sort-value="<?php echo esc_attr( absint($created_timestamp) ); ?>">
 							<?php
 							// Use helper to format DB datetime into WP-localized string
 							if (function_exists('pnpc_psd_format_db_datetime_for_display')) {
@@ -528,7 +567,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 							}
 							?>
 						</td>
-						<td data-sort-value="<?php echo absint($new_responses); ?>">
+						<td data-sort-value="<?php echo esc_attr( absint($new_responses) ); ?>">
 							<?php if ($new_responses > 0) : ?>
 								<span class="pnpc-psd-new-indicator-badge"><?php echo esc_html($new_responses); ?></span>
 							<?php endif; ?>
@@ -545,7 +584,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 			<?php // DIVIDER ROW - Only show if both active and closed exist ?>
 			<?php if ($has_active && $has_closed) : ?>
 				<tr class="pnpc-psd-closed-divider">
-					<td colspan="<?php echo $can_bulk_actions ? '10' : '9'; ?>">
+					<td colspan="<?php echo $can_bulk_actions ? 10 : 9; ?>">
 						<div class="pnpc-psd-divider-content">
 							<span class="pnpc-psd-divider-line"></span>
 							<span class="pnpc-psd-divider-text">
@@ -595,10 +634,10 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 								printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number));
 								?>
 							</label>
-							<input type="checkbox" name="ticket[]" id="cb-select-<?php echo absint($ticket->id); ?>" value="<?php echo absint($ticket->id); ?>">
+							<input type="checkbox" name="ticket[]" id="cb-select-<?php echo esc_attr( absint( $ticket->id ) ); ?>" value="<?php echo esc_attr( absint( $ticket->id ) ); ?>">
 						</th>
 						<?php endif; ?>
-						<td data-sort-value="<?php echo absint($ticket_num_for_sort); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
+						<td data-sort-value="<?php echo esc_attr( absint($ticket_num_for_sort) ); ?>"><strong><?php echo esc_html($ticket->ticket_number); ?></strong></td>
 						<td data-sort-value="<?php echo esc_attr(strtolower($ticket->subject)); ?>">
 							<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>">
 								<?php echo esc_html($ticket->subject); ?>
@@ -610,18 +649,18 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 							<?php endif; ?>
 						</td>
 						<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
-						<td data-sort-value="<?php echo absint($status_sort_value); ?>">
+						<td data-sort-value="<?php echo esc_attr( absint($status_sort_value) ); ?>">
 							<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>">
 								<?php echo esc_html(ucfirst($ticket->status)); ?>
 							</span>
 						</td>
-						<td data-sort-value="<?php echo absint($priority_sort_value); ?>">
+						<td data-sort-value="<?php echo esc_attr( absint($priority_sort_value) ); ?>">
 							<span class="pnpc-psd-priority pnpc-psd-priority-<?php echo esc_attr($ticket->priority); ?>">
 								<?php echo esc_html(ucfirst($ticket->priority)); ?>
 							</span>
 						</td>
 						<td data-sort-value="<?php echo esc_attr(strtolower($assigned_user ? $assigned_user->display_name : 'zzz_unassigned')); ?>"><?php echo $assigned_user ? esc_html($assigned_user->display_name) : esc_html__('Unassigned', 'pnpc-pocket-service-desk'); ?></td>
-						<td data-sort-value="<?php echo absint($created_timestamp); ?>">
+						<td data-sort-value="<?php echo esc_attr( absint($created_timestamp) ); ?>">
 							<?php
 							// Use helper to format DB datetime into WP-localized string
 							if (function_exists('pnpc_psd_format_db_datetime_for_display')) {

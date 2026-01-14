@@ -22,11 +22,10 @@ $user_id      = ! empty($current_user->ID) ? (int) $current_user->ID : 0;
 // Options:
 // pnpc_psd_show_products            => Display Public Products (free)
 // pnpc_psd_user_specific_products  => Enable User-specific Products (Pro)
-$display_public = (bool) get_option('pnpc_psd_show_products', 1);
-$user_specific  = (bool) get_option('pnpc_psd_user_specific_products', 0);
-
+$display_public = (bool) get_option( 'pnpc_psd_show_products', 1 );
+$user_specific  = ( function_exists( 'pnpc_psd_is_pro_active' ) && pnpc_psd_is_pro_active() );
 // If both are disabled, short-circuit.
-if (! $display_public && ! $user_specific) {
+if ( ! $display_public && ! $user_specific ) {
     echo '<div class="pnpc-psd-services"><p class="pnpc-psd-help-text">';
     esc_html_e('Products are not available at this time.', 'pnpc-pocket-service-desk');
     echo '</p></div>';
@@ -57,15 +56,12 @@ if ($user_specific) {
         return;
     }
 
-    $allocated = get_user_meta($user_id, 'pnpc_psd_allocated_products', true);
-    $ids       = array();
+    $ids = array();
 
-    if (! empty($allocated)) {
-        $ids = array_filter(array_map('absint', array_map('trim', explode(',', (string) $allocated))));
-        $ids = array_values(array_unique($ids));
+    if ( function_exists( 'pnpc_psd_filter_visible_products_for_user' ) ) {
+        $ids = pnpc_psd_filter_visible_products_for_user( $ids, $user_id );
     }
-
-    if (empty($ids)) {
+if (empty($ids)) {
         echo '<div class="pnpc-psd-services"><p class="pnpc-psd-help-text">';
         esc_html_e('No services have been allocated to your account. Please contact an administrator for access.', 'pnpc-pocket-service-desk');
         echo '</p></div>';

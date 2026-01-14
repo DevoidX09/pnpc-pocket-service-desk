@@ -49,7 +49,7 @@ class PNPC_PSD_Ticket
 			if ($default_agent_id > 0) {
 				$staff_user = get_userdata($default_agent_id);
 				if ($staff_user && ! empty($staff_user->ID) && ! empty($staff_user->roles)) {
-					$allowed_roles = array('administrator', 'pnpc_psd_manager', 'pnpc_psd_agent');
+					$allowed_roles = ( ( function_exists( 'pnpc_psd_enable_manager_role' ) && pnpc_psd_enable_manager_role() ) ? array( 'administrator', 'pnpc_psd_manager', 'pnpc_psd_agent' ) : array( 'administrator', 'pnpc_psd_agent' ) );
 					$has_allowed_role = false;
 					foreach ((array) $staff_user->roles as $r) {
 						if (in_array((string) $r, $allowed_roles, true)) {
@@ -137,8 +137,6 @@ class PNPC_PSD_Ticket
 					'wpdb_last_query' => isset($wpdb->last_query) ? $wpdb->last_query : '',
 				));
 			} else {
-				error_log('pnpc-psd-debug ticket_create_failed: ' . print_r($insert_data, true));
-				error_log('pnpc-psd-debug wpdb_last_error: ' . (isset($wpdb->last_error) ? $wpdb->last_error : ''));
 			}
 		}
 
@@ -1104,6 +1102,27 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 
 		return false !== $updated;
 	}
+
+	/**
+	 * Bulk cancel pending delete requests (restore from Review queue).
+	 *
+	 * @since 1.6.1
+	 * @param array $ticket_ids Array of ticket IDs.
+	 * @return int Number of tickets updated.
+	 */
+	public static function bulk_cancel_pending_delete( $ticket_ids ) {
+		if ( ! is_array( $ticket_ids ) || empty( $ticket_ids ) ) {
+			return 0;
+		}
+		$count = 0;
+		foreach ( $ticket_ids as $ticket_id ) {
+			if ( self::cancel_pending_delete( $ticket_id ) ) {
+				$count++;
+			}
+		}
+		return $count;
+	}
+
 
 
 	/**

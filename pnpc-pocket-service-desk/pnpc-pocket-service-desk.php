@@ -4,7 +4,7 @@
  * Plugin Name: PNPC Pocket Service Desk
  * Plugin URI: https://github.com/DevoidX09/pnpc-pocket-service-desk
  * Description: A comprehensive service desk plugin for managing customer support tickets with WooCommerce integration.
- * Version: 1.1.1.3
+ * Version: 1.1.1.3.7
  * Author: PNPC
  * Author URI: https://github.com/DevoidX09
  * License: GPL v2 or later
@@ -26,7 +26,7 @@ if (! defined('ABSPATH')) {
  * Current plugin version.
  */
 if (! defined('PNPC_PSD_VERSION')) {
-	define('PNPC_PSD_VERSION', '1.1.1.3');
+	define( 'PNPC_PSD_VERSION', '1.1.1.3.7' );
 }
 
 /**
@@ -92,7 +92,10 @@ function activate_pnpc_pocket_service_desk()
 		}
 	}
 	// Log if activator not available
-	error_log('pnpc-activate: activator file missing or class not found: ' . $activator);
+	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
+		error_log( 'pnpc-activate: activator file missing or class not found: ' . $activator );
+	}
 }
 register_activation_hook(__FILE__, 'activate_pnpc_pocket_service_desk');
 
@@ -110,7 +113,10 @@ function deactivate_pnpc_pocket_service_desk()
 		}
 	}
 	// Log if deactivator not available
-	error_log('pnpc-deactivate: deactivator file missing or class not found: ' . $deactivator);
+	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
+		error_log( 'pnpc-deactivate: deactivator file missing or class not found: ' . $deactivator );
+	}
 }
 register_deactivation_hook(__FILE__, 'deactivate_pnpc_pocket_service_desk');
 
@@ -132,7 +138,10 @@ foreach ($pnpc_core_files as $file) {
 	if (file_exists($file)) {
 		require_once $file;
 	} else {
-		error_log('pnpc-bootstrap: missing file ' . $file);
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
+			error_log( 'pnpc-bootstrap: missing file ' . $file );
+		}
 	}
 }
 
@@ -156,7 +165,10 @@ foreach ($pnpc_ticket_paths as $ticket_file) {
 }
 if (! $pnpc_ticket_loaded) {
 	// Log a single diagnostic pointing to the current expected file to reduce noise.
-	error_log('pnpc-bootstrap: missing file ' . $pnpc_ticket_paths[0]);
+	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
+		error_log( 'pnpc-bootstrap: missing file ' . $pnpc_ticket_paths[0] );
+	}
 }
 
 /**
@@ -176,7 +188,10 @@ if (class_exists('PNPC_PSD')) {
 		if (method_exists($plugin, 'run')) {
 			$plugin->run();
 		} else {
-			error_log('pnpc-bootstrap: PNPC_PSD exists but run() method missing.');
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
+				error_log( 'pnpc-bootstrap: PNPC_PSD exists but run() method missing.' );
+				}
 		}
 	}
 
@@ -191,5 +206,8 @@ if (class_exists('PNPC_PSD')) {
 			echo '</p></div>';
 		}
 	);
-	error_log('pnpc-bootstrap: core class PNPC_PSD not found; plugin not initialized.');
+	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
+		error_log( 'pnpc-bootstrap: core class PNPC_PSD not found; plugin not initialized.' );
+	}
 }
