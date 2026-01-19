@@ -43,40 +43,6 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 
 ?>
 <div class="wrap pnpc-psd-dashboard">
-	<style>
-		.pnpc-psd-dashboard .psd-topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:14px 0 18px;}
-		.pnpc-psd-dashboard .psd-brand{display:flex;align-items:center;gap:12px;}
-		.pnpc-psd-dashboard .psd-logo{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;border:1px solid #dcdcde;box-shadow:0 1px 1px rgba(0,0,0,.04);}
-		.pnpc-psd-dashboard .psd-logo img{max-width:100%;max-height:100%;display:block;}
-		.pnpc-psd-dashboard .psd-logo--placeholder{font-weight:700;color:#1d2327;}
-		.pnpc-psd-dashboard .psd-title{margin:0;font-size:22px;line-height:1.2;}
-		.pnpc-psd-dashboard .psd-subtitle{margin:2px 0 0;color:#646970;}
-		.pnpc-psd-dashboard .psd-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-		.pnpc-psd-dashboard .psd-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;}
-		.pnpc-psd-dashboard .psd-card{grid-column:span 12;background:#fff;border:1px solid #dcdcde;border-radius:14px;padding:14px 16px;box-shadow:0 1px 1px rgba(0,0,0,.04);}
-		@media (min-width: 900px){
-			.pnpc-psd-dashboard .psd-card--stats{grid-column:span 8;}
-			.pnpc-psd-dashboard .psd-card--alerts{grid-column:span 4;}
-		}
-		.pnpc-psd-dashboard .psd-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;}
-		@media (max-width: 900px){ .pnpc-psd-dashboard .psd-metrics{grid-template-columns:1fr;}}
-		.pnpc-psd-dashboard .psd-metric{border:1px solid #e5e5e5;border-radius:12px;padding:12px;}
-		.pnpc-psd-dashboard .psd-metric .k{color:#646970;font-size:12px;margin:0 0 6px;}
-		.pnpc-psd-dashboard .psd-metric .v{font-size:20px;font-weight:700;margin:0;}
-		.pnpc-psd-dashboard .psd-split{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-		.pnpc-psd-dashboard .psd-rings{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
-		.pnpc-psd-dashboard .psd-ring{--p:0;--size:92px;--th:10px;width:var(--size);height:var(--size);border-radius:999px;position:relative;display:grid;place-items:center;background:conic-gradient(currentColor calc(var(--p)*1%), #e5e5e5 0);color:#2271b1;}
-		.pnpc-psd-dashboard .psd-ring::before{content:"";position:absolute;inset:var(--th);border-radius:999px;background:#fff;}
-		.pnpc-psd-dashboard .psd-ring .psd-ring__label{position:relative;text-align:center;}
-		.pnpc-psd-dashboard .psd-ring .psd-ring__value{display:block;font-size:20px;font-weight:800;line-height:1;}
-		.pnpc-psd-dashboard .psd-ring .psd-ring__caption{display:block;margin-top:4px;font-size:11px;color:#646970;max-width:86px;}
-		.pnpc-psd-dashboard .psd-alert{border:1px solid #e5e5e5;border-radius:12px;padding:12px;margin:0 0 10px;}
-		.pnpc-psd-dashboard .psd-alert:last-child{margin-bottom:0;}
-		.pnpc-psd-dashboard .psd-alert-title{margin:0 0 4px;font-weight:700;}
-		.pnpc-psd-dashboard .psd-alert-body{margin:0;color:#646970;}
-		.pnpc-psd-dashboard .psd-cta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;}
-		.pnpc-psd-dashboard .psd-muted{color:#646970;}
-	</style>
 
 	<div class="psd-topbar">
 		<div class="psd-brand">
@@ -232,27 +198,4 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 		</div>
 	</div>
 
-	<script>
-	(function(){
-		function animateRing(el){
-			var target = parseInt(el.getAttribute('data-target')||'0',10);
-			target = Math.max(0, Math.min(100, target));
-			var numEl = el.querySelector('.psd-ring__num');
-			var start = 0;
-			var dur = 650;
-			var t0 = null;
-			function step(ts){
-				if(!t0) t0 = ts;
-				var p = Math.min(1, (ts - t0)/dur);
-				var val = Math.round(start + (target-start)*p);
-				el.style.setProperty('--p', val);
-				if(numEl){ numEl.textContent = val; }
-				if(p < 1){ requestAnimationFrame(step); }
-			}
-			requestAnimationFrame(step);
-		}
-		var rings = document.querySelectorAll('.pnpc-psd-dashboard .psd-ring');
-		rings.forEach(function(r){ animateRing(r); });
-	})();
-	</script>
 </div>

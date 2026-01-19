@@ -134,6 +134,18 @@ class PNPC_PSD_Admin
 				$this->version,
 				'all'
 			);
+
+			// Enqueue dashboard CSS on dashboard page
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
+			if (isset($_GET['page']) && 'pnpc-service-desk' === sanitize_text_field(wp_unslash($_GET['page']))) {
+				wp_enqueue_style(
+					$this->plugin_name . '-dashboard',
+					PNPC_PSD_PLUGIN_URL . 'assets/css/pnpc-psd-dashboard.css',
+					array(),
+					$this->version,
+					'all'
+				);
+			}
 		}
 	}
 
@@ -199,6 +211,30 @@ class PNPC_PSD_Admin
 				$this->version,
 				true
 			);
+
+			// Enqueue dashboard script on dashboard page
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
+			if (isset($_GET['page']) && 'pnpc-service-desk' === sanitize_text_field(wp_unslash($_GET['page']))) {
+				wp_enqueue_script(
+					$this->plugin_name . '-dashboard',
+					PNPC_PSD_PLUGIN_URL . 'assets/js/pnpc-psd-dashboard.js',
+					array(),
+					$this->version,
+					true
+				);
+			}
+
+			// Enqueue settings script on settings page
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
+			if (isset($_GET['page']) && 'pnpc-service-desk-settings' === sanitize_text_field(wp_unslash($_GET['page']))) {
+				wp_enqueue_script(
+					$this->plugin_name . '-settings',
+					PNPC_PSD_PLUGIN_URL . 'assets/js/pnpc-psd-settings.js',
+					array(),
+					$this->version,
+					true
+				);
+			}
 		}
 
 		// Enqueue Select2 on create ticket page
@@ -206,6 +242,7 @@ class PNPC_PSD_Admin
 		// for script enqueueing decisions. The value is sanitized before any usage.
 		// Note 2: Using CDN for simplicity. For production environments with strict security
 		// requirements, consider bundling Select2 locally with SRI integrity hashes.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
 		if (isset($_GET['page']) && 'pnpc-service-desk-create-ticket' === sanitize_text_field(wp_unslash($_GET['page']))) {
 			wp_enqueue_style(
 				'select2',
@@ -376,7 +413,7 @@ class PNPC_PSD_Admin
 		$step = isset( $_GET['step'] ) ? sanitize_key( wp_unslash( $_GET['step'] ) ) : 'start';
 
 		// Handle POST actions.
-		if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['pnpc_psd_setup_nonce'] ) ) {
+		if ( 'POST' === sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ?? '' ) ) && isset( $_POST['pnpc_psd_setup_nonce'] ) ) {
 			check_admin_referer( 'pnpc_psd_setup_wizard', 'pnpc_psd_setup_nonce' );
 
 			$mode   = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : '';
@@ -1001,7 +1038,7 @@ public function display_tickets_page()
 			return;
 		}
 
-		if (! isset($_POST['pnpc_psd_allocated_products_nonce']) || ! wp_verify_nonce(wp_unslash($_POST['pnpc_psd_allocated_products_nonce']), 'pnpc_psd_save_allocated_products')) {
+		if (! isset($_POST['pnpc_psd_allocated_products_nonce']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['pnpc_psd_allocated_products_nonce'])), 'pnpc_psd_save_allocated_products')) {
 			return;
 		}
 
@@ -1334,7 +1371,7 @@ public function display_tickets_page()
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) wp_unslash($_POST['ticket_ids'])) : array();
 
 		if (empty($ticket_ids)) {
 			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
@@ -1360,7 +1397,7 @@ public function display_tickets_page()
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) wp_unslash($_POST['ticket_ids'])) : array();
 
 		if (empty($ticket_ids)) {
 			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
@@ -1385,7 +1422,7 @@ public function display_tickets_page()
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) wp_unslash($_POST['ticket_ids'])) : array();
 		if ( empty($ticket_ids) ) {
 			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
 		}
@@ -1407,7 +1444,7 @@ public function display_tickets_page()
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) wp_unslash($_POST['ticket_ids'])) : array();
 		if ( empty($ticket_ids) ) {
 			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
 		}
@@ -1435,7 +1472,7 @@ public function display_tickets_page()
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_ids   = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+		$ticket_ids   = isset($_POST['ticket_ids']) ? array_map('absint', (array) wp_unslash($_POST['ticket_ids'])) : array();
 		$reason       = isset($_POST['reason']) ? sanitize_text_field(wp_unslash($_POST['reason'])) : '';
 		$reason_other = isset($_POST['reason_other']) ? sanitize_textarea_field(wp_unslash($_POST['reason_other'])) : '';
 
@@ -1480,7 +1517,7 @@ public function display_tickets_page()
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_ids   = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+		$ticket_ids   = isset($_POST['ticket_ids']) ? array_map('absint', (array) wp_unslash($_POST['ticket_ids'])) : array();
 		$reason       = isset($_POST['reason']) ? sanitize_text_field(wp_unslash($_POST['reason'])) : '';
 		$reason_other = isset($_POST['reason_other']) ? sanitize_textarea_field(wp_unslash($_POST['reason_other'])) : '';
 
@@ -1523,7 +1560,7 @@ public function display_tickets_page()
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) wp_unslash($_POST['ticket_ids'])) : array();
 		if (empty($ticket_ids)) {
 			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
 		}
@@ -1569,7 +1606,7 @@ public function display_tickets_page()
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) wp_unslash($_POST['ticket_ids'])) : array();
 		if (empty($ticket_ids)) {
 			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
 		}
@@ -1593,7 +1630,7 @@ public function display_tickets_page()
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
-		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) $_POST['ticket_ids']) : array();
+		$ticket_ids = isset($_POST['ticket_ids']) ? array_map('absint', (array) wp_unslash($_POST['ticket_ids'])) : array();
 
 		if (empty($ticket_ids)) {
 			wp_send_json_error(array('message' => __('No tickets selected.', 'pnpc-pocket-service-desk')));
@@ -2105,7 +2142,7 @@ public function display_tickets_page()
 		}
 
 		// Verify nonce
-		if (! wp_verify_nonce(wp_unslash($_POST['pnpc_psd_create_ticket_nonce']), 'pnpc_psd_create_ticket_admin')) {
+		if (! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['pnpc_psd_create_ticket_nonce'])), 'pnpc_psd_create_ticket_admin')) {
 			wp_die(esc_html__('Security check failed.', 'pnpc-pocket-service-desk'));
 		}
 
