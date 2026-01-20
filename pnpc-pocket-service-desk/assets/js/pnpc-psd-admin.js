@@ -795,18 +795,20 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 			}
 			
 			// Remove all notice classes
-			$messageDiv.removeClass('success error info notice-success notice-error notice-info notice-warning');
+			var noticeClasses = ['success', 'error', 'info', 'notice-success', 'notice-error', 'notice-info', 'notice-warning'];
+			$messageDiv.removeClass(noticeClasses.join(' '));
 			
 			// Add WordPress notice classes based on type
+			var typeClassMap = {
+				'success': 'notice-success',
+				'error': 'notice-error',
+				'info': 'notice-info',
+				'warning': 'notice-warning'
+			};
+			
 			$messageDiv.addClass('notice');
-			if (type === 'success') {
-				$messageDiv.addClass('notice-success');
-			} else if (type === 'error') {
-				$messageDiv.addClass('notice-error');
-			} else if (type === 'info') {
-				$messageDiv.addClass('notice-info');
-			} else if (type === 'warning') {
-				$messageDiv.addClass('notice-warning');
+			if (typeClassMap[type]) {
+				$messageDiv.addClass(typeClassMap[type]);
 			}
 			
 			$messageDiv.text(message).show();
