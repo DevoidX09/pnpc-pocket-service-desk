@@ -62,6 +62,36 @@ $canonical = "[pnpc_profile_settings]\n\n[pnpc_service_desk]\n\n[pnpc_create_tic
 			</p>
 		</div>
 
+	<?php elseif ( 'welcome' === $step ) : ?>
+		<div class="card" style="max-width: 980px; padding:16px;">
+			<h2 style="margin-top:0;">
+				<?php echo esc_html__( 'Welcome — Install Your Customer Dashboard', 'pnpc-pocket-service-desk' ); ?>
+			</h2>
+			<p><?php echo esc_html__( 'This installer will create (or help you link) a single Dashboard page that customers use as their Support Portal.', 'pnpc-pocket-service-desk' ); ?></p>
+			<ol>
+				<li><?php echo esc_html__( 'Create the Dashboard page (Elementor template or WordPress blocks).', 'pnpc-pocket-service-desk' ); ?></li>
+				<li><?php echo esc_html__( 'Confirm the Dashboard link in your menu/header (Customer Login / Support Portal).', 'pnpc-pocket-service-desk' ); ?></li>
+			</ol>
+
+			<div class="notice notice-info inline"><p><?php echo esc_html__( 'Reminder: add a “Customer Login” or “Support Portal” link in your menu/header that points to your Dashboard page.', 'pnpc-pocket-service-desk' ); ?></p></div>
+
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=start' ) ); ?>" style="margin-top:16px;">
+				<?php wp_nonce_field( 'pnpc_psd_setup_wizard', 'pnpc_psd_setup_nonce' ); ?>
+				<input type="hidden" name="mode" value="create" />
+				<input type="hidden" name="editor" value="<?php echo esc_attr( defined( 'ELEMENTOR_VERSION' ) ? 'elementor' : 'block' ); ?>" />
+				<input type="hidden" name="page_title" value="<?php echo esc_attr__( 'Support Dashboard', 'pnpc-pocket-service-desk' ); ?>" />
+				<input type="hidden" name="page_slug" value="dashboard" />
+				<p>
+					<button type="submit" class="button button-primary">
+						<?php echo esc_html__( 'Begin Install (Recommended)', 'pnpc-pocket-service-desk' ); ?>
+					</button>
+					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=start' ) ); ?>">
+						<?php echo esc_html__( 'Choose Options…', 'pnpc-pocket-service-desk' ); ?>
+					</a>
+				</p>
+			</form>
+		</div>
+
 	<?php else : ?>
 
 		<p><?php echo esc_html__( 'This wizard helps you create (or link) a single Dashboard page that customers use as their “Support Portal”. The dashboard uses shortcodes and will only display tickets for the currently logged-in customer.', 'pnpc-pocket-service-desk' ); ?></p>

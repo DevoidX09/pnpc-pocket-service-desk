@@ -51,6 +51,53 @@
 		});
 
 
+
+		// Auto-save info tooltip (works even if AJAX nonce localization fails)
+		$(document).on('click', '#pnpc-psd-autosave-tip', function(e) {
+			e.preventDefault();
+			var $link = $(this);
+			var $panel = $('#pnpc-psd-autosave-tip-panel');
+			if (!$panel.length) {
+				return;
+			}
+			var isOpen = $panel.is(':visible');
+			if (isOpen) {
+				$panel.hide();
+				$link.attr('aria-expanded', 'false');
+			} else {
+				$panel.show();
+				$link.attr('aria-expanded', 'true');
+			}
+		});
+
+		// Also support hover/focus, since many admins expect a classic tooltip interaction.
+		$(document).on('mouseenter focus', '#pnpc-psd-autosave-tip', function() {
+			var $panel = $('#pnpc-psd-autosave-tip-panel');
+			if ($panel.length) {
+				$panel.show();
+				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'true');
+			}
+		});
+		$(document).on('mouseleave blur', '#pnpc-psd-autosave-tip', function() {
+			var $panel = $('#pnpc-psd-autosave-tip-panel');
+			if ($panel.length) {
+				$panel.hide();
+				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
+			}
+		});
+
+		$(document).on('click', function(e) {
+			var $t = $(e.target);
+			if ($t.closest('#pnpc-psd-autosave-tip').length || $t.closest('#pnpc-psd-autosave-tip-panel').length) {
+				return;
+			}
+			var $panel = $('#pnpc-psd-autosave-tip-panel');
+			if ($panel.length && $panel.is(':visible')) {
+				$panel.hide();
+				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
+			}
+		});
+
 		if (! adminNonce) {
 			return;
 		}
@@ -519,6 +566,52 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 				$('#pnpc-psd-status-button').trigger('click');
 			});
 
+
+			// Priority auto-save
+			function pnpcPsdSavePriority(priorityVal) {
+				var pr = priorityVal || $('#pnpc-psd-priority-select').val();
+				if (!pr) {
+					return;
+				}
+				showMessage('info', 'Saving priority…', 'pnpc-psd-admin-action-message');
+				$.ajax({
+					url: pnpcPsdAdmin.ajax_url,
+					type: 'POST',
+					data: {
+						action: 'pnpc_psd_update_ticket_priority',
+						nonce: adminNonce,
+						ticket_id: ticketId,
+						priority: pr
+					},
+					success: function(result) {
+						if (result && result.success) {
+							showMessage('success', result.data.message || 'Priority updated.', 'pnpc-psd-admin-action-message');
+							setTimeout(function() {
+								location.reload();
+							}, 600);
+						} else if (result && result.data && result.data.message) {
+							showMessage('error', result.data.message, 'pnpc-psd-admin-action-message');
+						} else {
+							showMessage('error', 'Failed to update priority.', 'pnpc-psd-admin-action-message');
+						}
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+						console.error('pnpc-psd-admin.js priority AJAX error', textStatus, errorThrown);
+						showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-admin-action-message');
+					}
+				});
+			}
+
+			$(document).on('change', '#pnpc-psd-priority-select', function() {
+				pnpcPsdSavePriority($(this).val());
+			});
+
+			// Failsafe: if the manual Update Priority button is used, intercept and ajax instead of full post.
+			$(document).on('submit', '#pnpc-psd-priority-form', function(e) {
+				e.preventDefault();
+				pnpcPsdSavePriority($('#pnpc-psd-priority-select').val());
+			});
+
 			$('#pnpc-psd-response-form-admin').on('submit', function(e) {
 				e.preventDefault();
 
@@ -700,7 +793,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 			if (! $messageDiv.length) {
 				return;
 			}
-			$messageDiv.removeClass('success error').addClass(type).text(message).show();
+			$messageDiv.removeClass('success error info').addClass(type).text(message).show();
 
 			setTimeout(function() {
 				$messageDiv.fadeOut();

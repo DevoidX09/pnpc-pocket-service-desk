@@ -157,6 +157,10 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 		</div>
 
 		<div class="pnpc-psd-ticket-actions">
+			<div class="pnpc-psd-autosave-tip-wrap">
+				<a href="#" id="pnpc-psd-autosave-tip" class="pnpc-psd-autosave-tip" aria-expanded="false"><span class="dashicons dashicons-info-outline"></span> +Auto-save info</a>
+				<div id="pnpc-psd-autosave-tip-panel" class="pnpc-psd-autosave-tip-panel" style="display:none;">Agent, Status, and Priority auto-save when changed. Use the buttons as a failsafe if needed.</div>
+			</div>
 			<?php if (current_user_can('pnpc_psd_assign_tickets')) : ?>
 				<div class="pnpc-psd-field">
 					<label for="pnpc-psd-assign-agent"><?php esc_html_e('Assign Agent', 'pnpc-pocket-service-desk'); ?></label>
@@ -202,7 +206,7 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 					admin_url( 'admin.php' )
 				);
 				?>
-				<form class="pnpc-psd-field" method="post" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
+				<form class="pnpc-psd-field" id="pnpc-psd-priority-form" method="post" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 					<input type="hidden" name="page" value="pnpc-service-desk-ticket" />
 					<input type="hidden" name="ticket_id" value="<?php echo esc_attr( absint( $ticket->id ) ); ?>" />
 					<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect_to ); ?>" />
@@ -215,14 +219,16 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 							</option>
 						<?php endforeach; ?>
 					</select>
-					<button type="submit" class="button"><?php esc_html_e( 'Update Priority', 'pnpc-pocket-service-desk' ); ?></button>
+					<button type="submit" class="button" id="pnpc-psd-priority-button"><?php esc_html_e( 'Update Priority', 'pnpc-pocket-service-desk' ); ?></button>
 				</form>
 			<?php endif; ?>
 		</div>
 	</div>
 
 	
-	<div class="pnpc-psd-ticket-body" style="margin: 15px 0; padding: 12px 14px; background: #fff; border: 1px solid #dcdcde; border-radius: 4px;">
+	<div id="pnpc-psd-admin-action-message" class="pnpc-psd-message" style="display:none;"></div>
+
+	<div class="pnpc-psd-ticket-body" style="margin: 15px 0; padding: 12px 14px; background: #FAFFA1; border: 1px solid #dcdcde; border-radius: 4px;">
 		<h3 style="margin-top:0;"><?php esc_html_e('Ticket', 'pnpc-pocket-service-desk'); ?></h3>
 		<div class="pnpc-psd-ticket-content">
 			<?php
@@ -232,7 +238,6 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 		</div>
 	</div>
 
-<div id="pnpc-psd-admin-action-message" class="pnpc-psd-message" style="display:none;"></div>
 
 	<?php if (! empty($ticket_attachments)) : ?>
 		<div class="pnpc-psd-attachments">

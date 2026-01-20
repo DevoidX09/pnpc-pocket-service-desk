@@ -842,3 +842,53 @@ body.pnpc-psd-flash-active {
 .pnpc-psd-ticket-closed td {
 	color: #646970;
 }
+
+/* Admin messages (ticket detail + response area + bulk actions). */
+.pnpc-psd-message {
+	margin: 0 0 12px 0;
+	padding: 10px 12px;
+	border: 1px solid #dcdcde;
+	border-left-width: 4px;
+	border-radius: 4px;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.pnpc-psd-message.success {
+	background: #d1e7dd;
+	border-color: #0f5132;
+	color: #0f5132;
+}
+
+.pnpc-psd-message.error {
+	background: #f8d7da;
+	border-color: #842029;
+	color: #842029;
+}
+
+.pnpc-psd-message.info {
+	background: #cff4fc;
+	border-color: #055160;
+	color: #055160;
+}
+
+/* Auto-save tooltip */
+.pnpc-psd-autosave-tip-wrap {
+	text-align: right;
+	margin: 0 0 10px 0;
+}
+
+.pnpc-psd-autosave-tip {
+	text-decoration: none;
+}
+
+.pnpc-psd-autosave-tip-panel {
+	margin: 8px 0 0 0;
+	padding: 10px 12px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	max-width: 340px;
+	display: inline-block;
+	text-align: left;
+}

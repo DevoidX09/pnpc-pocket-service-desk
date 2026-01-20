@@ -117,6 +117,9 @@ class PNPC_PSD_Activator {
 		if ( $dash_id <= 0 || 'trash' === get_post_status( $dash_id ) ) {
 			update_option( 'pnpc_psd_needs_setup_wizard', 1 );
 			update_option( 'pnpc_psd_setup_notice_dismissed', 0 );
+			// Redirect into the wizard once after activation (clean installs only).
+			// Use an option (not a transient) so this survives object cache variance.
+			update_option( 'pnpc_psd_do_setup_redirect', 1 );
 		}
 
 	}
