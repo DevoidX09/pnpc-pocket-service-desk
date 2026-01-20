@@ -491,12 +491,15 @@ ob_start();
 	}
 
 	/**
-	* Ajax create ticket.
-	*
-	* @since 1.1.1.4
-	*
-	* @return mixed
-	*/
+	 * Handle AJAX request to create a new ticket.
+	 *
+	 * Verifies nonce and capability, sanitizes inputs, handles file attachments,
+	 * and creates a new support ticket with optional WooCommerce order association.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return void Outputs JSON response and exits.
+	 */
 	public function ajax_create_ticket()
 	{
 		// Defensive: ensure no stray output (notices/warnings) corrupts JSON responses for AJAX callers.
@@ -774,12 +777,15 @@ ob_start();
 	}
 
 	/**
-	* Ajax respond to ticket.
-	*
-	* @since 1.1.1.4
-	*
-	* @return mixed
-	*/
+	 * Handle AJAX request to respond to an existing ticket.
+	 *
+	 * Verifies nonce and ownership/capability, sanitizes inputs, handles file attachments,
+	 * and adds a response to the specified ticket.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return void Outputs JSON response and exits.
+	 */
 	public function ajax_respond_to_ticket()
 	{
 		// Defensive: ensure no stray output (notices/warnings) corrupts JSON responses for AJAX callers.
@@ -1013,12 +1019,15 @@ ob_start();
 	}
 
 	/**
-	* Ajax upload profile image.
-	*
-	* @since 1.1.1.4
-	*
-	* @return mixed
-	*/
+	 * Handle AJAX request to upload user profile image.
+	 *
+	 * Verifies nonce and authentication, validates file type and size,
+	 * and updates the user's profile image.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return void Outputs JSON response and exits.
+	 */
 	public function ajax_upload_profile_image()
 	{
 		check_ajax_referer('pnpc_psd_public_nonce', 'nonce');
@@ -1177,12 +1186,15 @@ ob_start();
 	}
 
 	/**
-	* Ajax get ticket detail.
-	*
-	* @since 1.1.1.4
-	*
-	* @return mixed
-	*/
+	 * Handle AJAX request to get ticket details.
+	 *
+	 * Verifies nonce and ownership/capability, retrieves ticket data including
+	 * responses, and marks the ticket as viewed for activity tracking.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return void Outputs JSON response and exits.
+	 */
 	public function ajax_get_ticket_detail()
 	{
 		$nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
