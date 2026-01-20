@@ -92,6 +92,18 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 		</div>
 		
 		<div class="pnpc-psd-quick-nav">
+			<?php if ( ! empty( $prev_ticket_id ) ) : ?>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-ticket&ticket_id=' . absint( $prev_ticket_id ) ) ); ?>" class="button" title="<?php esc_attr_e( 'Previous Ticket', 'pnpc-pocket-service-desk' ); ?>">
+					<span class="dashicons dashicons-arrow-left-alt2"></span>
+					<?php esc_html_e('Prev', 'pnpc-pocket-service-desk'); ?>
+				</a>
+			<?php endif; ?>
+			<?php if ( ! empty( $next_ticket_id ) ) : ?>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-ticket&ticket_id=' . absint( $next_ticket_id ) ) ); ?>" class="button" title="<?php esc_attr_e( 'Next Ticket', 'pnpc-pocket-service-desk' ); ?>">
+					<?php esc_html_e('Next', 'pnpc-pocket-service-desk'); ?>
+					<span class="dashicons dashicons-arrow-right-alt2"></span>
+				</a>
+			<?php endif; ?>
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-tickets' ) ); ?>" class="button">
 				<span class="dashicons dashicons-arrow-left-alt2"></span>
 				<?php esc_html_e('Back to All Tickets', 'pnpc-pocket-service-desk'); ?>
@@ -159,7 +171,7 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 		<div class="pnpc-psd-ticket-actions">
 			<div class="pnpc-psd-autosave-tip-wrap">
 				<a href="#" id="pnpc-psd-autosave-tip" class="pnpc-psd-autosave-tip" aria-expanded="false"><span class="dashicons dashicons-info-outline"></span> +Auto-save info</a>
-				<div id="pnpc-psd-autosave-tip-panel" class="pnpc-psd-autosave-tip-panel" style="display:none;">Agent, Status, and Priority auto-save when changed. Use the buttons as a failsafe if needed.</div>
+				<div id="pnpc-psd-autosave-tip-panel" class="pnpc-psd-autosave-tip-panel" style="display:none;"><?php esc_html_e( 'Your selections will auto-save; buttons are available if needed.', 'pnpc-pocket-service-desk' ); ?></div>
 			</div>
 			<?php if (current_user_can('pnpc_psd_assign_tickets')) : ?>
 				<div class="pnpc-psd-field">
