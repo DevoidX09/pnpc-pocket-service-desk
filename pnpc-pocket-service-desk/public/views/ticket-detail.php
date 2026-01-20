@@ -101,8 +101,19 @@ if (empty($dashboard_url)) {
 			<span class="pnpc-psd-ticket-number">
 				<?php printf(esc_html__('Ticket #%s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?>
 			</span>
-			<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>">
-				<?php echo esc_html(ucfirst($ticket->status)); ?>
+			<?php
+			$raw_status = isset( $ticket->status ) ? (string) $ticket->status : '';
+			$status_key = strtolower( str_replace( '_', '-', $raw_status ) );
+			$status_labels = array(
+				'open'        => __( 'Open', 'pnpc-pocket-service-desk' ),
+				'in-progress' => __( 'In Progress', 'pnpc-pocket-service-desk' ),
+				'waiting'     => __( 'Waiting', 'pnpc-pocket-service-desk' ),
+				'closed'      => __( 'Closed', 'pnpc-pocket-service-desk' ),
+			);
+			$status_label = isset( $status_labels[ $status_key ] ) ? $status_labels[ $status_key ] : ucwords( str_replace( '-', ' ', $status_key ) );
+			?>
+			<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr( $status_key ); ?>">
+				<?php echo esc_html( $status_label ); ?>
 			</span>
 			<span class="pnpc-psd-priority pnpc-psd-priority-<?php echo esc_attr($ticket->priority); ?>">
 				<?php echo esc_html(ucfirst($ticket->priority)); ?>

@@ -24,6 +24,13 @@ if (! defined('ABSPATH')) {
  * @return int Page ID or 0.
  */
 if (! function_exists('pnpc_psd_get_ticket_detail_page_id')) {
+/**
+ * Pnpc psd get ticket detail page id.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_get_ticket_detail_page_id()
     {
         static $cached = null;
@@ -78,6 +85,13 @@ if (! function_exists('pnpc_psd_get_ticket_detail_page_id')) {
  * @return int Page ID or 0.
  */
 if (! function_exists('pnpc_psd_get_my_tickets_page_id')) {
+/**
+ * Pnpc psd get my tickets page id.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_get_my_tickets_page_id()
     {
         static $cached = null;
@@ -125,6 +139,15 @@ if (! function_exists('pnpc_psd_get_my_tickets_page_id')) {
  * @return string URL or empty.
  */
 if (! function_exists('pnpc_psd_get_ticket_detail_url')) {
+/**
+ * Pnpc psd get ticket detail url.
+ *
+ * @param mixed $ticket_id 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_get_ticket_detail_url($ticket_id)
     {
         $ticket_id = (int) $ticket_id;
@@ -143,6 +166,13 @@ if (! function_exists('pnpc_psd_get_ticket_detail_url')) {
  * Return the URL to the configured "All Tickets / My Tickets" page.
  */
 if (! function_exists('pnpc_psd_get_my_tickets_url')) {
+/**
+ * Pnpc psd get my tickets url.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_get_my_tickets_url()
     {
         $page_id = pnpc_psd_get_my_tickets_page_id();
@@ -157,6 +187,13 @@ if (! function_exists('pnpc_psd_get_my_tickets_url')) {
  * Return the WP dashboard URL or fallback to my tickets.
  */
 if (! function_exists('pnpc_psd_get_dashboard_url')) {
+/**
+ * Pnpc psd get dashboard url.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_get_dashboard_url()
     {
         static $cached = null;
@@ -194,6 +231,13 @@ if (! function_exists('pnpc_psd_get_dashboard_url')) {
  * Get WP timezone as DateTimeZone or null.
  */
 if (! function_exists('pnpc_psd_get_wp_timezone')) {
+/**
+ * Pnpc psd get wp timezone.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_get_wp_timezone()
     {
         if (function_exists('wp_timezone')) {
@@ -236,6 +280,15 @@ if (! function_exists('pnpc_psd_get_wp_timezone')) {
  * Convert DB MySQL datetime (assumed UTC) to WP-local unix timestamp.
  */
 if (! function_exists('pnpc_psd_mysql_to_wp_local_ts')) {
+/**
+ * Pnpc psd mysql to wp local ts.
+ *
+ * @param mixed $mysql_datetime 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_mysql_to_wp_local_ts($mysql_datetime)
     {
         if ($mysql_datetime === null || $mysql_datetime === '' || $mysql_datetime === false) {
@@ -303,6 +356,13 @@ if (! function_exists('pnpc_psd_mysql_to_wp_local_ts')) {
  * Return UTC MySQL datetime string suitable for DB insertion.
  */
 if (! function_exists('pnpc_psd_get_utc_mysql_datetime')) {
+/**
+ * Pnpc psd get utc mysql datetime.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_get_utc_mysql_datetime()
     {
         if (function_exists('current_time')) {
@@ -316,6 +376,16 @@ if (! function_exists('pnpc_psd_get_utc_mysql_datetime')) {
  * Format DB datetime for display according to WP settings.
  */
 if (! function_exists('pnpc_psd_format_db_datetime_for_display')) {
+/**
+ * Pnpc psd format db datetime for display.
+ *
+ * @param mixed $mysql_datetime 
+ * @param mixed $format 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_format_db_datetime_for_display($mysql_datetime, $format = null)
     {
         if ($mysql_datetime === null || $mysql_datetime === '') {
@@ -343,6 +413,16 @@ if (! function_exists('pnpc_psd_format_db_datetime_for_display')) {
  * Conditional debug logger (controlled by WP_DEBUG and option pnpc_psd_debug_timestamps).
  */
 if (! function_exists('pnpc_psd_debug_log')) {
+/**
+ * Pnpc psd debug log.
+ *
+ * @param mixed $label 
+ * @param mixed $data 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_debug_log($label, $data = '')
     {
         if (! defined('WP_DEBUG') || ! WP_DEBUG) {
@@ -362,6 +442,15 @@ if (! function_exists('pnpc_psd_debug_log')) {
  * Normalize $_FILES multi-file structure to array of file arrays.
  */
 if (! function_exists('pnpc_psd_rearrange_files')) {
+/**
+ * Pnpc psd rearrange files.
+ *
+ * @param mixed $file_post 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_rearrange_files($file_post)
     {
         $files = array();
@@ -388,6 +477,15 @@ if (! function_exists('pnpc_psd_rearrange_files')) {
  * Human-friendly file size formatting (wraps size_format() if available).
  */
 if (! function_exists('pnpc_psd_format_filesize')) {
+/**
+ * Pnpc psd format filesize.
+ *
+ * @param mixed $bytes 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_format_filesize($bytes)
     {
         $bytes = intval($bytes);
@@ -421,6 +519,15 @@ if (! defined('PNPC_PSD_FREE_PREVIEW_LIMIT')) {
  * @return string 'image', 'pdf', or 'other'.
  */
 if (! function_exists('pnpc_psd_get_attachment_type')) {
+/**
+ * Pnpc psd get attachment type.
+ *
+ * @param mixed $extension 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_get_attachment_type($extension)
     {
         $extension = strtolower(trim($extension));
@@ -445,6 +552,15 @@ if (! function_exists('pnpc_psd_get_attachment_type')) {
  * @return string Emoji icon.
  */
 if (! function_exists('pnpc_psd_get_file_icon')) {
+/**
+ * Pnpc psd get file icon.
+ *
+ * @param mixed $extension 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_get_file_icon($extension)
     {
         $extension = strtolower(trim($extension));
@@ -476,6 +592,15 @@ if (! function_exists('pnpc_psd_get_file_icon')) {
  * @return bool True if can preview, false otherwise.
  */
 if (! function_exists('pnpc_psd_can_preview_attachment')) {
+/**
+ * Pnpc psd can preview attachment.
+ *
+ * @param mixed $file_size 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_can_preview_attachment($file_size)
     {
         return intval($file_size) <= PNPC_PSD_FREE_PREVIEW_LIMIT;
@@ -491,6 +616,16 @@ if (! function_exists('pnpc_psd_can_preview_attachment')) {
  * @return string Formatted reason label.
  */
 if (! function_exists('pnpc_psd_format_delete_reason')) {
+/**
+ * Pnpc psd format delete reason.
+ *
+ * @param mixed $reason 
+ * @param mixed $other_details 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
     function pnpc_psd_format_delete_reason($reason, $other_details = '')
     {
         if (empty($reason)) {
@@ -521,6 +656,13 @@ if (! function_exists('pnpc_psd_format_delete_reason')) {
  * Note: add_role() does not update an existing role, so we must add missing caps explicitly.
  */
 if ( ! function_exists( 'pnpc_psd_sync_roles_caps' ) ) {
+/**
+ * Pnpc psd sync roles caps.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_sync_roles_caps() {
 		// Define canonical caps.
 		$agent_caps = array(
@@ -607,6 +749,15 @@ add_action( 'init', 'pnpc_psd_sync_roles_caps', 1 );
  * @return array Sanitized option value.
  */
 if ( ! function_exists( 'pnpc_psd_sanitize_agents_option' ) ) {
+/**
+ * Pnpc psd sanitize agents option.
+ *
+ * @param mixed $value 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_sanitize_agents_option( $value ) {
 		if ( ! is_array( $value ) ) {
 			return array();
@@ -621,9 +772,11 @@ if ( ! function_exists( 'pnpc_psd_sanitize_agents_option' ) ) {
 			$row = is_array( $row ) ? $row : array();
 			$enabled = isset( $row['enabled'] ) ? absint( $row['enabled'] ) : 0;
 			$email   = isset( $row['notify_email'] ) ? sanitize_email( (string) $row['notify_email'] ) : '';
+			$notify  = isset( $row['notify'] ) ? absint( $row['notify'] ) : 0;
 			$out[ $uid ] = array(
 				'enabled'     => $enabled ? 1 : 0,
 				'notify_email'=> $email,
+				'notify'     => $notify ? 1 : 0,
 			);
 		}
 
@@ -662,6 +815,13 @@ if ( ! function_exists( 'pnpc_psd_sanitize_agents_option' ) ) {
  * @return WP_User[]
  */
 if ( ! function_exists( 'pnpc_psd_get_assignable_agents' ) ) {
+/**
+ * Pnpc psd get assignable agents.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_get_assignable_agents() {
 		$cfg = get_option( 'pnpc_psd_agents', array() );
 		$ids = array();
@@ -706,11 +866,28 @@ if ( ! function_exists( 'pnpc_psd_get_assignable_agents' ) ) {
  * @return string Email address.
  */
 if ( ! function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
+/**
+ * Pnpc psd get agent notification email.
+ *
+ * @param mixed $user_id 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_get_agent_notification_email( $user_id ) {
 		$user_id = absint( $user_id );
 		if ( ! $user_id ) {
 			return '';
 		}
+
+		// Default behavior for WP.org-ready builds: do not allow per-agent override emails unless explicitly enabled.
+		$disable_overrides = absint( get_option( 'pnpc_psd_disable_agent_notify_overrides', 1 ) );
+		if ( 1 === $disable_overrides ) {
+			$u = get_user_by( 'id', $user_id );
+			return ( $u && ! empty( $u->user_email ) ) ? (string) $u->user_email : '';
+		}
+
 		$cfg = get_option( 'pnpc_psd_agents', array() );
 		if ( is_array( $cfg ) && isset( $cfg[ $user_id ]['notify_email'] ) ) {
 			$e = sanitize_email( (string) $cfg[ $user_id ]['notify_email'] );
@@ -734,6 +911,13 @@ if ( ! function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
  * @return bool
  */
 if ( ! function_exists( 'pnpc_psd_is_pro' ) ) {
+/**
+ * Pnpc psd is pro.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_is_pro() {
 		$is_pro = false;
 		if ( defined( 'PNPC_PSD_IS_PRO' ) && PNPC_PSD_IS_PRO ) {
@@ -754,6 +938,13 @@ if ( ! function_exists( 'pnpc_psd_is_pro' ) ) {
  * @return bool
  */
 if ( ! function_exists( 'pnpc_psd_is_pro_active' ) ) {
+/**
+ * Pnpc psd is pro active.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_is_pro_active() {
 		return pnpc_psd_is_pro();
 	}
@@ -768,6 +959,13 @@ if ( ! function_exists( 'pnpc_psd_is_pro_active' ) ) {
  * @return bool
  */
 if ( ! function_exists( 'pnpc_psd_enable_manager_role' ) ) {
+/**
+ * Pnpc psd enable manager role.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_enable_manager_role() {
 		$enabled = false;
 		/**
@@ -790,6 +988,16 @@ if ( ! function_exists( 'pnpc_psd_enable_manager_role' ) ) {
  * @return int[]
  */
 if ( ! function_exists( 'pnpc_psd_filter_visible_products_for_user' ) ) {
+/**
+ * Pnpc psd filter visible products for user.
+ *
+ * @param mixed $product_ids 
+ * @param mixed $user_id 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_filter_visible_products_for_user( $product_ids, $user_id ) {
 		/**
 		 * Filter: visible products for a given user.
@@ -811,6 +1019,13 @@ if ( ! function_exists( 'pnpc_psd_filter_visible_products_for_user' ) ) {
  * @return int 0 = unlimited.
  */
 if ( ! function_exists( 'pnpc_psd_get_max_agents_limit' ) ) {
+/**
+ * Pnpc psd get max agents limit.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_get_max_agents_limit() {
 		return pnpc_psd_is_pro() ? 0 : 2;
 	}
@@ -827,6 +1042,13 @@ if ( ! function_exists( 'pnpc_psd_get_max_agents_limit' ) ) {
  * @return int
  */
 if ( ! function_exists( 'pnpc_psd_get_max_attachment_mb' ) ) {
+/**
+ * Pnpc psd get max attachment mb.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_get_max_attachment_mb() {
 		$default = pnpc_psd_is_pro() ? 20 : 5;
 		$min     = 1;
@@ -847,6 +1069,15 @@ if ( ! function_exists( 'pnpc_psd_get_max_attachment_mb' ) ) {
  * @return int
  */
 if ( ! function_exists( 'pnpc_psd_sanitize_max_attachment_mb' ) ) {
+/**
+ * Pnpc psd sanitize max attachment mb.
+ *
+ * @param mixed $value 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_sanitize_max_attachment_mb( $value ) {
 		$val = absint( $value );
 		$val = max( 1, $val );
@@ -862,6 +1093,13 @@ if ( ! function_exists( 'pnpc_psd_sanitize_max_attachment_mb' ) ) {
  * @return int
  */
 if ( ! function_exists( 'pnpc_psd_get_max_attachment_bytes' ) ) {
+/**
+ * Pnpc psd get max attachment bytes.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_get_max_attachment_bytes() {
 		$mb = pnpc_psd_get_max_attachment_mb();
 		return (int) ( $mb * 1024 * 1024 );
@@ -879,6 +1117,13 @@ if ( ! function_exists( 'pnpc_psd_get_max_attachment_bytes' ) ) {
  * @return string[] Lowercased allowed types/extensions.
  */
 if ( ! function_exists( 'pnpc_psd_get_allowed_file_types_list' ) ) {
+/**
+ * Pnpc psd get allowed file types list.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_get_allowed_file_types_list() {
 		$default_raw = 'jpg,jpeg,png,gif,webp,pdf,txt,csv,doc,docx,xls,xlsx,zip';
 		$raw         = (string) get_option( 'pnpc_psd_allowed_file_types', $default_raw );
@@ -926,6 +1171,15 @@ if ( ! function_exists( 'pnpc_psd_get_allowed_file_types_list' ) ) {
  * @return string
  */
 if ( ! function_exists( 'pnpc_psd_sanitize_allowed_file_types' ) ) {
+/**
+ * Pnpc psd sanitize allowed file types.
+ *
+ * @param mixed $value 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_sanitize_allowed_file_types( $value ) {
 		if ( is_array( $value ) ) {
 			$raw = implode( ',', array_map( 'strval', $value ) );

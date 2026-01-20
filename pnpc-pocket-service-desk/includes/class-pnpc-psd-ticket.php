@@ -11,6 +11,11 @@ if (! defined('ABSPATH')) {
 	exit;
 }
 
+/**
+ * PNPC PSD Ticket.
+ *
+ * @since 1.1.1.4
+ */
 class PNPC_PSD_Ticket
 {
 
@@ -339,6 +344,62 @@ class PNPC_PSD_Ticket
 		);
 
 		return $tickets;
+	}
+
+	/**
+	 * Count tickets for a user.
+	 *
+	 * Uses the same filters as get_by_user() (status, exclude_statuses, include_trashed, include_archived).
+	 *
+	 * @since 1.1.1
+	 * @param int   $user_id User ID.
+	 * @param array $args Query arguments.
+	 * @return int Ticket count.
+	 */
+	public static function get_user_count( $user_id, $args = array() ) {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		$user_id    = absint( $user_id );
+		if ( ! $user_id ) {
+			return 0;
+		}
+
+		$defaults = array(
+			'status'           => '',
+			'exclude_statuses' => array(),
+			'include_trashed'  => false,
+			'include_archived' => false,
+		);
+		$args = wp_parse_args( $args, $defaults );
+
+		$where = $wpdb->prepare( 'WHERE user_id = %d', $user_id );
+
+		if ( empty( $args['include_trashed'] ) ) {
+			$where .= ' AND deleted_at IS NULL';
+		}
+
+		if ( empty( $args['include_archived'] ) ) {
+			$where .= " AND archived_at IS NULL AND status <> 'archived'";
+		}
+
+		if ( ! empty( $args['status'] ) ) {
+			$where .= $wpdb->prepare( ' AND status = %s', $args['status'] );
+		}
+
+		if ( ! empty( $args['exclude_statuses'] ) && is_array( $args['exclude_statuses'] ) ) {
+			$exclude = array_values( array_filter( array_map( 'sanitize_key', $args['exclude_statuses'] ) ) );
+			if ( ! empty( $exclude ) ) {
+				$placeholders = implode( ',', array_fill( 0, count( $exclude ), '%s' ) );
+				$query = " AND status NOT IN ($placeholders)";
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				$where .= call_user_func_array( array( $wpdb, 'prepare' ), array_merge( array( $query ), $exclude ) );
+			}
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name} {$where}" );
+		return $count;
 	}
 
 	/**
@@ -1491,6 +1552,15 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		}
 		return $count;
 	}
+	/**
+	* Bulk delete permanently.
+	*
+	* @param mixed $ticket_ids
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public static function bulk_delete_permanently($ticket_ids)
 	{
 		if (! is_array($ticket_ids) || empty($ticket_ids)) {

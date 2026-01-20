@@ -5,6 +5,9 @@
  *
  * Expects:
  *  - $tickets (array)
+ *  - $total_tickets (int) Total tickets matching current tab (not just the current page).
+ *  - $current_page (int)
+ *  - $per_page (int)
  *
  * @package    PNPC_Pocket_Service_Desk
  * @subpackage PNPC_Pocket_Service_Desk/public/views
@@ -15,6 +18,14 @@ if (! defined('ABSPATH')) {
 }
 
 $viewer_id = get_current_user_id();
+
+$total_items  = isset( $total_tickets ) ? absint( $total_tickets ) : count( (array) $tickets );
+$current_page = isset( $current_page ) ? max( 1, absint( $current_page ) ) : 1;
+$per_page     = isset( $per_page ) ? max( 1, absint( $per_page ) ) : 20;
+$total_pages  = ( $per_page > 0 ) ? (int) ceil( $total_items / $per_page ) : 1;
+
+// Base URL for pagination links.
+$base_url = remove_query_arg( array( 'pnpc_psd_page' ) );
 ?>
 
 <?php if (! empty($tickets)) : ?>
@@ -68,7 +79,18 @@ $viewer_id = get_current_user_id();
 					</h3>
 					<div class="pnpc-psd-ticket-meta">
 						<span class="pnpc-psd-ticket-number">#<?php echo esc_html($ticket->ticket_number); ?></span>
-						<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>"><?php echo esc_html(ucfirst($ticket->status)); ?></span>
+						<?php
+						$raw_status = isset( $ticket->status ) ? (string) $ticket->status : '';
+						$status_key = strtolower( str_replace( '_', '-', $raw_status ) );
+						$status_labels = array(
+							'open'        => __( 'Open', 'pnpc-pocket-service-desk' ),
+							'in-progress' => __( 'In Progress', 'pnpc-pocket-service-desk' ),
+							'waiting'     => __( 'Waiting', 'pnpc-pocket-service-desk' ),
+							'closed'      => __( 'Closed', 'pnpc-pocket-service-desk' ),
+						);
+						$status_label = isset( $status_labels[ $status_key ] ) ? $status_labels[ $status_key ] : ucwords( str_replace( '-', ' ', $status_key ) );
+						?>
+						<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr( $status_key ); ?>"><?php echo esc_html( $status_label ); ?></span>
 						<span class="pnpc-psd-priority pnpc-psd-priority-<?php echo esc_attr($ticket->priority); ?>"><?php echo esc_html(ucfirst($ticket->priority)); ?></span>
 					</div>
 				</div>
@@ -91,12 +113,54 @@ $viewer_id = get_current_user_id();
 				</div>
 			</div>
 		<?php endforeach; ?>
+
+		<?php if ( $total_pages > 1 ) : ?>
+			<div class="pnpc-psd-pagination" style="margin-top: 16px; text-align: center;">
+				<?php
+				$pagination = paginate_links(
+					array(
+						'base'      => esc_url_raw( add_query_arg( 'pnpc_psd_page', '%#%', $base_url ) ),
+						'format'    => '',
+						'current'   => (int) $current_page,
+						'total'     => (int) $total_pages,
+						'prev_text' => __( '&laquo; Prev', 'pnpc-pocket-service-desk' ),
+						'next_text' => __( 'Next &raquo;', 'pnpc-pocket-service-desk' ),
+						'type'      => 'array',
+					)
+				);
+				if ( is_array( $pagination ) ) {
+					foreach ( $pagination as $link ) {
+						// Reuse existing button styles for a consistent look.
+						echo wp_kses_post( str_replace( 'page-numbers', 'pnpc-psd-button pnpc-psd-button-small page-numbers', $link ) );
+					}
+				}
+				?>
+				<div class="pnpc-psd-pagination-meta" style="margin-top: 10px;">
+					<?php
+					printf(
+						esc_html__( 'Page %1$d of %2$d', 'pnpc-pocket-service-desk' ),
+						absint( $current_page ),
+						absint( $total_pages )
+					);
+					?>
+				</div>
+			</div>
+		<?php endif; ?>
 	</div>
 <?php else : ?>
-	<p class="pnpc-psd-no-tickets"><?php esc_html_e('You have not created any tickets yet.', 'pnpc-pocket-service-desk'); ?></p>
+	<?php if ( $total_items > 0 && $current_page > 1 ) : ?>
+		<p class="pnpc-psd-no-tickets"><?php esc_html_e( 'No tickets found on this page.', 'pnpc-pocket-service-desk' ); ?></p>
+		<p>
+			<a href="<?php echo esc_url( add_query_arg( 'pnpc_psd_page', 1, $base_url ) ); ?>" class="pnpc-psd-button pnpc-psd-button-primary">
+				<?php esc_html_e( 'Go to Page 1', 'pnpc-pocket-service-desk' ); ?>
+			</a>
+		</p>
+	<?php else : ?>
+		<p class="pnpc-psd-no-tickets"><?php esc_html_e('You have not created any tickets yet.', 'pnpc-pocket-service-desk'); ?></p>
 	<p>
 		<a href="<?php echo esc_url(home_url('/create-ticket/')); ?>" class="pnpc-psd-button pnpc-psd-button-primary">
 			<?php esc_html_e('Create Your First Ticket', 'pnpc-pocket-service-desk'); ?>
 		</a>
 	</p>
+	<?php endif; ?>
 <?php endif; ?>

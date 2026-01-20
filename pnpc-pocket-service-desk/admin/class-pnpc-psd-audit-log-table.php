@@ -16,6 +16,11 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 	require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 }
 
+/**
+ * PNPC PSD Audit Log Table.
+ *
+ * @since 1.1.1.4
+ */
 class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 
 	/**

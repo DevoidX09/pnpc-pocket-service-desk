@@ -29,15 +29,27 @@ if (!isset($badge_counts)) {
 // Pagination setup
 $per_page = get_option('pnpc_psd_tickets_per_page', 20);
 $current_page = isset( $paged ) ? max( 1, absint( $paged ) ) : ( isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination parameter.
-$total_tickets = count($tickets);
-$total_pages = ceil($total_tickets / $per_page);
 $offset = ($current_page - 1) * $per_page;
 
-// Slice tickets for current page
-$tickets_paginated = array_slice($tickets, $offset, $per_page);
+// Total ticket count is provided by the controller (includes non-loaded pages).
+// Fall back to the loaded row count for safety.
+$total_items = isset( $total_tickets ) ? absint( $total_tickets ) : count( $tickets );
+$total_pages = ( $per_page > 0 ) ? (int) ceil( $total_items / $per_page ) : 1;
+
+// The controller already queries the correct page; no need to slice again.
+$tickets_paginated = $tickets;
 
 // Build pagination links helper function
 if (!function_exists('pnpc_psd_get_pagination_link')) {
+/**
+ * Pnpc psd get pagination link.
+ *
+ * @param mixed $page 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_get_pagination_link($page) {
 		$args = isset( $_GET ) ? (array) wp_unslash( $_GET ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Building pagination links from current query vars.
 		$args['paged'] = $page;
@@ -316,7 +328,22 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 						<td><strong><?php echo esc_html( $ticket->ticket_number ); ?></strong></td>
 						<td><a href="<?php echo esc_url( admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id) ); ?>"><?php echo esc_html( $ticket->subject ); ?></a></td>
 						<td><?php echo esc_html( $user ? $user->display_name : '' ); ?></td>
-						<td><?php echo esc_html( ucwords( str_replace('-', ' ', (string) $ticket->status ) ) ); ?></td>
+					<td>
+						<?php
+						$raw_status = isset( $ticket->status ) ? (string) $ticket->status : '';
+						$status_key = strtolower( str_replace( '_', '-', $raw_status ) );
+						$status_labels = array(
+							'open'        => __( 'Open', 'pnpc-pocket-service-desk' ),
+							'in-progress' => __( 'In Progress', 'pnpc-pocket-service-desk' ),
+							'waiting'     => __( 'Waiting', 'pnpc-pocket-service-desk' ),
+							'closed'      => __( 'Closed', 'pnpc-pocket-service-desk' ),
+						);
+						$status_label = isset( $status_labels[ $status_key ] ) ? $status_labels[ $status_key ] : ucwords( str_replace( '-', ' ', $status_key ) );
+						?>
+						<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr( $status_key ); ?>">
+							<?php echo esc_html( $status_label ); ?>
+						</span>
+					</td>
 						<td><?php echo esc_html( ucfirst( (string) $ticket->priority ) ); ?></td>
 						<td><?php echo esc_html( $assigned_user ? $assigned_user->display_name : __('Unassigned', 'pnpc-pocket-service-desk') ); ?></td>
 						<td><?php if ( $archived_at_raw ) { echo esc_html( function_exists('pnpc_psd_format_db_datetime_for_display') ? pnpc_psd_format_db_datetime_for_display( $archived_at_raw ) : date_i18n( get_option('date_format').' '.get_option('time_format'), $archived_ts ) ); } ?></td>
@@ -546,9 +573,22 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 							<?php endif; ?>
 						</td>
 						<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
-						<td data-sort-value="<?php echo esc_attr( absint($status_sort_value) ); ?>">
-							<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>">
-								<?php echo esc_html(ucfirst($ticket->status)); ?>
+						<td data-sort-value="<?php echo esc_attr( absint( $status_sort_value ) ); ?>">
+							<?php
+							$raw_status  = isset( $ticket->status ) ? (string) $ticket->status : '';
+							$status_key  = strtolower( str_replace( '_', '-', $raw_status ) );
+							$status_labels = array(
+								'open'        => __( 'Open', 'pnpc-pocket-service-desk' ),
+								'in-progress' => __( 'In Progress', 'pnpc-pocket-service-desk' ),
+								'waiting'     => __( 'Waiting', 'pnpc-pocket-service-desk' ),
+								'closed'      => __( 'Closed', 'pnpc-pocket-service-desk' ),
+								'review'      => __( 'Review', 'pnpc-pocket-service-desk' ),
+								'archived'    => __( 'Archived', 'pnpc-pocket-service-desk' ),
+							);
+							$status_label = isset( $status_labels[ $status_key ] ) ? $status_labels[ $status_key ] : ucwords( str_replace( '-', ' ', $status_key ) );
+							?>
+							<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr( $status_key ); ?>">
+								<?php echo esc_html( $status_label ); ?>
 							</span>
 						</td>
 						<td data-sort-value="<?php echo esc_attr( absint($priority_sort_value) ); ?>">
@@ -649,9 +689,22 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 							<?php endif; ?>
 						</td>
 						<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
-						<td data-sort-value="<?php echo esc_attr( absint($status_sort_value) ); ?>">
-							<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>">
-								<?php echo esc_html(ucfirst($ticket->status)); ?>
+						<td data-sort-value="<?php echo esc_attr( absint( $status_sort_value ) ); ?>">
+							<?php
+							$raw_status  = isset( $ticket->status ) ? (string) $ticket->status : '';
+							$status_key  = strtolower( str_replace( '_', '-', $raw_status ) );
+							$status_labels = array(
+								'open'        => __( 'Open', 'pnpc-pocket-service-desk' ),
+								'in-progress' => __( 'In Progress', 'pnpc-pocket-service-desk' ),
+								'waiting'     => __( 'Waiting', 'pnpc-pocket-service-desk' ),
+								'closed'      => __( 'Closed', 'pnpc-pocket-service-desk' ),
+								'review'      => __( 'Review', 'pnpc-pocket-service-desk' ),
+								'archived'    => __( 'Archived', 'pnpc-pocket-service-desk' ),
+							);
+							$status_label = isset( $status_labels[ $status_key ] ) ? $status_labels[ $status_key ] : ucwords( str_replace( '-', ' ', $status_key ) );
+							?>
+							<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr( $status_key ); ?>">
+								<?php echo esc_html( $status_label ); ?>
 							</span>
 						</td>
 						<td data-sort-value="<?php echo esc_attr( absint($priority_sort_value) ); ?>">
@@ -700,50 +753,53 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 		</tbody>
 	</table>
 	
-	<?php if ($total_pages > 1) : ?>
-	<div class="pnpc-psd-pagination">
-		<div class="pnpc-psd-pagination-info">
-			<?php
-			$showing_start = $offset + 1;
-			$showing_end = min($offset + $per_page, $total_tickets);
-			printf(
-				esc_html__('Showing %d-%d of %d tickets', 'pnpc-pocket-service-desk'),
-				$showing_start,
-				$showing_end,
-				$total_tickets
-			);
-			?>
-		</div>
-		
-		<div class="pnpc-psd-pagination-links">
-			<?php if ($current_page > 1) : ?>
-				<a href="<?php echo esc_url(pnpc_psd_get_pagination_link($current_page - 1)); ?>" class="button">
-					&laquo; <?php esc_html_e('Previous', 'pnpc-pocket-service-desk'); ?>
-				</a>
-			<?php endif; ?>
-			
-			<?php
-			// Show page numbers
-			$range = 2; // Pages to show on each side of current page
-			for ($i = 1; $i <= $total_pages; $i++) {
-				if ($i == 1 || $i == $total_pages || ($i >= $current_page - $range && $i <= $current_page + $range)) {
-					if ($i == $current_page) {
-						echo '<span class="pnpc-psd-page-number current">' . $i . '</span>';
-					} else {
-						echo '<a href="' . esc_url(pnpc_psd_get_pagination_link($i)) . '" class="pnpc-psd-page-number">' . $i . '</a>';
-					}
-				} elseif ($i == $current_page - $range - 1 || $i == $current_page + $range + 1) {
-					echo '<span class="pnpc-psd-page-dots">...</span>';
-				}
+	<?php if ( $total_pages > 1 ) : ?>
+		<?php
+		$showing_start = $offset + 1;
+		$showing_end   = min( $offset + $per_page, $total_items );
+		$pagination_links = paginate_links(
+			array(
+				'base'      => esc_url_raw( pnpc_psd_get_pagination_link( '%#%' ) ),
+				'format'    => '',
+				'current'   => (int) $current_page,
+				'total'     => (int) $total_pages,
+				'prev_text' => __( '&laquo;', 'pnpc-pocket-service-desk' ),
+				'next_text' => __( '&raquo;', 'pnpc-pocket-service-desk' ),
+				'type'      => 'array',
+			)
+		);
+
+		// Render pagination using WordPress admin "button" styling for a cleaner, more familiar UI.
+		$pagination_html = '';
+		if ( is_array( $pagination_links ) && ! empty( $pagination_links ) ) {
+			foreach ( $pagination_links as $link_html ) {
+				$link_html = (string) $link_html;
+
+				// Add button styles to anchors/spans.
+				$link_html = preg_replace( '/class="([^"]*page-numbers[^"]*)"/i', 'class="$1 button"', $link_html );
+				$link_html = str_replace( 'page-numbers current', 'page-numbers current button disabled', $link_html );
+				$link_html = str_replace( 'page-numbers dots', 'page-numbers dots button disabled', $link_html );
+
+				$pagination_html .= $link_html;
 			}
-			?>
-			
-			<?php if ($current_page < $total_pages) : ?>
-				<a href="<?php echo esc_url(pnpc_psd_get_pagination_link($current_page + 1)); ?>" class="button">
-					<?php esc_html_e('Next', 'pnpc-pocket-service-desk'); ?> &raquo;
-				</a>
-			<?php endif; ?>
-		</div>
-	</div>
+		}
+
+		printf(
+			'<div class="tablenav bottom"><div class="tablenav-pages">' .
+			'<span class="displaying-num">%s</span>' .
+			'<span class="pagination-links">%s</span>' .
+			'</div></div>',
+			esc_html(
+				sprintf(
+					/* translators: 1: start, 2: end, 3: total */
+					__( 'Showing %1$d-%2$d of %3$d tickets', 'pnpc-pocket-service-desk' ),
+					(int) $showing_start,
+					(int) $showing_end,
+					(int) $total_items
+				)
+			),
+			wp_kses_post( $pagination_html )
+		);
+		?>
 	<?php endif; ?>
 </div>

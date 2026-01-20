@@ -13,6 +13,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * PNPC PSD Notifications.
+ *
+ * @since 1.1.1.4
+ */
 class PNPC_PSD_Notifications {
 
 	/**
@@ -51,6 +56,8 @@ class PNPC_PSD_Notifications {
 	private static function get_staff_recipients_for_ticket( $ticket ) {
 		$to = array();
 		$assigned = isset( $ticket->assigned_to ) ? absint( $ticket->assigned_to ) : 0;
+
+		// 1) Assigned agent (or default assignment), using per-agent override routing.
 		if ( $assigned && function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
 			$e = pnpc_psd_get_agent_notification_email( $assigned );
 			if ( $e ) {
@@ -58,6 +65,30 @@ class PNPC_PSD_Notifications {
 			}
 		}
 
+		// 2) Additional enabled agents with Notifications ON.
+		$cfg = get_option( 'pnpc_psd_agents', array() );
+		if ( is_array( $cfg ) && function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
+			foreach ( $cfg as $uid => $row ) {
+				$uid = absint( $uid );
+				if ( ! $uid ) {
+					continue;
+				}
+				if ( $assigned && (int) $uid === (int) $assigned ) {
+					continue;
+				}
+				$row = is_array( $row ) ? $row : array();
+				$enabled = ! empty( $row['enabled'] );
+				$notify  = ! empty( $row['notify'] );
+				if ( $enabled && $notify ) {
+					$e = pnpc_psd_get_agent_notification_email( $uid );
+					if ( $e ) {
+						$to[] = $e;
+					}
+				}
+			}
+		}
+
+		// 3) Global notification email (if set).
 		$global = sanitize_email( (string) get_option( 'pnpc_psd_email_notifications', '' ) );
 		if ( $global ) {
 			$to[] = $global;

@@ -29,7 +29,7 @@ $open_url = add_query_arg( array( 'pnpc_psd_tab' => 'open', 'pnpc_psd_sort' => $
 $closed_url = add_query_arg( array( 'pnpc_psd_tab' => 'closed', 'pnpc_psd_sort' => $sort ), $base_url );
 ?>
 
-<div class="pnpc-psd-my-tickets" id="pnpc-psd-my-tickets" data-tab="<?php echo esc_attr($tab); ?>" data-sort="<?php echo esc_attr( $sort ); ?>">
+<div class="pnpc-psd-my-tickets" id="pnpc-psd-my-tickets" data-tab="<?php echo esc_attr($tab); ?>" data-sort="<?php echo esc_attr( $sort ); ?>" data-page="<?php echo esc_attr( isset( $current_page ) ? absint( $current_page ) : 1 ); ?>">
 	<h2><?php esc_html_e('My Support Tickets', 'pnpc-pocket-service-desk'); ?></h2>
 
 	<div class="pnpc-psd-my-tickets-tabs" style="display:flex;gap:12px;align-items:center;margin:8px 0 12px;flex-wrap:wrap;">

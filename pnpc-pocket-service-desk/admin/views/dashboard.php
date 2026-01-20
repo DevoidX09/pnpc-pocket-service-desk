@@ -22,6 +22,12 @@ if ( ! is_array( $alerts ) ) {
 	$alerts = array();
 }
 
+// Review queue count (used for the dashboard alert header indicator).
+$review_queue_count = 0;
+if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
+	$review_queue_count = (int) PNPC_PSD_Ticket::get_pending_delete_count();
+}
+
 $opened_week  = isset( $stats['opened']['week'] ) ? (int) $stats['opened']['week'] : 0;
 $opened_month = isset( $stats['opened']['month'] ) ? (int) $stats['opened']['month'] : 0;
 $opened_year  = isset( $stats['opened']['year'] ) ? (int) $stats['opened']['year'] : 0;
@@ -166,7 +172,22 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 		</div>
 
 		<div class="psd-card psd-card--alerts">
-			<h2 style="margin-top:0;"><?php echo esc_html__( 'Alert Inbox', 'pnpc-pocket-service-desk' ); ?></h2>
+			<h2 style="margin-top:0;">
+				<?php echo esc_html__( 'Alert Inbox', 'pnpc-pocket-service-desk' ); ?>
+				<?php if ( $review_queue_count > 0 ) : ?>
+					<small>
+						<?php
+						echo esc_html(
+							sprintf(
+								/* translators: %d: count */
+								__( 'Review queue: %d', 'pnpc-pocket-service-desk' ),
+								absint( $review_queue_count )
+							)
+						);
+						?>
+					</small>
+				<?php endif; ?>
+			</h2>
 			<?php if ( empty( $alerts ) ) : ?>
 				<p class="psd-muted"><?php echo esc_html__( 'No alerts right now.', 'pnpc-pocket-service-desk' ); ?></p>
 			<?php else : ?>

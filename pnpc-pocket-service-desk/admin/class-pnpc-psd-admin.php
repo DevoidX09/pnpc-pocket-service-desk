@@ -11,12 +11,27 @@ if (! defined('ABSPATH')) {
 	exit;
 }
 
+/**
+ * PNPC PSD Admin.
+ *
+ * @since 1.1.1.4
+ */
 class PNPC_PSD_Admin
 {
 
 	private $plugin_name;
 	private $version;
 
+	/**
+	* Construct.
+	*
+	* @param mixed $plugin_name
+	* @param mixed $version
+	*
+	* @since 1.1.1.4
+	*
+	* @return void
+	*/
 	public function __construct($plugin_name, $version)
 	{
 		$this->plugin_name = $plugin_name;
@@ -26,6 +41,9 @@ class PNPC_PSD_Admin
 		add_filter( 'plugin_action_links_' . PNPC_PSD_PLUGIN_BASENAME, array( $this, 'add_plugin_action_links' ) );
 
 		if (is_admin()) {
+			// Provide baseline dashboard alerts (filterable).
+			add_filter( 'pnpc_psd_dashboard_alerts', array( $this, 'get_default_dashboard_alerts' ) );
+
 			// One-time setup wizard prompt if the customer dashboard page is not configured.
 			add_action( 'admin_notices', array( $this, 'maybe_show_setup_wizard_notice' ) );
 
@@ -115,6 +133,13 @@ class PNPC_PSD_Admin
 		// remove_menu_page( 'profile.php' );
 	}
 
+	/**
+	* Enqueue styles.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function enqueue_styles()
 	{
 		if ($this->is_plugin_page()) {
@@ -149,6 +174,13 @@ class PNPC_PSD_Admin
 		}
 	}
 
+	/**
+	* Enqueue scripts.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function enqueue_scripts()
 	{
 		$force_load = (isset($_GET['page']) && 0 === strpos(sanitize_text_field(wp_unslash($_GET['page'])), 'pnpc-service-desk'));
@@ -240,20 +272,18 @@ class PNPC_PSD_Admin
 		// Enqueue Select2 on create ticket page
 		// Note 1: $_GET['page'] access is safe here as we're only comparing to a known value
 		// for script enqueueing decisions. The value is sanitized before any usage.
-		// Note 2: Using CDN for simplicity. For production environments with strict security
-		// requirements, consider bundling Select2 locally with SRI integrity hashes.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
 		if (isset($_GET['page']) && 'pnpc-service-desk-create-ticket' === sanitize_text_field(wp_unslash($_GET['page']))) {
 			wp_enqueue_style(
 				'select2',
-				'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css',
+				PNPC_PSD_PLUGIN_URL . 'assets/vendor/select2/css/select2.min.css',
 				array(),
 				'4.1.0'
 			);
 
 			wp_enqueue_script(
 				'select2',
-				'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js',
+				PNPC_PSD_PLUGIN_URL . 'assets/vendor/select2/js/select2.min.js',
 				array('jquery'),
 				'4.1.0',
 				true
@@ -272,6 +302,13 @@ class PNPC_PSD_Admin
 		}
 	}
 
+	/**
+	* Add plugin admin menu.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function add_plugin_admin_menu()
 	{
 		$all_count      = PNPC_PSD_Ticket::get_count();
@@ -533,6 +570,39 @@ class PNPC_PSD_Admin
 		);
 	}
 
+	/**
+	 * Provide baseline dashboard alerts.
+	 *
+	 * @param array $alerts Existing alerts.
+	 * @return array Alerts.
+	 */
+	public function get_default_dashboard_alerts( $alerts ) {
+		if ( ! is_array( $alerts ) ) {
+			$alerts = array();
+		}
+
+		// Review queue: pending delete requests awaiting staff action.
+		if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
+			$review_count = (int) PNPC_PSD_Ticket::get_pending_delete_count();
+			if ( $review_count > 0 ) {
+				$alerts[] = array(
+					'title' => __( 'Review queue requires attention', 'pnpc-pocket-service-desk' ),
+					/* translators: %d: count */
+					'body'  => sprintf( _n( '%d ticket is awaiting review in the Review tab.', '%d tickets are awaiting review in the Review tab.', $review_count, 'pnpc-pocket-service-desk' ), $review_count ),
+				);
+			}
+		}
+
+		return $alerts;
+	}
+
+/**
+ * Display tickets page.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 public function display_tickets_page()
 	{
 		if (! current_user_can('pnpc_psd_view_tickets')) {
@@ -541,9 +611,17 @@ public function display_tickets_page()
 
 		$status = isset($_GET['status']) ? sanitize_text_field(wp_unslash($_GET['status'])) : '';
 		$view   = isset($_GET['view']) ? sanitize_text_field(wp_unslash($_GET['view'])) : '';
+		$paged  = isset($_GET['paged']) ? max(1, absint(wp_unslash($_GET['paged']))) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination parameter.
+
+		$per_page = (int) get_option('pnpc_psd_tickets_per_page', 20);
+		if ( $per_page < 1 ) {
+			$per_page = 20;
+		}
+		$offset = ( $paged - 1 ) * $per_page;
 
 		$args = array(
-			'limit'  => 20,
+			'limit'  => $per_page,
+			'offset' => $offset,
 		);
 
 		// Check special list views.
@@ -567,6 +645,30 @@ public function display_tickets_page()
 		$archived_count = method_exists('PNPC_PSD_Ticket','get_archived_count') ? PNPC_PSD_Ticket::get_archived_count() : 0;
 
 		$all_count = (int) $open_count + (int) $in_progress_count + (int) $waiting_count + (int) $closed_count;
+
+		// Total for the current view (used by the list template pagination).
+		if ( 'trash' === $view ) {
+			$total_tickets = (int) $trash_count;
+		} elseif ( 'review' === $view ) {
+			$total_tickets = (int) $review_count;
+		} elseif ( 'archived' === $view ) {
+			$total_tickets = (int) $archived_count;
+		} elseif ( empty( $status ) || 'all' === $status ) {
+			$total_tickets = (int) $all_count;
+		} elseif ( 'open' === $status ) {
+			$total_tickets = (int) $open_count;
+		} elseif ( 'in-progress' === $status ) {
+			$total_tickets = (int) $in_progress_count;
+		} elseif ( 'waiting' === $status ) {
+			$total_tickets = (int) $waiting_count;
+		} elseif ( 'closed' === $status ) {
+			$total_tickets = (int) $closed_count;
+		} else {
+			$total_tickets = (int) $all_count;
+		}
+
+		// Provide $paged explicitly for the view.
+		$paged = (int) $paged;
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/tickets-list.php';
 	}
 
@@ -583,6 +685,13 @@ public function display_tickets_page()
 
 
 
+	/**
+	* Display ticket detail page.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function display_ticket_detail_page()
 	{
 		if (! current_user_can('pnpc_psd_view_tickets')) {
@@ -627,6 +736,13 @@ public function display_tickets_page()
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/ticket-detail.php';
 	}
 
+	/**
+	* Display settings page.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function display_settings_page()
 	{
 		if (! current_user_can('pnpc_psd_manage_settings')) {
@@ -636,6 +752,13 @@ public function display_tickets_page()
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/settings.php';
 	}
 
+	/**
+	* Register settings.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function register_settings()
 	{
 		// Assigned/eligible agents list + per-agent notification emails (stored in option array).
@@ -646,6 +769,17 @@ public function display_tickets_page()
 				'type'              => 'array',
 				'sanitize_callback' => 'pnpc_psd_sanitize_agents_option',
 				'default'           => array(),
+			)
+		);
+
+		// Default: disable per-user notify_email overrides (use the user's account email).
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_disable_agent_notify_overrides',
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 1,
 			)
 		);
 
@@ -985,6 +1119,15 @@ public function display_tickets_page()
 		);
 	}
 
+	/**
+	* Render user allocated products field.
+	*
+	* @param mixed $user
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function render_user_allocated_products_field($user)
 	{
 		if (! current_user_can('manage_options')) {
@@ -1032,6 +1175,15 @@ public function display_tickets_page()
 <?php
 	}
 
+	/**
+	* Save user allocated products.
+	*
+	* @param mixed $user_id
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function save_user_allocated_products($user_id)
 	{
 		if (! current_user_can('manage_options')) {
@@ -1058,6 +1210,13 @@ public function display_tickets_page()
 		}
 	}
 
+	/**
+	* Ajax respond to ticket.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_respond_to_ticket()
 	{
 		global $wpdb;
@@ -1271,6 +1430,13 @@ public function display_tickets_page()
 		wp_send_json_error(array('message' => __('Failed to add response.', 'pnpc-pocket-service-desk')));
 	}
 
+	/**
+	* Ajax assign ticket.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_assign_ticket()
 	{
 		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
@@ -1298,6 +1464,13 @@ public function display_tickets_page()
 		}
 	}
 
+	/**
+	* Ajax update ticket status.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_update_ticket_status()
 	{
 		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
@@ -1338,6 +1511,13 @@ public function display_tickets_page()
 		}
 	}
 
+	/**
+	* Ajax delete ticket.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_delete_ticket()
 	{
 		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
@@ -1362,6 +1542,13 @@ public function display_tickets_page()
 		}
 	}
 
+	/**
+	* Ajax bulk trash tickets.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_bulk_trash_tickets()
 	{
 		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
@@ -1388,6 +1575,13 @@ public function display_tickets_page()
 		}
 	}
 
+	/**
+	* Ajax bulk restore tickets.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_bulk_restore_tickets()
 	{
 		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
@@ -1414,6 +1608,13 @@ public function display_tickets_page()
 		}
 	}
 
+	/**
+	* Ajax bulk archive tickets.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_bulk_archive_tickets()
 	{
 		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
@@ -1436,6 +1637,13 @@ public function display_tickets_page()
 		wp_send_json_error(array('message' => __('No closed tickets were archived.', 'pnpc-pocket-service-desk')));
 	}
 
+	/**
+	* Ajax bulk restore archived tickets.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_bulk_restore_archived_tickets()
 	{
 		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
@@ -1621,6 +1829,13 @@ public function display_tickets_page()
 		wp_send_json_error(array('message' => __('Failed to restore tickets.', 'pnpc-pocket-service-desk')));
 	}
 
+	/**
+	* Ajax bulk delete permanently tickets.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_bulk_delete_permanently_tickets()
 	{
 		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
@@ -1728,18 +1943,29 @@ public function display_tickets_page()
 		$paged  = isset($_POST['paged']) ? absint( wp_unslash( $_POST['paged'] ) ) : 1;
 		$current_user_id = get_current_user_id();
 
+		$per_page = (int) get_option( 'pnpc_psd_tickets_per_page', 20 );
+		if ( $per_page < 1 ) {
+			$per_page = 20;
+		}
+		$paged  = max( 1, (int) $paged );
+		$offset = ( $paged - 1 ) * $per_page;
+
 		$args = array(
-			'limit'  => 20,
+			'limit'  => $per_page,
+			'offset' => $offset,
 		);
 
 		// Check special list views.
-		$is_trash_view  = ('trash' === $view);
-		$is_review_view = ('review' === $view);
+		$is_trash_view    = ( 'trash' === $view );
+		$is_review_view   = ( 'review' === $view );
+		$is_archived_view = ( 'archived' === $view );
 
 		if ( $is_trash_view ) {
 			$tickets = PNPC_PSD_Ticket::get_trashed($args);
 		} elseif ( $is_review_view ) {
 			$tickets = PNPC_PSD_Ticket::get_pending_delete($args);
+		} elseif ( $is_archived_view ) {
+			$tickets = PNPC_PSD_Ticket::get_archived( $args );
 		} else {
 			$args['status'] = $status;
 			$tickets = PNPC_PSD_Ticket::get_all($args);
@@ -1749,7 +1975,7 @@ public function display_tickets_page()
 		$badge_counts = array();
 		
 		foreach ($tickets as $ticket) {
-			if ( ! $is_trash_view && ! $is_review_view ) {
+			if ( ! $is_trash_view && ! $is_review_view && ! $is_archived_view ) {
 				$badge_count = $this->calculate_new_badge_count($ticket->id, $current_user_id);
 				$badge_counts[$ticket->id] = $badge_count;
 			}
@@ -1760,8 +1986,8 @@ public function display_tickets_page()
 		// Generate HTML for ticket rows
 		ob_start();
 		if (! empty($tickets)) {
-			// For trash/review views, don't separate by status.
-			if ($is_trash_view || $is_review_view) {
+			// For trash/review/archived views, don't separate by status.
+			if ( $is_trash_view || $is_review_view || $is_archived_view ) {
 				foreach ($tickets as $ticket) {
 					$this->render_ticket_row($ticket, $is_trash_view, false, $view);
 				}
@@ -1810,7 +2036,7 @@ public function display_tickets_page()
 				}
 			}
 		} else {
-			$colspan = ($is_trash_view || $is_review_view)
+			$colspan = ( $is_trash_view || $is_review_view || $is_archived_view )
 				? (current_user_can('pnpc_psd_delete_tickets') ? '6' : '5')
 				: (current_user_can('pnpc_psd_delete_tickets') ? '10' : '9');
 			?>
@@ -1821,6 +2047,8 @@ public function display_tickets_page()
 						esc_html_e('No tickets in trash.', 'pnpc-pocket-service-desk');
 					} elseif ( $is_review_view ) {
 						esc_html_e('No tickets pending review.', 'pnpc-pocket-service-desk');
+					} elseif ( $is_archived_view ) {
+						esc_html_e('No archived tickets.', 'pnpc-pocket-service-desk');
 					} else {
 						esc_html_e('No tickets found.', 'pnpc-pocket-service-desk');
 					}
@@ -1846,6 +2074,7 @@ public function display_tickets_page()
 				'closed' => $closed_count,
 				'trash'  => $trash_count,
 				'review' => $review_count,
+				'archived' => $archived_count,
 			),
 		));
 	}
@@ -2080,11 +2309,22 @@ public function display_tickets_page()
 				</td>
 			<?php else : ?>
 				<td data-sort-value="<?php echo esc_attr(strtolower($user ? $user->display_name : 'zzz_unknown')); ?>"><?php echo $user ? esc_html($user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk'); ?></td>
-				<td data-sort-value="<?php echo absint($status_sort_value); ?>">
-					<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>">
-						<?php echo esc_html(ucfirst($ticket->status)); ?>
-					</span>
-				</td>
+			<td data-sort-value="<?php echo absint($status_sort_value); ?>">
+				<?php
+				$raw_status = isset( $ticket->status ) ? (string) $ticket->status : '';
+				$status_key = strtolower( str_replace( '_', '-', $raw_status ) );
+				$status_labels = array(
+					'open'        => __( 'Open', 'pnpc-pocket-service-desk' ),
+					'in-progress' => __( 'In Progress', 'pnpc-pocket-service-desk' ),
+					'waiting'     => __( 'Waiting', 'pnpc-pocket-service-desk' ),
+					'closed'      => __( 'Closed', 'pnpc-pocket-service-desk' ),
+				);
+				$status_label = isset( $status_labels[ $status_key ] ) ? $status_labels[ $status_key ] : ucwords( str_replace( '-', ' ', $status_key ) );
+				?>
+				<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr( $status_key ); ?>">
+					<?php echo esc_html( $status_label ); ?>
+				</span>
+			</td>
 				<td data-sort-value="<?php echo absint($priority_sort_value); ?>">
 					<span class="pnpc-psd-priority pnpc-psd-priority-<?php echo esc_attr($ticket->priority); ?>">
 						<?php echo esc_html(ucfirst($ticket->priority)); ?>
@@ -2115,6 +2355,13 @@ public function display_tickets_page()
 		<?php
 	}
 
+	/**
+	* Is plugin page.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	private function is_plugin_page()
 	{
 		$screen = get_current_screen();
@@ -2125,6 +2372,13 @@ public function display_tickets_page()
 		return strpos($screen->id, 'pnpc-service-desk') !== false;
 	}
 
+	/**
+	* Display create ticket page.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function display_create_ticket_page()
 	{
 		if (! current_user_can('pnpc_psd_view_tickets')) {
@@ -2134,6 +2388,13 @@ public function display_tickets_page()
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/create-ticket-admin.php';
 	}
 
+	/**
+	* Process admin create ticket.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function process_admin_create_ticket()
 	{
 		// Check if form submitted
@@ -2321,6 +2582,16 @@ public function display_tickets_page()
 		}
 	}
 
+	/**
+	* Send staff created ticket notification.
+	*
+	* @param mixed $ticket_id
+	* @param mixed $customer_id
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	private function send_staff_created_ticket_notification($ticket_id, $customer_id)
 	{
 		$ticket = PNPC_PSD_Ticket::get($ticket_id);

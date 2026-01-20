@@ -57,7 +57,19 @@ $status_options = array(
 	'closed'      => __('Closed', 'pnpc-pocket-service-desk'),
 );
 
+// Normalize stored status keys (some legacy rows used underscores).
+$ticket_status_key = isset( $ticket->status ) ? strtolower( str_replace( '_', '-', (string) $ticket->status ) ) : '';
+
 if (! function_exists('pnpc_psd_admin_format_datetime')) {
+/**
+ * Pnpc psd admin format datetime.
+ *
+ * @param mixed $datetime 
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 	function pnpc_psd_admin_format_datetime($datetime)
 	{
 		return function_exists('pnpc_psd_format_db_datetime_for_display')
@@ -118,7 +130,12 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 			<div class="pnpc-psd-ticket-meta">
 				<p>
 					<?php esc_html_e('Status:', 'pnpc-pocket-service-desk'); ?>
-					<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr($ticket->status); ?>"><?php echo esc_html(ucfirst($ticket->status)); ?></span>
+					<?php
+					$ticket_status_label = isset( $status_options[ $ticket_status_key ] )
+						? $status_options[ $ticket_status_key ]
+						: ucwords( str_replace( '-', ' ', $ticket_status_key ) );
+					?>
+					<span class="pnpc-psd-status pnpc-psd-status-<?php echo esc_attr( $ticket_status_key ); ?>"><?php echo esc_html( $ticket_status_label ); ?></span>
 				</p>
 				<p>
 					<?php esc_html_e( 'Priority:', 'pnpc-pocket-service-desk' ); ?>
@@ -160,7 +177,7 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 					<label for="pnpc-psd-status-select"><?php esc_html_e('Ticket Status', 'pnpc-pocket-service-desk'); ?></label>
 					<select id="pnpc-psd-status-select" name="status">
 						<?php foreach ($status_options as $key => $label) : ?>
-							<option value="<?php echo esc_attr($key); ?>" <?php selected($ticket->status, $key); ?>>
+							<option value="<?php echo esc_attr($key); ?>" <?php selected($ticket_status_key, $key); ?>>
 								<?php echo esc_html($label); ?>
 							</option>
 						<?php endforeach; ?>

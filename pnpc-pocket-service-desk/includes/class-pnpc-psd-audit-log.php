@@ -10,6 +10,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * PNPC PSD Audit Log.
+ *
+ * @since 1.1.1.4
+ */
 class PNPC_PSD_Audit_Log {
 
 	/**

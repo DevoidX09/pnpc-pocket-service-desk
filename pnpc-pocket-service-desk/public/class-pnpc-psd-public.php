@@ -11,17 +11,39 @@ if (! defined('ABSPATH')) {
 	exit;
 }
 
+/**
+ * PNPC PSD Public.
+ *
+ * @since 1.1.1.4
+ */
 class PNPC_PSD_Public
 {
 	private $plugin_name;
 	private $version;
 
+	/**
+	* Construct.
+	*
+	* @param mixed $plugin_name
+	* @param mixed $version
+	*
+	* @since 1.1.1.4
+	*
+	* @return void
+	*/
 	public function __construct($plugin_name = 'pnpc-pocket-service-desk', $version = '1.0.0')
 	{
 		$this->plugin_name = $plugin_name;
 		$this->version     = $version;
 	}
 
+	/**
+	* Enqueue styles.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function enqueue_styles()
 	{
 		wp_enqueue_style(
@@ -85,6 +107,13 @@ class PNPC_PSD_Public
 		}
 	}
 
+	/**
+	* Enqueue scripts.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function enqueue_scripts()
 	{
 		// Cache-bust the public JS reliably (CDN/proxy/browser caches often ignore plugin version bumps).
@@ -110,6 +139,13 @@ class PNPC_PSD_Public
 		);
 	}
 
+	/**
+	* Register shortcodes.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function register_shortcodes()
 	{
 		$shortcodes = array(
@@ -181,6 +217,15 @@ class PNPC_PSD_Public
 	}
 
 
+	/**
+	* Render service desk.
+	*
+	* @param mixed $atts
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function render_service_desk($atts)
 	{
 		if (! is_user_logged_in()) {
@@ -191,6 +236,15 @@ ob_start();
 		return ob_get_clean();
 	}
 
+	/**
+	* Render create ticket.
+	*
+	* @param mixed $atts
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function render_create_ticket($atts)
 	{
 		if (! is_user_logged_in()) {
@@ -201,6 +255,15 @@ ob_start();
 		return ob_get_clean();
 	}
 
+	/**
+	* Render my tickets.
+	*
+	* @param mixed $atts
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function render_my_tickets($atts)
 	{
 		if (! is_user_logged_in()) {
@@ -217,7 +280,22 @@ ob_start();
 			$sort = 'latest';
 		}
 
-		$ticket_args = array();
+		// Pagination (public My Tickets screen).
+		$current_page = isset( $_GET['pnpc_psd_page'] ) ? max( 1, absint( wp_unslash( $_GET['pnpc_psd_page'] ) ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination parameter.
+		$per_page     = (int) get_option( 'pnpc_psd_tickets_per_page', 20 );
+		if ( $per_page < 1 ) {
+			$per_page = 20;
+		}
+		// Keep public output reasonable even if the admin increases the admin list page size.
+		if ( $per_page > 100 ) {
+			$per_page = 100;
+		}
+		$offset = ( $current_page - 1 ) * $per_page;
+
+		$ticket_args = array(
+			'limit'  => $per_page,
+			'offset' => $offset,
+		);
 		if ('closed' === $tab) {
 			$ticket_args['status'] = 'closed';
 		} else {
@@ -240,6 +318,7 @@ ob_start();
 		}
 
 		$tickets = PNPC_PSD_Ticket::get_by_user($current_user->ID, $ticket_args);
+		$total_tickets = method_exists( 'PNPC_PSD_Ticket', 'get_user_count' ) ? PNPC_PSD_Ticket::get_user_count( $current_user->ID, $ticket_args ) : count( (array) $tickets );
 
 		if ( 'unread' === $sort && ! empty( $tickets ) ) {
 			$unread = array();
@@ -280,6 +359,15 @@ ob_start();
 		return ob_get_clean();
 	}
 
+	/**
+	* Render ticket detail.
+	*
+	* @param mixed $atts
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function render_ticket_detail($atts)
 	{
 		if (! is_user_logged_in()) {
@@ -328,6 +416,15 @@ $ticket_id = isset( $_GET['ticket_id'] ) ? absint( wp_unslash( $_GET['ticket_id'
 		return ob_get_clean();
 	}
 
+	/**
+	* Render profile settings.
+	*
+	* @param mixed $atts
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function render_profile_settings($atts)
 	{
 		if (! is_user_logged_in()) {
@@ -338,6 +435,15 @@ ob_start();
 		return ob_get_clean();
 	}
 
+	/**
+	* Render services.
+	*
+	* @param mixed $atts
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function render_services($atts)
 	{
 		$atts = shortcode_atts(array('limit' => 4), (array) $atts, 'pnpc_services');
@@ -348,6 +454,15 @@ ob_start();
 		return ob_get_clean();
 	}
 
+	/**
+	* Normalize files array.
+	*
+	* @param mixed $file_post
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	private function normalize_files_array($file_post)
 	{
 		if (function_exists('pnpc_psd_rearrange_files')) {
@@ -375,6 +490,13 @@ ob_start();
 		return $files;
 	}
 
+	/**
+	* Ajax create ticket.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_create_ticket()
 	{
 		// Defensive: ensure no stray output (notices/warnings) corrupts JSON responses for AJAX callers.
@@ -651,6 +773,13 @@ ob_start();
 		) );
 	}
 
+	/**
+	* Ajax respond to ticket.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_respond_to_ticket()
 	{
 		// Defensive: ensure no stray output (notices/warnings) corrupts JSON responses for AJAX callers.
@@ -883,6 +1012,13 @@ ob_start();
 		wp_send_json_error(array('message' => __('Failed to add response. ', 'pnpc-pocket-service-desk')));
 	}
 
+	/**
+	* Ajax upload profile image.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_upload_profile_image()
 	{
 		check_ajax_referer('pnpc_psd_public_nonce', 'nonce');
@@ -958,11 +1094,23 @@ ob_start();
 		}
 
 		$sort = isset( $_POST['sort'] ) ? sanitize_key( wp_unslash( $_POST['sort'] ) ) : 'latest';
+		$page = isset( $_POST['page'] ) ? max( 1, absint( wp_unslash( $_POST['page'] ) ) ) : 1;
+		$per_page = (int) get_option( 'pnpc_psd_tickets_per_page', 20 );
+		if ( $per_page < 1 ) {
+			$per_page = 20;
+		}
+		if ( $per_page > 100 ) {
+			$per_page = 100;
+		}
+		$offset = ( $page - 1 ) * $per_page;
 		if ( ! in_array( $sort, array( 'latest', 'newest', 'oldest', 'unread' ), true ) ) {
 			$sort = 'latest';
 		}
 
-		$ticket_args = array();
+		$ticket_args = array(
+			'limit'  => $per_page,
+			'offset' => $offset,
+		);
 		if ('closed' === $tab) {
 			$ticket_args['status'] = 'closed';
 		} else {
@@ -984,6 +1132,8 @@ ob_start();
 		}
 
 		$tickets = PNPC_PSD_Ticket::get_by_user($current_user->ID, $ticket_args);
+		$total_tickets = method_exists( 'PNPC_PSD_Ticket', 'get_user_count' ) ? PNPC_PSD_Ticket::get_user_count( $current_user->ID, $ticket_args ) : count( (array) $tickets );
+		$current_page = (int) $page;
 
 		if ( 'unread' === $sort && ! empty( $tickets ) ) {
 			$unread = array();
@@ -1026,6 +1176,13 @@ ob_start();
 		wp_send_json_success(array('html' => $html));
 	}
 
+	/**
+	* Ajax get ticket detail.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function ajax_get_ticket_detail()
 	{
 		$nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';

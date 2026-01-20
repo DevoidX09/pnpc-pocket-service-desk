@@ -1,10 +1,10 @@
 === PNPC Pocket Service Desk ===
 Contributors: pnpc
 Tags: helpdesk, service desk, support, tickets, customer support, woocommerce
-Requires at least: 6.0
+Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.1.3.5
+Stable tag: 1.1.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,6 +20,13 @@ Key capabilities:
 * Optional WooCommerce integration for displaying services/products via shortcode.
 
 This distribution build is the Free edition baseline. Pro-only capabilities (such as a dedicated Service Desk Manager role and customer-specific product targeting) are intentionally handled via extension seams and a separate Pro add-on.
+
+== Third Party Libraries ==
+
+This plugin bundles UI enhancement assets locally to avoid loading code from external CDNs.
+
+* Select2 (https://select2.org)
+  License: MIT
 
 == Installation ==
 
@@ -84,6 +91,19 @@ Yes. WooCommerce is only required for the `[pnpc_services]` shortcode and relate
 5. Admin ticket detail view
 
 == Changelog ==
+
+= 1.1.1.4 =
+* Version bump for WordPress.org submission.
+* Documentation: add/normalize PHPDoc where applicable.
+
+= 1.1.1.3.8 =
+* Admin/Public: Improve pagination UX and make paging consistent under refresh.
+* Admin: Normalize status display so In Progress renders consistently.
+* Admin: Dashboard alerts now include Review queue items.
+* Notifications: Add a setting to disable per-agent notification email overrides (default ON).
+
+= 1.1.1.3.7 =
+* WordPress.org submission build: bundle Select2 locally (no CDN), normalize readme metadata, remove dev artifacts from release ZIP.
 
 = 1.1.1.3 =
 * Distribution packaging cleanup for submission readiness (documentation/dev artifacts excluded from release ZIP).

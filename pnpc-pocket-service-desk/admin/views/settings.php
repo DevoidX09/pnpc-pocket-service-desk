@@ -256,13 +256,34 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 								</option>
 							<?php endforeach; ?>
 						</select>
-						<p class="description"><?php esc_html_e( 'If set, new tickets will be automatically assigned to this staff user unless an assignee is explicitly chosen elsewhere.', 'pnpc-pocket-service-desk' ); ?></p>
+						<p class="description"><?php esc_html_e( 'If set, new tickets will be automatically assigned to this staff user unless an assignee is explicitly chosen elsewhere. Agents with Notifications ON (below) will also be copied on staff ticket emails.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 			</table>
 
 			<h3 style="margin-top:18px;"><?php esc_html_e( 'Eligible Agents', 'pnpc-pocket-service-desk' ); ?></h3>
-			<p class="description"><?php esc_html_e( 'Select which internal users can be assigned tickets. Optionally override the notification email per agent. If you do not configure agents here, all staff roles (Admin/Manager/Agent) remain assignable (backwards compatible).', 'pnpc-pocket-service-desk' ); ?></p>
+			<p class="description" style="margin:6px 0 10px;">
+				<?php esc_html_e( 'Choose which internal users can be assigned tickets and how staff emails are routed.', 'pnpc-pocket-service-desk' ); ?>
+			</p>
+			<ul class="ul-disc" style="margin:0 0 10px 22px;">
+				<li><?php esc_html_e( 'Enable: allows the user to be assigned tickets.', 'pnpc-pocket-service-desk' ); ?></li>
+				<li><?php esc_html_e( 'Notification Email Override: optional destination address for staff ticket emails (when overrides are enabled).', 'pnpc-pocket-service-desk' ); ?></li>
+				<li><?php esc_html_e( 'Notifications (ON): copy this agent on staff ticket emails for new tickets and customer replies.', 'pnpc-pocket-service-desk' ); ?></li>
+			</ul>
+			<p class="description" style="margin:0 0 10px;">
+				<?php esc_html_e( 'Backwards compatibility: if you do not configure agents here, all staff roles (Admin/Manager/Agent) remain assignable.', 'pnpc-pocket-service-desk' ); ?>
+			</p>
+			<?php
+			$disable_overrides = absint( get_option( 'pnpc_psd_disable_agent_notify_overrides', 1 ) );
+			?>
+			<label>
+				<input type="hidden" name="pnpc_psd_disable_agent_notify_overrides" value="0" />
+				<input type="checkbox" name="pnpc_psd_disable_agent_notify_overrides" value="1" <?php checked( 1, $disable_overrides ); ?> />
+				<?php esc_html_e( 'Disable per-agent notification email overrides (use the agent\'s WordPress account email)', 'pnpc-pocket-service-desk' ); ?>
+			</label>
+			<p class="description" style="margin-top:4px;">
+				<?php esc_html_e( 'Recommended for WordPress.org review: keeps notification routing predictable. If unchecked, the per-agent email field below will be used when provided.', 'pnpc-pocket-service-desk' ); ?>
+			</p>
 			<?php if ( function_exists( 'pnpc_psd_get_max_agents_limit' ) ) : ?>
 				<?php $agent_limit = (int) pnpc_psd_get_max_agents_limit(); ?>
 				<p class="description" style="margin-top:4px;">
@@ -287,6 +308,9 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				<button type="button" class="button" id="pnpc-psd-disable-all-agents"><?php esc_html_e( 'Disable all', 'pnpc-pocket-service-desk' ); ?></button>
 				<span class="description" style="margin-left:8px;"><?php esc_html_e( 'These buttons only toggle the checkboxes on this screen—click Save Changes to persist.', 'pnpc-pocket-service-desk' ); ?></span>
 			</div>
+			<p class="description" style="margin:0 0 10px;">
+				<?php esc_html_e( 'Notifications: when ON, the agent is copied on staff ticket emails (new tickets + customer replies).', 'pnpc-pocket-service-desk' ); ?>
+			</p>
 
 			<table class="widefat striped" style="max-width: 900px;">
 				<thead>
@@ -295,6 +319,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 						<th><?php esc_html_e( 'User', 'pnpc-pocket-service-desk' ); ?></th>
 						<th><?php esc_html_e( 'Role(s)', 'pnpc-pocket-service-desk' ); ?></th>
 						<th><?php esc_html_e( 'Notification Email Override', 'pnpc-pocket-service-desk' ); ?></th>
+						<th style="width:160px;"><?php esc_html_e( 'Notifications', 'pnpc-pocket-service-desk' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -304,6 +329,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 							$row      = isset( $agents_cfg[ $uid ] ) && is_array( $agents_cfg[ $uid ] ) ? $agents_cfg[ $uid ] : array();
 							$enabled  = $has_any_cfg ? ( ! empty( $row['enabled'] ) ) : true;
 							$notify_e = isset( $row['notify_email'] ) ? (string) $row['notify_email'] : '';
+									$notify_on = ! empty( $row['notify'] );
 							$roles    = ! empty( $staff->roles ) ? implode( ', ', array_map( 'sanitize_text_field', (array) $staff->roles ) ) : '';
 						?>
 						<tr>
@@ -325,6 +351,14 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 									<?php esc_html_e( 'Optional. Leave blank to use the user\'s account email.', 'pnpc-pocket-service-desk' ); ?>
 								</p>
 							</td>
+									<td>
+										<input type="hidden" name="pnpc_psd_agents[<?php echo esc_attr( $uid ); ?>][notify]" value="0" />
+										<label>
+											<input type="checkbox" name="pnpc_psd_agents[<?php echo esc_attr( $uid ); ?>][notify]" value="1" <?php checked( true, (bool) $notify_on ); ?> />
+											<?php esc_html_e( 'ON', 'pnpc-pocket-service-desk' ); ?>
+										</label>
+									<?php // Intentionally no per-row description; see the table description above. ?>
+									</td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>

@@ -16,6 +16,11 @@
  * @package    PNPC_Pocket_Service_Desk
  * @subpackage PNPC_Pocket_Service_Desk/includes
  */
+/**
+ * PNPC PSD i18n.
+ *
+ * @since 1.1.1.4
+ */
 class PNPC_PSD_i18n {
 
 	/**

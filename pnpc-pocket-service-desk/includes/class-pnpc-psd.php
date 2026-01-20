@@ -7,6 +7,11 @@
  * @subpackage PNPC_Pocket_Service_Desk/includes
  */
 
+/**
+ * PNPC PSD.
+ *
+ * @since 1.1.1.4
+ */
 class PNPC_PSD
 {
 
@@ -14,6 +19,16 @@ class PNPC_PSD
 	protected $plugin_name;
 	protected $version;
 
+	/**
+	* Construct.
+	*
+	* @param mixed $plugin_name
+	* @param mixed $version
+	*
+	* @since 1.1.1.4
+	*
+	* @return void
+	*/
 	public function __construct( $plugin_name = 'pnpc-pocket-service-desk', $version = null )
 	{
 		$this->version     = $version ? $version : PNPC_PSD_VERSION;
@@ -25,6 +40,13 @@ class PNPC_PSD
 		$this->define_public_hooks();
 	}
 
+	/**
+	* Load dependencies.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	private function load_dependencies()
 	{
 		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-loader.php';
@@ -38,12 +60,26 @@ class PNPC_PSD
 		$this->loader = new PNPC_PSD_Loader();
 	}
 
+	/**
+	* Set locale.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	private function set_locale()
 	{
 		$plugin_i18n = new PNPC_PSD_i18n();
 		$this->loader->add_action('plugins_loaded', $plugin_i18n, 'load_plugin_textdomain');
 	}
 
+	/**
+	* Define admin hooks.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	private function define_admin_hooks()
 	{
 		$plugin_admin = new PNPC_PSD_Admin($this->get_plugin_name(), $this->get_version());
@@ -78,6 +114,13 @@ class PNPC_PSD
 		$this->loader->add_action('admin_post_pnpc_psd_export_tickets', $plugin_admin, 'handle_export_tickets');
 	}
 
+	/**
+	* Define public hooks.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	private function define_public_hooks()
 	{
 		$plugin_public = new PNPC_PSD_Public($this->get_plugin_name(), $this->get_version());
@@ -124,21 +167,49 @@ public function ensure_roles_caps() {
     }
 }
 
+/**
+ * Run.
+ *
+ * @since 1.1.1.4
+ *
+ * @return mixed
+ */
 public function run()
 	{
 		$this->loader->run();
 	}
 
+	/**
+	* Get plugin name.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function get_plugin_name()
 	{
 		return $this->plugin_name;
 	}
 
+	/**
+	* Get loader.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function get_loader()
 	{
 		return $this->loader;
 	}
 
+	/**
+	* Get version.
+	*
+	* @since 1.1.1.4
+	*
+	* @return mixed
+	*/
 	public function get_version()
 	{
 		return $this->version;

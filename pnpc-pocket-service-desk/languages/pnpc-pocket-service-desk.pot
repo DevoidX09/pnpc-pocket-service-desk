@@ -2,7 +2,7 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: PNPC Pocket Service Desk 1.1.1.3.7"
+"Project-Id-Version: PNPC Pocket Service Desk 1.1.1.4"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/pnpc-pocket-service-desk\n"
 "POT-Creation-Date: 2026-01-13 13:52+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
