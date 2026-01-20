@@ -847,29 +847,26 @@ body.pnpc-psd-flash-active {
 .pnpc-psd-message {
 	margin: 0 0 12px 0;
 	padding: 10px 12px;
-	border: 1px solid #dcdcde;
 	border-left-width: 4px;
-	border-radius: 4px;
 	font-size: 13px;
 	line-height: 1.4;
 }
 
-.pnpc-psd-message.success {
-	background: #d1e7dd;
-	border-color: #0f5132;
-	color: #0f5132;
+/* WordPress notice classes will handle the styling */
+.pnpc-psd-message.notice-success {
+	/* WordPress notice-success styling will apply */
 }
 
-.pnpc-psd-message.error {
-	background: #f8d7da;
-	border-color: #842029;
-	color: #842029;
+.pnpc-psd-message.notice-error {
+	/* WordPress notice-error styling will apply */
 }
 
-.pnpc-psd-message.info {
-	background: #cff4fc;
-	border-color: #055160;
-	color: #055160;
+.pnpc-psd-message.notice-info {
+	/* WordPress notice-info styling will apply */
+}
+
+.pnpc-psd-message.notice-warning {
+	/* WordPress notice-warning styling will apply */
 }
 
 /* Auto-save tooltip */
