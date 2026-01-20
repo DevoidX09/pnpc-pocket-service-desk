@@ -852,23 +852,6 @@ body.pnpc-psd-flash-active {
 	line-height: 1.4;
 }
 
-/* WordPress notice classes will handle the styling */
-.pnpc-psd-message.notice-success {
-	/* WordPress notice-success styling will apply */
-}
-
-.pnpc-psd-message.notice-error {
-	/* WordPress notice-error styling will apply */
-}
-
-.pnpc-psd-message.notice-info {
-	/* WordPress notice-info styling will apply */
-}
-
-.pnpc-psd-message.notice-warning {
-	/* WordPress notice-warning styling will apply */
-}
-
 /* Auto-save tooltip */
 .pnpc-psd-autosave-tip-wrap {
 	text-align: right;
