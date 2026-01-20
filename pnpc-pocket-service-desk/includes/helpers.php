@@ -478,13 +478,13 @@ if (! function_exists('pnpc_psd_rearrange_files')) {
  */
 if (! function_exists('pnpc_psd_format_filesize')) {
 /**
- * Format filesize for display.
+ * Pnpc psd format filesize.
  *
- * @param int|string $bytes File size in bytes.
+ * @param mixed $bytes 
  *
  * @since 1.1.1.4
  *
- * @return string Formatted file size.
+ * @return mixed
  */
     function pnpc_psd_format_filesize($bytes)
     {
@@ -493,19 +493,15 @@ if (! function_exists('pnpc_psd_format_filesize')) {
             return size_format($bytes);
         }
         if ($bytes >= 1073741824) {
-            /* translators: %s: File size in gigabytes */
-            return sprintf( __( '%s GB', 'pnpc-pocket-service-desk' ), round( $bytes / 1073741824, 2 ) );
+            return round($bytes / 1073741824, 2) . ' GB';
         }
         if ($bytes >= 1048576) {
-            /* translators: %s: File size in megabytes */
-            return sprintf( __( '%s MB', 'pnpc-pocket-service-desk' ), round( $bytes / 1048576, 2 ) );
+            return round($bytes / 1048576, 2) . ' MB';
         }
         if ($bytes >= 1024) {
-            /* translators: %s: File size in kilobytes */
-            return sprintf( __( '%s KB', 'pnpc-pocket-service-desk' ), round( $bytes / 1024, 2 ) );
+            return round($bytes / 1024, 2) . ' KB';
         }
-        /* translators: %s: File size in bytes */
-        return sprintf( __( '%s B', 'pnpc-pocket-service-desk' ), $bytes );
+        return $bytes . ' B';
     }
 }
 
@@ -1292,10 +1288,6 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 	 * - Nonce
 	 * - Capability (staff) OR ticket ownership (customer)
 	 * - Attachment belongs to ticket and is not deleted
-	 *
-	 * @since 1.1.1.4
-	 *
-	 * @return void Outputs file and exits, or dies on error.
 	 */
 	function pnpc_psd_handle_download_attachment() {
 		if ( ! is_user_logged_in() ) {

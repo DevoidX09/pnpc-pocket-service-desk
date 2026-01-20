@@ -2842,13 +2842,6 @@ public function display_tickets_page()
 
 	/**
 	 * Handle archiving a ticket from admin list.
-	 *
-	 * Admin-post handler for archiving tickets. Verifies nonce and capability,
-	 * then archives the specified ticket.
-	 *
-	 * @since 1.1.1.4
-	 *
-	 * @return void Redirects on success, dies on error.
 	 */
 	public function handle_archive_ticket() {
 		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
@@ -2902,13 +2895,6 @@ public function display_tickets_page()
 
 	/**
 	 * Handle restoring an archived ticket.
-	 *
-	 * Admin-post handler for restoring archived tickets. Verifies nonce and capability,
-	 * then restores the specified ticket from archive.
-	 *
-	 * @since 1.1.1.4
-	 *
-	 * @return void Redirects on success, dies on error.
 	 */
 	public function handle_restore_archived_ticket() {
 		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
@@ -2932,13 +2918,6 @@ public function display_tickets_page()
 
 	/**
 	 * Export tickets as a CSV.
-	 *
-	 * Admin-post handler for exporting tickets. Verifies nonce and capability,
-	 * queries tickets based on filters, and outputs a CSV file for download.
-	 *
-	 * @since 1.1.1.4
-	 *
-	 * @return void Outputs CSV and exits.
 	 */
 	public function handle_export_tickets() {
 		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
