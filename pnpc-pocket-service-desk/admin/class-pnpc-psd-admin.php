@@ -886,6 +886,35 @@ public function display_tickets_page()
 				)
 			);
 
+		// Compute previous and next ticket IDs for navigation.
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		$prev_ticket_id = 0;
+		$next_ticket_id = 0;
+
+		// Get previous ticket (by ID, descending).
+		$prev_result = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$table_name} WHERE id < %d AND deleted_at IS NULL ORDER BY id DESC LIMIT 1",
+				$ticket->id
+			)
+		);
+		if ( $prev_result ) {
+			$prev_ticket_id = absint( $prev_result );
+		}
+
+		// Get next ticket (by ID, ascending).
+		$next_result = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$table_name} WHERE id > %d AND deleted_at IS NULL ORDER BY id ASC LIMIT 1",
+				$ticket->id
+			)
+		);
+		if ( $next_result ) {
+			$next_ticket_id = absint( $next_result );
+		}
+
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/ticket-detail.php';
 	}
 

@@ -793,7 +793,23 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 			if (! $messageDiv.length) {
 				return;
 			}
-			$messageDiv.removeClass('success error info').addClass(type).text(message).show();
+			
+			// Remove all notice classes
+			$messageDiv.removeClass('success error info notice-success notice-error notice-info notice-warning');
+			
+			// Add WordPress notice classes based on type
+			$messageDiv.addClass('notice');
+			if (type === 'success') {
+				$messageDiv.addClass('notice-success');
+			} else if (type === 'error') {
+				$messageDiv.addClass('notice-error');
+			} else if (type === 'info') {
+				$messageDiv.addClass('notice-info');
+			} else if (type === 'warning') {
+				$messageDiv.addClass('notice-warning');
+			}
+			
+			$messageDiv.text(message).show();
 
 			setTimeout(function() {
 				$messageDiv.fadeOut();
