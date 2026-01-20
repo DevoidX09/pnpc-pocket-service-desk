@@ -888,6 +888,7 @@ public function display_tickets_page()
 
 		// Compute previous and next ticket IDs for navigation.
 		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safe (core prefix + hardcoded suffix).
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 
 		$prev_ticket_id = 0;
@@ -896,6 +897,7 @@ public function display_tickets_page()
 		// Get previous ticket (by ID, descending).
 		$prev_result = $wpdb->get_var(
 			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safe (core prefix + hardcoded suffix).
 				"SELECT id FROM {$table_name} WHERE id < %d AND deleted_at IS NULL ORDER BY id DESC LIMIT 1",
 				$ticket->id
 			)
@@ -907,6 +909,7 @@ public function display_tickets_page()
 		// Get next ticket (by ID, ascending).
 		$next_result = $wpdb->get_var(
 			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is safe (core prefix + hardcoded suffix).
 				"SELECT id FROM {$table_name} WHERE id > %d AND deleted_at IS NULL ORDER BY id ASC LIMIT 1",
 				$ticket->id
 			)
