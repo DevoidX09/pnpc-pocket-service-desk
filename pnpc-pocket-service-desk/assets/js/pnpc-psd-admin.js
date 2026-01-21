@@ -117,7 +117,7 @@
 				setTimeout(function() {
 					$panel.hide();
 					$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
-				}, 200);
+				}, 300);
 			}
 		});
 
