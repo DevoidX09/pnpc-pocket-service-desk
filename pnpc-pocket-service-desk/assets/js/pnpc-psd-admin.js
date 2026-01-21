@@ -62,60 +62,55 @@
 
 
 
-		// ================================================
-		// Auto-save tooltip - SIMPLE CLICK TOGGLE
-		// ================================================
-		(function() {
-			var isOpen = false;
-			var $tip = $('#pnpc-psd-autosave-tip');
-			var $panel = $('#pnpc-psd-autosave-tip-panel');
+		// ==============================================
+		// Auto-save tooltip - ULTRA SIMPLE
+		// ==============================================
+		var $tip = $('#pnpc-psd-autosave-tip');
+		var $panel = $('#pnpc-psd-autosave-tip-panel');
+		
+		// Exit if elements don't exist
+		if (!$tip.length || !$panel.length) return;
+		
+		var isOpen = false;
+		
+		// Toggle on click
+		$tip.on('click', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
 			
-			if (!$tip.length || !$panel.length) {
-				return; // Elements don't exist, exit early
+			isOpen = !isOpen;
+			
+			if (isOpen) {
+				$panel.show();
+				$tip.attr('aria-expanded', 'true');
+			} else {
+				$panel.hide();
+				$tip.attr('aria-expanded', 'false');
+			}
+		});
+		
+		// Close on outside click
+		$(document).on('click', function(e) {
+			if (!isOpen) return;
+			
+			var $target = $(e.target);
+			if ($target.closest('#pnpc-psd-autosave-tip').length || $target.closest('#pnpc-psd-autosave-tip-panel').length) {
+				return;
 			}
 			
-			// Click on the tip link
-			$tip.on('click', function(e) {
-				e.preventDefault();
-				e.stopPropagation();
-				
-				if (isOpen) {
-					// Close it
-					$panel.hide();
-					$tip.attr('aria-expanded', 'false');
-					isOpen = false;
-				} else {
-					// Open it
-					$panel.show();
-					$tip.attr('aria-expanded', 'true');
-					isOpen = true;
-				}
-			});
-			
-			// Click anywhere else on the page
-			$(document).on('click', function(e) {
-				// If clicking on tip or panel, do nothing
-				if ($(e.target).closest('#pnpc-psd-autosave-tip, #pnpc-psd-autosave-tip-panel').length) {
-					return;
-				}
-				
-				// Close if open
-				if (isOpen) {
-					$panel.hide();
-					$tip.attr('aria-expanded', 'false');
-					isOpen = false;
-				}
-			});
-			
-			// ESC key to close
-			$(document).on('keyup', function(e) {
-				if (e.key === 'Escape' && isOpen) {
-					$panel.hide();
-					$tip.attr('aria-expanded', 'false');
-					isOpen = false;
-				}
-			});
-		})();
+			isOpen = false;
+			$panel.hide();
+			$tip.attr('aria-expanded', 'false');
+		});
+		
+		// Close on ESC
+		$(document).on('keydown', function(e) {
+			if (e.key === 'Escape' && isOpen) {
+				isOpen = false;
+				$panel.hide();
+				$tip.attr('aria-expanded', 'false');
+			}
+		});
 
 		if (! adminNonce) {
 			return;
