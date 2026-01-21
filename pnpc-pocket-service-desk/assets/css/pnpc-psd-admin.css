@@ -174,11 +174,13 @@
 #response-message.notice-success,
 #response-message.success {
 	border-left-color: #00a32a;
+	background-color: #d4edda;
 }
 
 #response-message.notice-error,
 #response-message.error {
 	border-left-color: #d63638;
+	background-color: #f8d7da;
 }
 
 .pnpc-psd-status {
@@ -312,11 +314,13 @@
 #pnpc-psd-bulk-message.notice-success,
 #pnpc-psd-bulk-message.success {
 	border-left-color: #00a32a;
+	background-color: #d4edda;
 }
 
 #pnpc-psd-bulk-message.notice-error,
 #pnpc-psd-bulk-message.error {
 	border-left-color: #d63638;
+	background-color: #f8d7da;
 }
 
 /* Checkbox column styling */
@@ -862,10 +866,12 @@ body.pnpc-psd-flash-active {
 
 .pnpc-psd-message.notice-success {
 	border-left-color: #00a32a;
+	background-color: #d4edda;
 }
 
 .pnpc-psd-message.notice-error {
 	border-left-color: #d63638;
+	background-color: #f8d7da;
 }
 
 .pnpc-psd-message.notice-info {
@@ -879,10 +885,12 @@ body.pnpc-psd-flash-active {
 /* Remove old custom styles that conflict with WP notice classes */
 .pnpc-psd-message.success {
 	border-left-color: #00a32a;
+	background-color: #d4edda;
 }
 
 .pnpc-psd-message.error {
 	border-left-color: #d63638;
+	background-color: #f8d7da;
 }
 
 .pnpc-psd-message.info {
