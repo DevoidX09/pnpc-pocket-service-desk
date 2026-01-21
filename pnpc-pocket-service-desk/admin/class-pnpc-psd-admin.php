@@ -545,7 +545,7 @@ class PNPC_PSD_Admin
 				}
 				update_option( 'pnpc_psd_dashboard_page_id', (int) $page_id, false );
 				update_option( 'pnpc_psd_setup_completed_at', time(), false );
-				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=done' ) );
+				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=complete' ) );
 				exit;
 			}
 		}
@@ -577,8 +577,7 @@ class PNPC_PSD_Admin
 
 				update_option( 'pnpc_psd_dashboard_page_id', (int) $page_id, false );
 				update_option( 'pnpc_psd_setup_completed_at', time(), false );
-
-				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=done' ) );
+				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=complete' ) );
 				exit;
 
 			} elseif ( 'use_existing' === $mode ) {
