@@ -738,11 +738,14 @@ class PNPC_PSD_Admin
 		if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
 			$review_count = (int) PNPC_PSD_Ticket::get_pending_delete_count();
 			if ( $review_count > 0 ) {
+				// Build URL to Review tab
+				$review_url = admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=review' );
+
 				$alerts[] = array(
 					'title' => __( 'Review queue requires attention', 'pnpc-pocket-service-desk' ),
 					/* translators: %d: count */
 					'body'  => sprintf( _n( '%d ticket is awaiting review in the Review tab.', '%d tickets are awaiting review in the Review tab.', $review_count, 'pnpc-pocket-service-desk' ), $review_count ),
-					'url'   => admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=review' ),
+					'url'   => $review_url,
 					'button_text' => __( 'View Review Queue', 'pnpc-pocket-service-desk' ),
 				);
 			}
