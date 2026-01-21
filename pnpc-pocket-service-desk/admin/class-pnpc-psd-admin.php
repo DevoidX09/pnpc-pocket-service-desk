@@ -676,6 +676,14 @@ class PNPC_PSD_Admin
 
 				if ( file_exists( $template_path ) ) {
 					$template_json = file_get_contents( $template_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+					
+					if ( false === $template_json ) {
+						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+							error_log( 'PNPC PSD: Failed to read Elementor template file' );
+						}
+						return (int) $page_id;
+					}
+					
 					$template_data = json_decode( $template_json, true );
 
 					// Validate JSON structure.
@@ -712,8 +720,8 @@ class PNPC_PSD_Admin
 
 		// For block editor, ensure content is properly formatted.
 		if ( 'block' === $editor ) {
-			// WordPress will handle shortcodes in classic content.
-			// No special block formatting needed - shortcodes work in classic editor.
+			// Set default page template.
+			// Block editor will render the shortcodes in the post_content.
 			update_post_meta( $page_id, '_wp_page_template', 'default' );
 		}
 
