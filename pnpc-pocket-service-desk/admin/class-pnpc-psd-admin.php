@@ -672,7 +672,7 @@ class PNPC_PSD_Admin
 		if ( 'elementor' === $editor && defined( 'ELEMENTOR_VERSION' ) && class_exists( '\Elementor\Plugin' ) ) {
 			try {
 				// Load template JSON.
-				$template_path = plugin_dir_path( dirname( __FILE__ ) ) . 'admin/assets/dashboard-template-elementor.json';
+				$template_path = PNPC_PSD_PLUGIN_DIR . 'admin/assets/dashboard-template-elementor.json';
 
 				if ( file_exists( $template_path ) ) {
 					$template_json = file_get_contents( $template_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
@@ -692,15 +692,21 @@ class PNPC_PSD_Admin
 						}
 					} else {
 						// JSON invalid - fall back to shortcodes.
-						error_log( 'PNPC PSD: Invalid Elementor template JSON, using shortcode fallback' );
+						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+							error_log( 'PNPC PSD: Invalid Elementor template JSON, using shortcode fallback' );
+						}
 					}
 				} else {
 					// Template file missing - fall back to shortcodes.
-					error_log( 'PNPC PSD: Elementor template file not found at ' . $template_path );
+					if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+						error_log( 'PNPC PSD: Elementor template file not found at ' . $template_path );
+					}
 				}
 			} catch ( Exception $e ) {
 				// Any error - fall back to shortcodes.
-				error_log( 'PNPC PSD: Error loading Elementor template - ' . $e->getMessage() );
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'PNPC PSD: Error loading Elementor template - ' . $e->getMessage() );
+				}
 			}
 		}
 

@@ -95,8 +95,7 @@
 			// Click anywhere else on the page
 			$(document).on('click', function(e) {
 				// If clicking on tip or panel, do nothing
-				if ($(e.target).is($tip) || $(e.target).closest('#pnpc-psd-autosave-tip').length || 
-					$(e.target).is($panel) || $(e.target).closest('#pnpc-psd-autosave-tip-panel').length) {
+				if ($(e.target).closest('#pnpc-psd-autosave-tip, #pnpc-psd-autosave-tip-panel').length) {
 					return;
 				}
 				
