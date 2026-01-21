@@ -324,6 +324,7 @@ pnpc_psd_render_progress_bar( 3 );
 var cards = document.querySelectorAll('.pnpc-psd-builder-card');
 var editorInput = document.getElementById('selected-editor');
 
+if (editorInput) {
 cards.forEach(function(card) {
 card.addEventListener('click', function() {
 cards.forEach(function(c) { c.classList.remove('selected'); });
@@ -331,6 +332,7 @@ this.classList.add('selected');
 editorInput.value = this.getAttribute('data-editor');
 });
 });
+}
 })();
 </script>
 
@@ -408,7 +410,7 @@ array(
 <p><?php echo esc_html__( 'Copy this complete layout to use all features in a single-column design:', 'pnpc-pocket-service-desk' ); ?></p>
 <textarea class="large-text code" rows="8" readonly onclick="this.select()"><?php echo esc_textarea( $canonical ); ?></textarea>
 <p>
-<button type="button" class="button" onclick="navigator.clipboard.writeText(this.previousElementSibling.value); this.textContent = '<?php echo esc_js( __( 'Copied!', 'pnpc-pocket-service-desk' ) ); ?>'; setTimeout(() => this.textContent = '<?php echo esc_js( __( 'Copy Layout', 'pnpc-pocket-service-desk' ) ); ?>', 2000);">
+<button type="button" class="button copy-layout-button">
 <?php echo esc_html__( 'Copy Layout', 'pnpc-pocket-service-desk' ); ?>
 </button>
 </p>
@@ -430,8 +432,26 @@ button.textContent = '<?php echo esc_js( __( 'Copied!', 'pnpc-pocket-service-des
 setTimeout(function() {
 button.textContent = '<?php echo esc_js( __( 'Copy', 'pnpc-pocket-service-desk' ) ); ?>';
 }, 2000);
+}).catch(function(err) {
+console.error('Failed to copy text:', err);
 });
 });
+});
+
+var copyLayoutButton = document.querySelector('.copy-layout-button');
+if (copyLayoutButton) {
+copyLayoutButton.addEventListener('click', function() {
+var textarea = this.parentElement.previousElementSibling;
+navigator.clipboard.writeText(textarea.value).then(function() {
+copyLayoutButton.textContent = '<?php echo esc_js( __( 'Copied!', 'pnpc-pocket-service-desk' ) ); ?>';
+setTimeout(function() {
+copyLayoutButton.textContent = '<?php echo esc_js( __( 'Copy Layout', 'pnpc-pocket-service-desk' ) ); ?>';
+}, 2000);
+}).catch(function(err) {
+console.error('Failed to copy text:', err);
+});
+});
+}
 });
 })();
 </script>
