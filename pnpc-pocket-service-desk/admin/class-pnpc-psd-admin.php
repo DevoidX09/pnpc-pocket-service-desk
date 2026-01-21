@@ -219,6 +219,18 @@ class PNPC_PSD_Admin
 					'all'
 				);
 			}
+
+			// Enqueue setup wizard CSS on setup wizard page
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
+			if (isset($_GET['page']) && 'pnpc-service-desk-setup' === sanitize_text_field(wp_unslash($_GET['page']))) {
+				wp_enqueue_style(
+					$this->plugin_name . '-setup-wizard',
+					PNPC_PSD_PLUGIN_URL . 'admin/css/setup-wizard.css',
+					array(),
+					$this->version,
+					'all'
+				);
+			}
 		}
 	}
 
@@ -533,7 +545,7 @@ class PNPC_PSD_Admin
 				}
 				update_option( 'pnpc_psd_dashboard_page_id', (int) $page_id, false );
 				update_option( 'pnpc_psd_setup_completed_at', time(), false );
-				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=done' ) );
+				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=complete' ) );
 				exit;
 			}
 		}
@@ -565,8 +577,7 @@ class PNPC_PSD_Admin
 
 				update_option( 'pnpc_psd_dashboard_page_id', (int) $page_id, false );
 				update_option( 'pnpc_psd_setup_completed_at', time(), false );
-
-				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=done' ) );
+				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=complete' ) );
 				exit;
 
 			} elseif ( 'use_existing' === $mode ) {
