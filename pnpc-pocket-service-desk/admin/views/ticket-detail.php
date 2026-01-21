@@ -165,6 +165,28 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 				<p><?php esc_html_e('Created:', 'pnpc-pocket-service-desk'); ?>
 					<?php echo esc_html($ticket_created_display); ?>
 				</p>
+				<p>
+					<?php esc_html_e('Created by:', 'pnpc-pocket-service-desk'); ?>
+					<?php
+					$creator_user = $ticket->user_id ? get_userdata($ticket->user_id) : null;
+					if ($creator_user) {
+						$creator_name = esc_html($creator_user->display_name);
+						$creator_edit_link = get_edit_user_link($creator_user->ID);
+						if ($creator_edit_link) {
+							echo '<a href="' . esc_url($creator_edit_link) . '">' . $creator_name . '</a>';
+						} else {
+							echo $creator_name;
+						}
+						
+						// Display user_url if present
+						if (!empty($creator_user->user_url)) {
+							echo ' | <a href="' . esc_url($creator_user->user_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Website', 'pnpc-pocket-service-desk') . '</a>';
+						}
+					} else {
+						esc_html_e('Unknown', 'pnpc-pocket-service-desk');
+					}
+					?>
+				</p>
 			</div>
 		</div>
 
@@ -242,6 +264,23 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 
 	<div class="pnpc-psd-ticket-body" style="margin: 15px 0; padding: 12px 14px; background: #FAFFA1; border: 1px solid #dcdcde; border-radius: 4px;">
 		<h3 style="margin-top:0;"><?php esc_html_e('Ticket', 'pnpc-pocket-service-desk'); ?></h3>
+		<p style="margin: 0 0 10px 0; font-size: 0.9em; color: #555;">
+			<?php esc_html_e('Requestor:', 'pnpc-pocket-service-desk'); ?>
+			<?php
+			$requestor_user = $ticket->user_id ? get_userdata($ticket->user_id) : null;
+			if ($requestor_user) {
+				$requestor_name = esc_html($requestor_user->display_name);
+				$requestor_edit_link = get_edit_user_link($requestor_user->ID);
+				if ($requestor_edit_link) {
+					echo '<a href="' . esc_url($requestor_edit_link) . '">' . $requestor_name . '</a>';
+				} else {
+					echo $requestor_name;
+				}
+			} else {
+				esc_html_e('Unknown', 'pnpc-pocket-service-desk');
+			}
+			?>
+		</p>
 		<div class="pnpc-psd-ticket-content">
 			<?php
 			$ticket_body = isset($ticket->description) ? $ticket->description : '';

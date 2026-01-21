@@ -908,6 +908,16 @@ public function display_tickets_page()
 		);
 		$next_ticket_id = $next_ticket_id ? absint( $next_ticket_id ) : 0;
 
+		// Localize ticket-specific data for JS (priority auto-save, etc.)
+		wp_localize_script(
+			$this->plugin_name,
+			'pnpcPsdTicketDetail',
+			array(
+				'ticketId'    => absint( $ticket_id ),
+				'adminNonce'  => wp_create_nonce( 'pnpc_psd_admin_nonce' ),
+			)
+		);
+
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/ticket-detail.php';
 	}
 
