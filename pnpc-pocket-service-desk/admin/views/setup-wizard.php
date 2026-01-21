@@ -83,48 +83,36 @@ $class = 'active';
 // STEP 1: WELCOME
 // ========================================
 if ( 'welcome' === $step ) :
-pnpc_psd_render_progress_bar( 1 );
 ?>
+    <div class="card" style="max-width: 980px; padding:16px;">
+        <h2 style="margin-top:0;">
+            <?php echo esc_html__( 'Welcome — Install Your Customer Dashboard', 'pnpc-pocket-service-desk' ); ?>
+        </h2>
+        <p><?php echo esc_html__( 'This installer will create (or help you link) a single Dashboard page that customers use as their Support Portal.', 'pnpc-pocket-service-desk' ); ?></p>
+        <ol>
+            <li><?php echo esc_html__( 'Choose your page builder (Elementor, WordPress blocks, or DIY).', 'pnpc-pocket-service-desk' ); ?></li>
+            <li><?php echo esc_html__( 'Create the Dashboard page (Elementor template or WordPress blocks).', 'pnpc-pocket-service-desk' ); ?></li>
+            <li><?php echo esc_html__( 'Confirm the Dashboard link in your menu/header (Customer Login / Support Portal).', 'pnpc-pocket-service-desk' ); ?></li>
+        </ol>
 
-<div class="pnpc-psd-welcome-hero">
-<h1><?php echo esc_html__( 'Welcome to Service Desk Setup', 'pnpc-pocket-service-desk' ); ?></h1>
-<p><?php echo esc_html__( 'Let\'s create your customer support portal in just a few minutes', 'pnpc-pocket-service-desk' ); ?></p>
-</div>
+        <div class="notice notice-info inline"><p><?php echo esc_html__( 'Reminder: add a "Customer Login" or "Support Portal" link in your menu/header that points to your Dashboard page.', 'pnpc-pocket-service-desk' ); ?></p></div>
 
-<div class="pnpc-psd-time-estimate">
-<span class="dashicons dashicons-clock"></span>
-<strong><?php echo esc_html__( 'Estimated Time:', 'pnpc-pocket-service-desk' ); ?></strong>
-<?php echo esc_html__( '2-3 minutes', 'pnpc-pocket-service-desk' ); ?>
-</div>
-
-<h2><?php echo esc_html__( 'What We\'ll Set Up', 'pnpc-pocket-service-desk' ); ?></h2>
-<div class="pnpc-psd-features-grid">
-<div class="pnpc-psd-feature-card">
-<span class="dashicons dashicons-admin-page"></span>
-<h3><?php echo esc_html__( 'Dashboard Page', 'pnpc-pocket-service-desk' ); ?></h3>
-<p><?php echo esc_html__( 'A dedicated page where customers can view and manage their support tickets', 'pnpc-pocket-service-desk' ); ?></p>
-</div>
-<div class="pnpc-psd-feature-card">
-<span class="dashicons dashicons-tickets"></span>
-<h3><?php echo esc_html__( 'Ticket System', 'pnpc-pocket-service-desk' ); ?></h3>
-<p><?php echo esc_html__( 'Create, view, and track support tickets with real-time updates', 'pnpc-pocket-service-desk' ); ?></p>
-</div>
-<div class="pnpc-psd-feature-card">
-<span class="dashicons dashicons-admin-users"></span>
-<h3><?php echo esc_html__( 'Customer Portal', 'pnpc-pocket-service-desk' ); ?></h3>
-<p><?php echo esc_html__( 'Secure login area showing only each customer\'s own tickets', 'pnpc-pocket-service-desk' ); ?></p>
-</div>
-</div>
-
-<div style="text-align: center; margin: 40px 0;">
-<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=scan' ) ); ?>" class="button button-primary button-hero">
-<?php echo esc_html__( 'Get Started', 'pnpc-pocket-service-desk' ); ?>
-</a>
-<br><br>
-<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=builder' ) ); ?>" class="button button-secondary">
-<?php echo esc_html__( 'Skip to Manual Setup', 'pnpc-pocket-service-desk' ); ?>
-</a>
-</div>
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=start' ) ); ?>" style="margin-top:16px;">
+            <?php wp_nonce_field( 'pnpc_psd_setup_wizard', 'pnpc_psd_setup_nonce' ); ?>
+            <input type="hidden" name="mode" value="create" />
+            <input type="hidden" name="editor" value="<?php echo esc_attr( defined( 'ELEMENTOR_VERSION' ) ? 'elementor' : 'block' ); ?>" />
+            <input type="hidden" name="page_title" value="<?php echo esc_attr__( 'Support Dashboard', 'pnpc-pocket-service-desk' ); ?>" />
+            <input type="hidden" name="page_slug" value="dashboard" />
+            <p>
+                <button type="submit" class="button button-primary">
+                    <?php echo esc_html__( 'Begin Install (Recommended)', 'pnpc-pocket-service-desk' ); ?>
+                </button>
+                <a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=start' ) ); ?>">
+                    <?php echo esc_html__( 'Choose Options…', 'pnpc-pocket-service-desk' ); ?>
+                </a>
+            </p>
+        </form>
+    </div>
 
 <?php
 // ========================================
