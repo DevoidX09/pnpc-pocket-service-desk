@@ -60,20 +60,25 @@
 
 
 		// Auto-save info tooltip (works even if AJAX nonce localization fails)
+		console.log('Initializing auto-save tooltip handlers');
 		$(document).on('click', '#pnpc-psd-autosave-tip', function(e) {
 			e.preventDefault();
+			console.log('Auto-save tooltip clicked');
 			var $link = $(this);
 			var $panel = $('#pnpc-psd-autosave-tip-panel');
 			if (!$panel.length) {
+				console.log('Auto-save tooltip panel not found');
 				return;
 			}
 			var isOpen = $panel.is(':visible');
 			if (isOpen) {
 				$panel.hide();
 				$link.attr('aria-expanded', 'false');
+				console.log('Auto-save tooltip hidden');
 			} else {
 				$panel.show();
 				$link.attr('aria-expanded', 'true');
+				console.log('Auto-save tooltip shown');
 			}
 		});
 
@@ -577,10 +582,14 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 			// Priority auto-save
 			function pnpcPsdSavePriority(priorityVal) {
 				var pr = priorityVal || $('#pnpc-psd-priority-select').val();
+				console.log('pnpcPsdSavePriority called with priority:', pr);
+				console.log('ticketId:', ticketId, 'adminNonce:', adminNonce ? 'present' : 'missing');
 				if (!pr) {
+					console.log('Priority value is empty, returning');
 					return;
 				}
 				showMessage('info', 'Saving priority…', 'pnpc-psd-admin-action-message');
+				console.log('Sending AJAX request to update priority');
 				$.ajax({
 					url: pnpcPsdAdmin.ajax_url,
 					type: 'POST',
@@ -591,6 +600,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 						priority: pr
 					},
 					success: function(result) {
+						console.log('Priority AJAX response:', result);
 						if (result && result.success) {
 							showMessage('success', result.data.message || 'Priority updated.', 'pnpc-psd-admin-action-message');
 							setTimeout(function() {
@@ -610,12 +620,14 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 			}
 
 			$(document).on('change', '#pnpc-psd-priority-select', function() {
+				console.log('Priority select changed, new value:', $(this).val());
 				pnpcPsdSavePriority($(this).val());
 			});
 
 			// Failsafe: if the manual Update Priority button is used, intercept and ajax instead of full post.
 			$(document).on('submit', '#pnpc-psd-priority-form', function(e) {
 				e.preventDefault();
+				console.log('Priority form submitted');
 				pnpcPsdSavePriority($('#pnpc-psd-priority-select').val());
 			});
 

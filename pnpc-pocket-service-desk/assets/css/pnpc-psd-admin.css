@@ -856,47 +856,62 @@ body.pnpc-psd-flash-active {
 /* Override WP core notice styles to ensure they work properly */
 .pnpc-psd-message.notice {
 	border-left: 4px solid #72aee6;
-	background: #fff;
+	background: #f0f6fc;
 	padding: 1px 12px;
 }
 
 .pnpc-psd-message.notice-success {
 	border-left-color: #00a32a;
+	background: #edfaef;
 }
 
 .pnpc-psd-message.notice-error {
 	border-left-color: #d63638;
+	background: #fcf0f1;
 }
 
 .pnpc-psd-message.notice-info {
 	border-left-color: #72aee6;
+	background: #f0f6fc;
 }
 
 .pnpc-psd-message.notice-warning {
 	border-left-color: #dba617;
+	background: #fcf9e8;
 }
 
 /* Remove old custom styles that conflict with WP notice classes */
 .pnpc-psd-message.success {
 	border-left-color: #00a32a;
+	background: #edfaef;
 }
 
 .pnpc-psd-message.error {
 	border-left-color: #d63638;
+	background: #fcf0f1;
 }
 
 .pnpc-psd-message.info {
 	border-left-color: #72aee6;
+	background: #f0f6fc;
 }
 
 /* Auto-save tooltip */
 .pnpc-psd-autosave-tip-wrap {
 	text-align: right;
 	margin: 0 0 10px 0;
+	position: relative;
 }
 
 .pnpc-psd-autosave-tip {
 	text-decoration: none;
+	cursor: pointer;
+	display: inline-block;
+}
+
+.pnpc-psd-autosave-tip:hover,
+.pnpc-psd-autosave-tip:focus {
+	color: #2271b1;
 }
 
 .pnpc-psd-autosave-tip-panel {
@@ -908,4 +923,7 @@ body.pnpc-psd-flash-active {
 	max-width: 340px;
 	display: inline-block;
 	text-align: left;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+	z-index: 100;
+	position: relative;
 }
