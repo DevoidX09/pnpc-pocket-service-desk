@@ -202,7 +202,7 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 						<p class="psd-alert-title"><?php echo esc_html( $title ); ?></p>
 						<p class="psd-alert-body"><?php echo esc_html( $body ); ?></p>
 						<?php if ( $url ) : ?>
-							<p style="margin-top:8px;">
+							<p class="psd-alert-actions">
 								<a href="<?php echo esc_url( $url ); ?>" class="button button-small">
 									<?php echo esc_html( $button_text ); ?>
 								</a>

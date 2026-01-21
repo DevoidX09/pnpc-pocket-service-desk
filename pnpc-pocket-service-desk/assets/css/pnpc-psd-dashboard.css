@@ -195,6 +195,10 @@
 	color: #646970;
 }
 
+.pnpc-psd-dashboard .psd-alert-actions {
+	margin-top: 8px;
+}
+
 .pnpc-psd-dashboard .psd-cta {
 	display: flex;
 	gap: 10px;
