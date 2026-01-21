@@ -60,6 +60,7 @@
 
 
 		// Auto-save info tooltip (works even if AJAX nonce localization fails)
+		// Use click for primary interaction
 		$(document).on('click', '#pnpc-psd-autosave-tip', function(e) {
 			e.preventDefault();
 			var $link = $(this);
@@ -77,7 +78,7 @@
 			}
 		});
 
-		// Also support hover/focus, since many admins expect a classic tooltip interaction.
+		// Also support hover/focus for accessibility and classic tooltip behavior
 		$(document).on('mouseenter focus', '#pnpc-psd-autosave-tip', function() {
 			var $panel = $('#pnpc-psd-autosave-tip-panel');
 			if ($panel.length) {
@@ -85,6 +86,7 @@
 				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'true');
 			}
 		});
+		
 		$(document).on('mouseleave blur', '#pnpc-psd-autosave-tip', function() {
 			var $panel = $('#pnpc-psd-autosave-tip-panel');
 			if ($panel.length) {
@@ -93,6 +95,7 @@
 			}
 		});
 
+		// Close tooltip when clicking outside
 		$(document).on('click', function(e) {
 			var $t = $(e.target);
 			if ($t.closest('#pnpc-psd-autosave-tip').length || $t.closest('#pnpc-psd-autosave-tip-panel').length) {
@@ -801,7 +804,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 				return;
 			}
 			
-			// Remove existing notice classes
+			// Remove existing notice classes (preserve pnpc-psd-message base class)
 			$messageDiv.removeClass('notice notice-success notice-error notice-info notice-warning success error info');
 			
 			// Add WP notice classes based on type
@@ -812,6 +815,13 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 				noticeClass += ' notice-error';
 			} else if (type === 'info') {
 				noticeClass += ' notice-info';
+			} else if (type === 'warning') {
+				noticeClass += ' notice-warning';
+			}
+			
+			// Ensure base message class is present
+			if (!$messageDiv.hasClass('pnpc-psd-message')) {
+				$messageDiv.addClass('pnpc-psd-message');
 			}
 			
 			$messageDiv.addClass(noticeClass).text(message).show();
