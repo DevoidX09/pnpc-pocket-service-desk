@@ -62,53 +62,61 @@
 
 
 
-		// Auto-save info tooltip - click-based toggle behavior
-		var tooltipOpen = false;
-
-		$(document).on('click', '#pnpc-psd-autosave-tip', function(e) {
-			e.preventDefault();
-			e.stopPropagation();
-			
+		// ================================================
+		// Auto-save tooltip - SIMPLE CLICK TOGGLE
+		// ================================================
+		(function() {
+			var isOpen = false;
+			var $tip = $('#pnpc-psd-autosave-tip');
 			var $panel = $('#pnpc-psd-autosave-tip-panel');
-			if (!$panel.length) {
-				return;
+			
+			if (!$tip.length || !$panel.length) {
+				return; // Elements don't exist, exit early
 			}
 			
-			if (tooltipOpen) {
-				$panel.hide();
-				$(this).attr('aria-expanded', 'false');
-				tooltipOpen = false;
-			} else {
-				$panel.show();
-				$(this).attr('aria-expanded', 'true');
-				tooltipOpen = true;
-			}
-		});
-
-		// Close on outside click
-		$(document).on('click', function(e) {
-			if ($(e.target).closest('#pnpc-psd-autosave-tip, #pnpc-psd-autosave-tip-panel').length) {
-				return;
-			}
-			var $panel = $('#pnpc-psd-autosave-tip-panel');
-			if ($panel.is(':visible')) {
-				$panel.hide();
-				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
-				tooltipOpen = false;
-			}
-		});
-
-		// ESC key support
-		$(document).on('keydown', function(e) {
-			if (e.key === 'Escape') {
-				var $panel = $('#pnpc-psd-autosave-tip-panel');
-				if ($panel.is(':visible')) {
+			// Click on the tip link
+			$tip.on('click', function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				
+				if (isOpen) {
+					// Close it
 					$panel.hide();
-					$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
-					tooltipOpen = false;
+					$tip.attr('aria-expanded', 'false');
+					isOpen = false;
+				} else {
+					// Open it
+					$panel.show();
+					$tip.attr('aria-expanded', 'true');
+					isOpen = true;
 				}
-			}
-		});
+			});
+			
+			// Click anywhere else on the page
+			$(document).on('click', function(e) {
+				// If clicking on tip or panel, do nothing
+				if ($(e.target).is($tip) || $(e.target).closest('#pnpc-psd-autosave-tip').length || 
+					$(e.target).is($panel) || $(e.target).closest('#pnpc-psd-autosave-tip-panel').length) {
+					return;
+				}
+				
+				// Close if open
+				if (isOpen) {
+					$panel.hide();
+					$tip.attr('aria-expanded', 'false');
+					isOpen = false;
+				}
+			});
+			
+			// ESC key to close
+			$(document).on('keyup', function(e) {
+				if (e.key === 'Escape' && isOpen) {
+					$panel.hide();
+					$tip.attr('aria-expanded', 'false');
+					isOpen = false;
+				}
+			});
+		})();
 
 		if (! adminNonce) {
 			return;
