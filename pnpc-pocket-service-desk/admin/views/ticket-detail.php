@@ -79,6 +79,11 @@ if (! function_exists('pnpc_psd_admin_format_datetime')) {
 }
 
 $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
+
+// Fetch user data once for reuse in multiple sections (creator info, requestor info).
+$ticket_user = $ticket->user_id ? get_userdata($ticket->user_id) : null;
+$ticket_user_name = $ticket_user ? esc_html($ticket_user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk');
+$ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '';
 ?>
 
 <div class="wrap pnpc-psd-ticket-detail" id="pnpc-psd-ticket-detail" data-ticket-id="<?php echo esc_attr($ticket->id); ?>">
@@ -165,6 +170,21 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 				<p><?php esc_html_e('Created:', 'pnpc-pocket-service-desk'); ?>
 					<?php echo esc_html($ticket_created_display); ?>
 				</p>
+				<p>
+					<?php esc_html_e('Created by:', 'pnpc-pocket-service-desk'); ?>
+					<?php
+					if ($ticket_user_edit_link) {
+						echo '<a href="' . esc_url($ticket_user_edit_link) . '">' . $ticket_user_name . '</a>';
+					} else {
+						echo $ticket_user_name;
+					}
+					
+					// Display user_url if present
+					if ($ticket_user && !empty($ticket_user->user_url)) {
+						echo ' | <a href="' . esc_url($ticket_user->user_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Website', 'pnpc-pocket-service-desk') . '</a>';
+					}
+					?>
+				</p>
 			</div>
 		</div>
 
@@ -242,6 +262,16 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 
 	<div class="pnpc-psd-ticket-body" style="margin: 15px 0; padding: 12px 14px; background: #FAFFA1; border: 1px solid #dcdcde; border-radius: 4px;">
 		<h3 style="margin-top:0;"><?php esc_html_e('Ticket', 'pnpc-pocket-service-desk'); ?></h3>
+		<p style="margin: 0 0 10px 0; font-size: 0.9em; color: #555;">
+			<?php esc_html_e('Requestor:', 'pnpc-pocket-service-desk'); ?>
+			<?php
+			if ($ticket_user_edit_link) {
+				echo '<a href="' . esc_url($ticket_user_edit_link) . '">' . $ticket_user_name . '</a>';
+			} else {
+				echo $ticket_user_name;
+			}
+			?>
+		</p>
 		<div class="pnpc-psd-ticket-content">
 			<?php
 			$ticket_body = isset($ticket->description) ? $ticket->description : '';

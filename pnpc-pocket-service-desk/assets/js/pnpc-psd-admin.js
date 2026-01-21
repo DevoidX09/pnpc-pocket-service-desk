@@ -8,6 +8,13 @@
 		var $ticketDetail = $('#pnpc-psd-ticket-detail');
 		var ticketId = $ticketDetail.data('ticket-id');
 		var adminNonce = (typeof pnpcPsdAdmin !== 'undefined') ? pnpcPsdAdmin.nonce :  '';
+		
+		// Use localized ticket-specific values if available (for ticket detail page).
+		if (typeof pnpcPsdTicketDetail !== 'undefined') {
+			ticketId = pnpcPsdTicketDetail.ticketId || ticketId;
+			adminNonce = pnpcPsdTicketDetail.adminNonce || adminNonce;
+		}
+		
 		var MESSAGE_TARGETS = ['pnpc-psd-admin-action-message', 'response-message', 'pnpc-psd-bulk-message'];
 		// ================================
 		// Attachments (Admin Response): preview + remove before send
