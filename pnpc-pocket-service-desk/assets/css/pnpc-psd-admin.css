@@ -168,17 +168,25 @@
 	padding: 10px;
 	border-radius: 0;
 	border-left: 4px solid #72aee6;
-	background: #fff;
+	background: #f0f6fc;
 }
 
 #response-message.notice-success,
 #response-message.success {
 	border-left-color: #00a32a;
+	background: #edfaef;
 }
 
 #response-message.notice-error,
 #response-message.error {
 	border-left-color: #d63638;
+	background: #fcf0f1;
+}
+
+#response-message.notice-info,
+#response-message.info {
+	border-left-color: #72aee6;
+	background: #f0f6fc;
 }
 
 .pnpc-psd-status {
