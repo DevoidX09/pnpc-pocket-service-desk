@@ -81,21 +81,41 @@
 			}
 		});
 
-		// Also support hover/focus for accessibility and classic tooltip behavior
-		$(document).on('mouseenter focus', '#pnpc-psd-autosave-tip', function() {
+		// Attach hover to the wrapper to prevent flickering
+		$(document).on('mouseenter', '#pnpc-psd-autosave-tip-wrap', function() {
 			var $panel = $('#pnpc-psd-autosave-tip-panel');
 			if ($panel.length) {
 				$panel.show();
 				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'true');
 			}
 		});
-		
-		$(document).on('mouseleave blur', '#pnpc-psd-autosave-tip', function() {
+
+		$(document).on('mouseleave', '#pnpc-psd-autosave-tip-wrap', function() {
 			var $panel = $('#pnpc-psd-autosave-tip-panel');
 			if ($panel.length) {
 				$panel.hide();
 				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
 			}
+		});
+
+		// Keep focus events on the link for keyboard accessibility
+		$(document).on('focus', '#pnpc-psd-autosave-tip', function() {
+			var $panel = $('#pnpc-psd-autosave-tip-panel');
+			if ($panel.length) {
+				$panel.show();
+				$(this).attr('aria-expanded', 'true');
+			}
+		});
+
+		$(document).on('blur', '#pnpc-psd-autosave-tip', function() {
+			// Add delay to allow user to tab into panel if needed
+			setTimeout(function() {
+				var $panel = $('#pnpc-psd-autosave-tip-panel');
+				if ($panel.length && !$panel.is(':focus-within')) {
+					$panel.hide();
+					$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
+				}
+			}, 100);
 		});
 
 		// Close tooltip when clicking outside
