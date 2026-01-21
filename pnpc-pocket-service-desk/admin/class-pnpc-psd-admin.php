@@ -219,6 +219,18 @@ class PNPC_PSD_Admin
 					'all'
 				);
 			}
+
+			// Enqueue setup wizard CSS on setup wizard page
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
+			if (isset($_GET['page']) && 'pnpc-service-desk-setup' === sanitize_text_field(wp_unslash($_GET['page']))) {
+				wp_enqueue_style(
+					$this->plugin_name . '-setup-wizard',
+					PNPC_PSD_PLUGIN_URL . 'admin/css/setup-wizard.css',
+					array(),
+					$this->version,
+					'all'
+				);
+			}
 		}
 	}
 
