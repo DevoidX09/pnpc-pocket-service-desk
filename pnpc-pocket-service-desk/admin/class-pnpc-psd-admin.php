@@ -554,14 +554,31 @@ class PNPC_PSD_Admin
 		if ( 'POST' === sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ?? '' ) ) && isset( $_POST['pnpc_psd_setup_nonce'] ) ) {
 			check_admin_referer( 'pnpc_psd_setup_wizard', 'pnpc_psd_setup_nonce' );
 
+			if ( ! current_user_can( 'pnpc_psd_manage_settings' ) ) {
+				wp_die( esc_html__( 'Permission denied.', 'pnpc-pocket-service-desk' ) );
+			}
+
 			$mode   = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : '';
-			$editor = isset( $_POST['editor'] ) ? sanitize_key( wp_unslash( $_POST['editor'] ) ) : 'diy';
+			$editor = isset( $_POST['editor'] ) ? sanitize_key( wp_unslash( $_POST['editor'] ) ) : 'block';
 
 			update_option( 'pnpc_psd_setup_editor', $editor, false );
 
 			if ( 'create' === $mode ) {
 				$title = isset( $_POST['page_title'] ) ? sanitize_text_field( wp_unslash( $_POST['page_title'] ) ) : esc_html__( 'Support Dashboard', 'pnpc-pocket-service-desk' );
 				$slug  = isset( $_POST['page_slug'] ) ? sanitize_title( wp_unslash( $_POST['page_slug'] ) ) : 'dashboard';
+
+				// Validate inputs.
+				if ( empty( $title ) ) {
+					update_option( 'pnpc_psd_setup_error', esc_html__( 'Page title is required.', 'pnpc-pocket-service-desk' ), false );
+					wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=start' ) );
+					exit;
+				}
+
+				if ( empty( $slug ) ) {
+					update_option( 'pnpc_psd_setup_error', esc_html__( 'Page slug is required.', 'pnpc-pocket-service-desk' ), false );
+					wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=start' ) );
+					exit;
+				}
 
 				$page_id = $this->create_dashboard_page_from_wizard( array(
 					'title'  => $title,
@@ -576,6 +593,7 @@ class PNPC_PSD_Admin
 				}
 
 				update_option( 'pnpc_psd_dashboard_page_id', (int) $page_id, false );
+				update_option( 'pnpc_psd_setup_error', '', false );
 				update_option( 'pnpc_psd_setup_completed_at', time(), false );
 				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=complete' ) );
 				exit;
@@ -614,59 +632,97 @@ class PNPC_PSD_Admin
 	private function create_dashboard_page_from_wizard( $args ) {
 		$title  = isset( $args['title'] ) ? sanitize_text_field( (string) $args['title'] ) : esc_html__( 'Support Dashboard', 'pnpc-pocket-service-desk' );
 		$slug   = isset( $args['slug'] ) ? sanitize_title( (string) $args['slug'] ) : 'dashboard';
-		$editor = isset( $args['editor'] ) ? sanitize_key( (string) $args['editor'] ) : 'diy';
+		$editor = isset( $args['editor'] ) ? sanitize_key( (string) $args['editor'] ) : 'block';
 
-		// Canonical shortcode stack (used for DIY fallback + block editor content).
-		$canonical = "[pnpc_profile_settings]\n\n[pnpc_service_desk]\n\n[pnpc_create_ticket]\n\n[pnpc_services]\n\n[pnpc_my_tickets]\n";
-
-		$post_content = '';
-		if ( 'block' === $editor ) {
-			$blocks = array(
-				"<!-- wp:shortcode -->\n[pnpc_profile_settings]\n<!-- /wp:shortcode -->",
-				"<!-- wp:shortcode -->\n[pnpc_service_desk]\n<!-- /wp:shortcode -->",
-				"<!-- wp:shortcode -->\n[pnpc_create_ticket]\n<!-- /wp:shortcode -->",
-				"<!-- wp:shortcode -->\n[pnpc_services]\n<!-- /wp:shortcode -->",
-				"<!-- wp:shortcode -->\n[pnpc_my_tickets]\n<!-- /wp:shortcode -->",
-			);
-			$post_content = implode( "\n\n", $blocks ) . "\n";
-		} elseif ( 'diy' === $editor ) {
-			// DIY: create nothing (wizard will still finish and show the shortcode stack).
-			return 0;
-		} else {
-			// Elementor (or unknown): put the canonical stack into post_content as a safety fallback.
-			$post_content = $canonical;
+		// Debug output.
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'PNPC PSD: Creating dashboard page with args: ' . print_r( $args, true ) );
 		}
 
-		$postarr = array(
-			'post_type'    => 'page',
-			'post_status'  => 'publish',
+		// Canonical shortcode content (safe fallback).
+		$content = "[pnpc_profile_settings]\n\n[pnpc_service_desk]\n\n[pnpc_create_ticket]\n\n[pnpc_services]\n\n[pnpc_my_tickets]";
+
+		// For DIY mode, skip page creation.
+		if ( 'diy' === $editor ) {
+			return 0;
+		}
+
+		// Create page with safe defaults.
+		$page_data = array(
 			'post_title'   => $title,
 			'post_name'    => $slug,
-			'post_content' => $post_content,
+			'post_content' => $content,
+			'post_status'  => 'publish',
+			'post_type'    => 'page',
+			'post_author'  => get_current_user_id(),
 		);
 
-		$page_id = wp_insert_post( $postarr, true );
+		$page_id = wp_insert_post( $page_data, true );
+
 		if ( is_wp_error( $page_id ) ) {
 			return $page_id;
 		}
 
-		// Elementor template seeding.
-		if ( 'elementor' === $editor && defined( 'ELEMENTOR_VERSION' ) ) {
-			$template_path = PNPC_PSD_PLUGIN_DIR . 'admin/assets/dashboard-template-elementor.json';
-			$json = '';
-			if ( file_exists( $template_path ) ) {
-				$json = (string) file_get_contents( $template_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-			}
+		// Debug output.
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'PNPC PSD: Page created successfully with ID: ' . $page_id );
+		}
 
-			if ( $json ) {
-				$decoded = json_decode( $json, true );
-				if ( is_array( $decoded ) ) {
-					// Store the elementor data as JSON (Elementor reads this from post meta).
-					update_post_meta( $page_id, '_elementor_edit_mode', 'builder' );
-					update_post_meta( $page_id, '_elementor_template_type', 'wp-page' );
-					update_post_meta( $page_id, '_elementor_data', wp_slash( wp_json_encode( $decoded ) ) );
+		// Only attempt Elementor if it's active and specifically requested.
+		if ( 'elementor' === $editor && defined( 'ELEMENTOR_VERSION' ) && class_exists( '\Elementor\Plugin' ) ) {
+			try {
+				// Load template JSON.
+				$template_path = PNPC_PSD_PLUGIN_DIR . 'admin/assets/dashboard-template-elementor.json';
+
+				if ( file_exists( $template_path ) ) {
+					$template_json = file_get_contents( $template_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+					
+					if ( false === $template_json ) {
+						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+							error_log( 'PNPC PSD: Failed to read Elementor template file' );
+						}
+						return (int) $page_id;
+					}
+					
+					$template_data = json_decode( $template_json, true );
+
+					// Validate JSON structure.
+					if ( json_last_error() === JSON_ERROR_NONE && isset( $template_data['content'] ) && is_array( $template_data['content'] ) ) {
+						// Apply Elementor template.
+						update_post_meta( $page_id, '_elementor_edit_mode', 'builder' );
+						update_post_meta( $page_id, '_elementor_template_type', 'wp-page' );
+						update_post_meta( $page_id, '_elementor_version', ELEMENTOR_VERSION );
+						update_post_meta( $page_id, '_elementor_data', wp_slash( wp_json_encode( $template_data['content'] ) ) );
+
+						// Clear Elementor cache.
+						if ( class_exists( '\Elementor\Plugin' ) ) {
+							\Elementor\Plugin::$instance->files_manager->clear_cache();
+						}
+					} else {
+						// JSON invalid - fall back to shortcodes.
+						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+							error_log( 'PNPC PSD: Invalid Elementor template JSON, using shortcode fallback' );
+						}
+					}
+				} else {
+					// Template file missing - fall back to shortcodes.
+					if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+						error_log( 'PNPC PSD: Elementor template file not found at ' . $template_path );
+					}
+				}
+			} catch ( Exception $e ) {
+				// Any error - fall back to shortcodes.
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'PNPC PSD: Error loading Elementor template - ' . $e->getMessage() );
 				}
 			}
+		}
+
+		// For block editor, ensure content is properly formatted.
+		if ( 'block' === $editor ) {
+			// Set default page template.
+			// Block editor will render the shortcodes in the post_content.
+			update_post_meta( $page_id, '_wp_page_template', 'default' );
 		}
 
 		return (int) $page_id;
