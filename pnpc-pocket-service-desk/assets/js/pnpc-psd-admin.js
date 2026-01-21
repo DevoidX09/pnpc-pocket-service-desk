@@ -81,20 +81,43 @@
 			}
 		});
 
-		// Also support hover/focus for accessibility and classic tooltip behavior
-		$(document).on('mouseenter focus', '#pnpc-psd-autosave-tip', function() {
+		// Hover handling for tooltip container to prevent flickering
+		$(document).on('mouseenter', '.pnpc-psd-autosave-tip-container', function() {
 			var $panel = $('#pnpc-psd-autosave-tip-panel');
 			if ($panel.length) {
+				clearTimeout($panel.data('hideTimer'));
 				$panel.show();
 				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'true');
 			}
 		});
-		
-		$(document).on('mouseleave blur', '#pnpc-psd-autosave-tip', function() {
+
+		$(document).on('mouseleave', '.pnpc-psd-autosave-tip-container', function() {
 			var $panel = $('#pnpc-psd-autosave-tip-panel');
 			if ($panel.length) {
-				$panel.hide();
-				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
+				var hideTimer = setTimeout(function() {
+					$panel.hide();
+					$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
+				}, 300); // 300ms delay prevents flicker
+				$panel.data('hideTimer', hideTimer);
+			}
+		});
+
+		// Keep focus handlers for keyboard accessibility
+		$(document).on('focus', '#pnpc-psd-autosave-tip', function() {
+			var $panel = $('#pnpc-psd-autosave-tip-panel');
+			if ($panel.length) {
+				$panel.show();
+				$(this).attr('aria-expanded', 'true');
+			}
+		});
+
+		$(document).on('blur', '#pnpc-psd-autosave-tip', function() {
+			var $panel = $('#pnpc-psd-autosave-tip-panel');
+			if ($panel.length) {
+				setTimeout(function() {
+					$panel.hide();
+					$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
+				}, 200);
 			}
 		});
 
