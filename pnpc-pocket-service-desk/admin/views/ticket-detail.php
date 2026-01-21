@@ -79,6 +79,11 @@ if (! function_exists('pnpc_psd_admin_format_datetime')) {
 }
 
 $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
+
+// Fetch user data once for reuse in multiple sections (creator info, requestor info).
+$ticket_user = $ticket->user_id ? get_userdata($ticket->user_id) : null;
+$ticket_user_name = $ticket_user ? esc_html($ticket_user->display_name) : esc_html__('Unknown', 'pnpc-pocket-service-desk');
+$ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '';
 ?>
 
 <div class="wrap pnpc-psd-ticket-detail" id="pnpc-psd-ticket-detail" data-ticket-id="<?php echo esc_attr($ticket->id); ?>">
@@ -168,22 +173,15 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 				<p>
 					<?php esc_html_e('Created by:', 'pnpc-pocket-service-desk'); ?>
 					<?php
-					$creator_user = $ticket->user_id ? get_userdata($ticket->user_id) : null;
-					if ($creator_user) {
-						$creator_name = esc_html($creator_user->display_name);
-						$creator_edit_link = get_edit_user_link($creator_user->ID);
-						if ($creator_edit_link) {
-							echo '<a href="' . esc_url($creator_edit_link) . '">' . $creator_name . '</a>';
-						} else {
-							echo $creator_name;
-						}
-						
-						// Display user_url if present
-						if (!empty($creator_user->user_url)) {
-							echo ' | <a href="' . esc_url($creator_user->user_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Website', 'pnpc-pocket-service-desk') . '</a>';
-						}
+					if ($ticket_user_edit_link) {
+						echo '<a href="' . esc_url($ticket_user_edit_link) . '">' . $ticket_user_name . '</a>';
 					} else {
-						esc_html_e('Unknown', 'pnpc-pocket-service-desk');
+						echo $ticket_user_name;
+					}
+					
+					// Display user_url if present
+					if ($ticket_user && !empty($ticket_user->user_url)) {
+						echo ' | <a href="' . esc_url($ticket_user->user_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Website', 'pnpc-pocket-service-desk') . '</a>';
 					}
 					?>
 				</p>
@@ -267,17 +265,10 @@ $ticket_created_display = pnpc_psd_admin_format_datetime($ticket->created_at);
 		<p style="margin: 0 0 10px 0; font-size: 0.9em; color: #555;">
 			<?php esc_html_e('Requestor:', 'pnpc-pocket-service-desk'); ?>
 			<?php
-			$requestor_user = $ticket->user_id ? get_userdata($ticket->user_id) : null;
-			if ($requestor_user) {
-				$requestor_name = esc_html($requestor_user->display_name);
-				$requestor_edit_link = get_edit_user_link($requestor_user->ID);
-				if ($requestor_edit_link) {
-					echo '<a href="' . esc_url($requestor_edit_link) . '">' . $requestor_name . '</a>';
-				} else {
-					echo $requestor_name;
-				}
+			if ($ticket_user_edit_link) {
+				echo '<a href="' . esc_url($ticket_user_edit_link) . '">' . $ticket_user_name . '</a>';
 			} else {
-				esc_html_e('Unknown', 'pnpc-pocket-service-desk');
+				echo $ticket_user_name;
 			}
 			?>
 		</p>
