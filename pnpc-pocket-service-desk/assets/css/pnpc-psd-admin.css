@@ -901,6 +901,11 @@ body.pnpc-psd-flash-active {
 	cursor: help;
 }
 
+.pnpc-psd-autosave-tip-container {
+	position: relative;
+	display: inline-block;
+}
+
 .pnpc-psd-autosave-tip-panel {
 	position: absolute;
 	right: 0;
