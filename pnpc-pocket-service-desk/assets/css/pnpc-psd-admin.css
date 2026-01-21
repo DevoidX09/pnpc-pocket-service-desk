@@ -899,13 +899,23 @@ body.pnpc-psd-flash-active {
 	text-decoration: none;
 }
 
+.pnpc-psd-autosave-tip-container {
+	position: relative;
+	display: inline-block;
+}
+
 .pnpc-psd-autosave-tip-panel {
-	margin: 8px 0 0 0;
+	position: absolute;
+	top: 100%;
+	right: 0;
+	margin-top: 5px;
 	padding: 10px 12px;
 	background: #fff;
-	border: 1px solid #dcdcde;
+	border: 1px solid #c3c4c7;
 	border-radius: 4px;
-	max-width: 340px;
-	display: inline-block;
-	text-align: left;
+	box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+	white-space: nowrap;
+	z-index: 1000;
+	font-size: 13px;
+	line-height: 1.4;
 }
