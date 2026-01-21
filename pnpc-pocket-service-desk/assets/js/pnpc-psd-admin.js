@@ -6,7 +6,7 @@
 
 	$(document).ready(function() {
 		var $ticketDetail = $('#pnpc-psd-ticket-detail');
-		var ticketId = $ticketDetail.data('ticket-id');
+		var ticketId = $ticketDetail.data('ticket-id') || 0;
 		var adminNonce = (typeof pnpcPsdAdmin !== 'undefined') ? pnpcPsdAdmin.nonce :  '';
 		
 		// Use localized ticket-specific values if available (for ticket detail page).
@@ -14,6 +14,9 @@
 			ticketId = pnpcPsdTicketDetail.ticketId || ticketId;
 			adminNonce = pnpcPsdTicketDetail.adminNonce || adminNonce;
 		}
+		
+		// Convert ticketId to integer to ensure proper comparisons
+		ticketId = ticketId ? parseInt(ticketId, 10) : 0;
 		
 		var MESSAGE_TARGETS = ['pnpc-psd-admin-action-message', 'response-message', 'pnpc-psd-bulk-message'];
 		// ================================
