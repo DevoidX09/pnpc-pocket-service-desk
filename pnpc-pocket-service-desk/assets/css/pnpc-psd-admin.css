@@ -920,7 +920,7 @@ body.pnpc-psd-flash-active {
 	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 	z-index: 99999;
 	white-space: normal;
-	max-width: 340px;
+	max-width: 425px;
 	overflow-wrap: anywhere;
 	word-break: break-word;
 }
