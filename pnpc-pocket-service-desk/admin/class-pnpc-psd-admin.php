@@ -3513,15 +3513,15 @@ public function display_tickets_page()
 
 			$message = sprintf(
 				/* translators: 1: customer name, 2: ticket number, 3: subject, 4: priority, 5: description, 6: ticket URL, 7: staff name, 8: site name */
-				__('Hello %1$s,', 'pnpc-pocket-service-desk') . "nn" .
-				__('A support ticket has been created for you by our support team.', 'pnpc-pocket-service-desk') . "nn" .
-				__('Ticket Number: %2$s', 'pnpc-pocket-service-desk') . "n" .
-				__('Subject: %3$s', 'pnpc-pocket-service-desk') . "n" .
-				__('Priority: %4$s', 'pnpc-pocket-service-desk') . "nn" .
-				__('Description:', 'pnpc-pocket-service-desk') . "n%5$snn" .
-				__('You can view and respond to this ticket here:', 'pnpc-pocket-service-desk') . "n%6$snn" .
-				__('Created by: %7$s', 'pnpc-pocket-service-desk') . "nn" .
-				__('Thank you,', 'pnpc-pocket-service-desk') . "n" .
+				__('Hello %1$s,', 'pnpc-pocket-service-desk') . "\n\n" .
+				__('A support ticket has been created for you by our support team.', 'pnpc-pocket-service-desk') . "\n\n" .
+				__('Ticket Number: %2$s', 'pnpc-pocket-service-desk') . "\n" .
+				__('Subject: %3$s', 'pnpc-pocket-service-desk') . "\n" .
+				__('Priority: %4$s', 'pnpc-pocket-service-desk') . "\n\n" .
+				__('Description:', 'pnpc-pocket-service-desk') . "\n%5$s\n\n" .
+				__('You can view and respond to this ticket here:', 'pnpc-pocket-service-desk') . "\n%6$s\n\n" .
+				__('Created by: %7$s', 'pnpc-pocket-service-desk') . "\n\n" .
+				__('Thank you,', 'pnpc-pocket-service-desk') . "\n" .
 				__('%8$s Support Team', 'pnpc-pocket-service-desk'),
 				$customer->display_name,
 				$ticket->ticket_number,
