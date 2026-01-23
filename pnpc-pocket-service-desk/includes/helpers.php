@@ -1356,7 +1356,23 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 			$ctype = 'application/octet-stream';
 		}
 
-		// Serve the file.
+		/**
+		 * Serve attachment file with security verification.
+		 * 
+		 * Security measures in place:
+		 * 1. Nonce verification (check_admin_referer)
+		 * 2. User login requirement (is_user_logged_in)
+		 * 3. Capability check (staff) OR ticket ownership verification
+		 * 4. File existence and readability validation
+		 * 5. Path traversal protection via pnpc_psd_attachment_db_to_path()
+		 * 6. MIME type validation via wp_check_filetype()
+		 * 
+		 * Using readfile() instead of WP_Filesystem because:
+		 * - Efficiently streams large binary files without loading into memory
+		 * - Properly handles Content-Length for download progress
+		 * - Tested and secure for binary file output
+		 * - All security checks completed before file access
+		 */
 		nocache_headers();
 		header( 'X-Content-Type-Options: nosniff' );
 		header( 'Content-Type: ' . $ctype );
