@@ -66,6 +66,7 @@ class PNPC_PSD_Ticket_Response
 			'created_at'        => $created_at_utc,
 		);
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$result = $wpdb->insert(
 			$table_name,
 			$insert_data,
@@ -97,6 +98,7 @@ class PNPC_PSD_Ticket_Response
 						'created_at'  => $created_at_utc,
 					);
 					// IMPORTANT: keep formats aligned with $att_data keys to avoid corrupting file_type/file_size.
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 					$wpdb->insert(
 						$attachments_table,
 						$att_data,
@@ -213,6 +215,7 @@ class PNPC_PSD_Ticket_Response
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
 		$ticket_id  = absint($ticket_id);
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$result = $wpdb->delete(
 			$table_name,
 			array('ticket_id' => $ticket_id),

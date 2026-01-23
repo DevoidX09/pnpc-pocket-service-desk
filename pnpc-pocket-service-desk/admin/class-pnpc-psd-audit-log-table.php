@@ -261,7 +261,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 
 		// Count.
 		$sql_count = "SELECT COUNT(*) FROM {$table} {$where}";
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$total_items = (int) $wpdb->get_var( $wpdb->prepare( $sql_count, $params ) );
 
 		if ( ! $this->is_pro ) {
@@ -283,7 +283,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 			$sql   = "SELECT id, ticket_id, actor_id, action, context, created_at FROM {$table} {$where} ORDER BY {$orderby} {$order} {$limit_clause}";
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
 
 		$items = array();

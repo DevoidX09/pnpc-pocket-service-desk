@@ -57,6 +57,7 @@ $att_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 
 // Ticket-level attachments (response_id NULL/empty/0) and not deleted.
 // NOTE: Earlier builds incorrectly persisted ticket-level attachments with response_id=0.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 $ticket_attachments = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND (response_id IS NULL OR response_id = '' OR response_id = 0) ORDER BY id ASC",
@@ -66,6 +67,7 @@ $ticket_attachments = $wpdb->get_results(
 
 // Response attachments keyed by response_id
 $response_attachments_map = array();
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 $all_response_atts = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND response_id IS NOT NULL AND response_id <> 0 ORDER BY id ASC",

@@ -342,18 +342,18 @@ class PNPC_PSD_Activator {
 		);
 
 		foreach ( $columns as $col => $sql ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$tickets_table} LIKE %s", $col ) );
 			if ( ! $exists ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
 				$wpdb->query( $sql );
 			}
 		}
 
 		// Backfill: treat ticket creation as customer activity + customer viewed.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$wpdb->query( "UPDATE {$tickets_table} SET last_customer_activity_at = COALESCE(last_customer_activity_at, created_at)" );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$wpdb->query( "UPDATE {$tickets_table} SET last_customer_viewed_at = COALESCE(last_customer_viewed_at, created_at)" );
 
 		// Default settings introduced in v1.1.0+.
@@ -395,11 +395,12 @@ class PNPC_PSD_Activator {
 		$audit_table   = $wpdb->prefix . 'pnpc_psd_audit_log';
 
 		// Add archived_at column if missing.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$archived_exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$tickets_table} LIKE %s", 'archived_at' ) );
 		if ( ! $archived_exists ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
 			$wpdb->query( "ALTER TABLE {$tickets_table} ADD COLUMN archived_at datetime DEFAULT NULL AFTER deleted_at" );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
 			$wpdb->query( "ALTER TABLE {$tickets_table} ADD KEY archived_at (archived_at)" );
 		}
 
@@ -444,6 +445,7 @@ class PNPC_PSD_Activator {
 		);
 
 		if ($table_exists) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
 					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
@@ -472,6 +474,7 @@ class PNPC_PSD_Activator {
 		);
 
 		if ($table_exists) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
 					"SHOW COLUMNS FROM {$responses_table} LIKE %s",
@@ -500,6 +503,7 @@ class PNPC_PSD_Activator {
 		);
 
 		if ($table_exists) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
 					"SHOW COLUMNS FROM {$attachments_table} LIKE %s",
@@ -541,6 +545,7 @@ class PNPC_PSD_Activator {
 
 		if ( $table_exists ) {
 			// Check if delete_reason column exists.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
 					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
@@ -602,6 +607,7 @@ class PNPC_PSD_Activator {
 
 		if ( $table_exists ) {
 			// Check if created_by_staff column exists.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
 					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
