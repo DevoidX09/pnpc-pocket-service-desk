@@ -3,9 +3,8 @@
 /**
  * Plugin Name: PNPC Pocket Service Desk
  * Plugin URI: https://github.com/DevoidX09/pnpc-pocket-service-desk
- * Description: A comprehensive service desk plugin for managing customer 
- * support tickets with WooCommerce integration.
- * Version: 1.1.1.4.1.1
+ * Description: A comprehensive service desk plugin for managing customer support tickets with WooCommerce integration.
+ * Version: 1.1.2
  * Author: PNPC
  * Author URI: https://github.com/DevoidX09
  * License: GPL v2 or later
@@ -27,15 +26,15 @@ if (! defined('ABSPATH')) {
  * Current plugin version.
  */
 if (! defined('PNPC_PSD_VERSION')) {
-	define( 'PNPC_PSD_VERSION', '1.1.1.4.1.1' );
+	define('PNPC_PSD_VERSION', '1.1.1.4.1.1');
 }
 
 /**
  * Plugin directory path.
  */
-	if (! defined('PNPC_PSD_PLUGIN_DIR')) {
-		define('PNPC_PSD_PLUGIN_DIR', plugin_dir_path(__FILE__));
-	}
+if (! defined('PNPC_PSD_PLUGIN_DIR')) {
+	define('PNPC_PSD_PLUGIN_DIR', plugin_dir_path(__FILE__));
+}
 
 /**
  * Plugin directory URL.
@@ -93,9 +92,9 @@ function activate_pnpc_pocket_service_desk()
 		}
 	}
 	// Log if activator not available
-	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+	if (defined('WP_DEBUG') && WP_DEBUG) {
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
-		error_log( 'pnpc-activate: activator file missing or class not found: ' . $activator );
+		error_log('pnpc-activate: activator file missing or class not found: ' . $activator);
 	}
 }
 register_activation_hook(__FILE__, 'activate_pnpc_pocket_service_desk');
@@ -114,9 +113,9 @@ function deactivate_pnpc_pocket_service_desk()
 		}
 	}
 	// Log if deactivator not available
-	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+	if (defined('WP_DEBUG') && WP_DEBUG) {
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
-		error_log( 'pnpc-deactivate: deactivator file missing or class not found: ' . $deactivator );
+		error_log('pnpc-deactivate: deactivator file missing or class not found: ' . $deactivator);
 	}
 }
 register_deactivation_hook(__FILE__, 'deactivate_pnpc_pocket_service_desk');
@@ -139,9 +138,9 @@ foreach ($pnpc_core_files as $file) {
 	if (file_exists($file)) {
 		require_once $file;
 	} else {
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		if (defined('WP_DEBUG') && WP_DEBUG) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
-			error_log( 'pnpc-bootstrap: missing file ' . $file );
+			error_log('pnpc-bootstrap: missing file ' . $file);
 		}
 	}
 }
@@ -166,9 +165,9 @@ foreach ($pnpc_ticket_paths as $ticket_file) {
 }
 if (! $pnpc_ticket_loaded) {
 	// Log a single diagnostic pointing to the current expected file to reduce noise.
-	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+	if (defined('WP_DEBUG') && WP_DEBUG) {
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
-		error_log( 'pnpc-bootstrap: missing file ' . $pnpc_ticket_paths[0] );
+		error_log('pnpc-bootstrap: missing file ' . $pnpc_ticket_paths[0]);
 	}
 }
 
@@ -189,10 +188,10 @@ if (class_exists('PNPC_PSD')) {
 		if (method_exists($plugin, 'run')) {
 			$plugin->run();
 		} else {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			if (defined('WP_DEBUG') && WP_DEBUG) {
 				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
-				error_log( 'pnpc-bootstrap: PNPC_PSD exists but run() method missing.' );
-				}
+				error_log('pnpc-bootstrap: PNPC_PSD exists but run() method missing.');
+			}
 		}
 	}
 
@@ -207,8 +206,8 @@ if (class_exists('PNPC_PSD')) {
 			echo '</p></div>';
 		}
 	);
-	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+	if (defined('WP_DEBUG') && WP_DEBUG) {
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
-		error_log( 'pnpc-bootstrap: core class PNPC_PSD not found; plugin not initialized.' );
+		error_log('pnpc-bootstrap: core class PNPC_PSD not found; plugin not initialized.');
 	}
 }
