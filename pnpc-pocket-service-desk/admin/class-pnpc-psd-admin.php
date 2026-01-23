@@ -3486,7 +3486,7 @@ public function display_tickets_page()
 			
 			// Validate email address
 			if (!is_email($to)) {
-				error_log('PNPC PSD: Invalid customer email address: ' . $to);
+				error_log('PNPC PSD: Invalid customer email address for customer ID: ' . absint($customer_id));
 				return false;
 			}
 			
@@ -3498,14 +3498,14 @@ public function display_tickets_page()
 			);
 
 			// Try to get customer-facing ticket detail page, fallback to admin URL
-			$ticket_url = admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket_id);
+			$ticket_url = admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . absint($ticket_id));
 			
 			$ticket_detail_page_id = absint(get_option('pnpc_psd_ticket_detail_page_id', 0));
 			if ($ticket_detail_page_id > 0) {
 				$page = get_post($ticket_detail_page_id);
 				if ($page && $page->post_status === 'publish') {
 					$ticket_url = add_query_arg(
-						array('ticket_id' => $ticket_id),
+						array('ticket_id' => absint($ticket_id)),
 						get_permalink($ticket_detail_page_id)
 					);
 				}
@@ -3538,7 +3538,7 @@ public function display_tickets_page()
 			$result = wp_mail($to, $subject, $message, $headers);
 			
 			if (!$result) {
-				error_log('PNPC PSD: Failed to send notification email to ' . $to);
+				error_log('PNPC PSD: Failed to send notification email for ticket ID: ' . absint($ticket_id) . ', customer ID: ' . absint($customer_id));
 			}
 			
 			return $result;
