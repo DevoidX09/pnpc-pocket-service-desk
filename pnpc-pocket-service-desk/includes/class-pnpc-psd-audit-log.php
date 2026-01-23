@@ -94,7 +94,11 @@ class PNPC_PSD_Audit_Log {
 		}
 
 		// MySQL requires a derived table when deleting with a subquery on the same table.
-		$sql = "DELETE FROM {$table} WHERE id NOT IN (SELECT id FROM (SELECT id FROM {$table} ORDER BY id DESC LIMIT {$cap}) t)";
+		// Use prepared statement for security compliance.
+		$sql = $wpdb->prepare(
+			"DELETE FROM {$table} WHERE id NOT IN (SELECT id FROM (SELECT id FROM {$table} ORDER BY id DESC LIMIT %d) t)",
+			$cap
+		);
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->query( $sql );
 	}
