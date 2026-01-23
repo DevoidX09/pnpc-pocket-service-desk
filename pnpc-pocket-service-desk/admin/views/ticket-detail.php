@@ -133,8 +133,8 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 			/* translators: 1: staff member name, 2: customer name */
 			printf(
 				esc_html__('Staff-Created Ticket: Created by %1$s on behalf of %2$s', 'pnpc-pocket-service-desk'),
-				'<strong>' . $staff_name . '</strong>',
-				'<strong>' . $customer_name . '</strong>'
+				'<strong>' . esc_html( $staff_name ) . '</strong>',
+				'<strong>' . esc_html( $customer_name ) . '</strong>'
 			);
 			?>
 		</div>
@@ -306,7 +306,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 							 class="pnpc-psd-attachment-thumbnail">
 					<?php else : ?>
 						<div class="pnpc-psd-attachment-icon">
-							<?php echo pnpc_psd_get_file_icon($file_ext); ?>
+							<?php echo esc_html( pnpc_psd_get_file_icon($file_ext) ); ?>
 						</div>
 					<?php endif; ?>
 					
@@ -393,7 +393,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 										 class="pnpc-psd-attachment-thumbnail">
 								<?php else : ?>
 									<div class="pnpc-psd-attachment-icon">
-										<?php echo pnpc_psd_get_file_icon($file_ext); ?>
+										<?php echo esc_html( pnpc_psd_get_file_icon($file_ext) ); ?>
 									</div>
 								<?php endif; ?>
 								

@@ -3448,7 +3448,7 @@ public function display_tickets_page()
 			);
 
 			// Redirect to ticket detail
-			wp_redirect(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket_id));
+			wp_safe_redirect(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket_id));
 			exit;
 		} else {
 			add_settings_error(
