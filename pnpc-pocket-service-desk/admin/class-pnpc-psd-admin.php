@@ -3429,9 +3429,14 @@ public function display_tickets_page()
 				}
 			}
 			
-			// Send notification if requested
+			// Send notification if requested (don't let email failures break the redirect)
 			if ($notify_customer) {
-				$this->send_staff_created_ticket_notification($ticket_id, $customer_id);
+				try {
+					$this->send_staff_created_ticket_notification($ticket_id, $customer_id);
+				} catch (Exception $e) {
+					// Log but don't break the flow
+					error_log('PNPC PSD: Notification failed: ' . $e->getMessage());
+				}
 			}
 
 			// Success message and redirect
@@ -3467,59 +3472,81 @@ public function display_tickets_page()
 	*/
 	private function send_staff_created_ticket_notification($ticket_id, $customer_id)
 	{
-		$ticket = PNPC_PSD_Ticket::get($ticket_id);
-		$customer = get_userdata($customer_id);
-		$staff = wp_get_current_user();
+		try {
+			$ticket = PNPC_PSD_Ticket::get($ticket_id);
+			$customer = get_userdata($customer_id);
+			$staff = wp_get_current_user();
 
-		if (! $ticket || ! $customer) {
+			if (! $ticket || ! $customer) {
+				error_log('PNPC PSD: Failed to send notification - invalid ticket or customer');
+				return false;
+			}
+
+			$to = $customer->user_email;
+			
+			// Validate email address
+			if (!is_email($to)) {
+				error_log('PNPC PSD: Invalid customer email address: ' . $to);
+				return false;
+			}
+			
+			$subject = sprintf(
+				/* translators: 1: site name, 2: ticket number */
+				__('[%1$s] Support Ticket Created - #%2$s', 'pnpc-pocket-service-desk'),
+				get_bloginfo('name'),
+				$ticket->ticket_number
+			);
+
+			// Try to get customer-facing ticket detail page, fallback to admin URL
+			$ticket_url = admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket_id);
+			
+			$ticket_detail_page_id = absint(get_option('pnpc_psd_ticket_detail_page_id', 0));
+			if ($ticket_detail_page_id > 0) {
+				$page = get_post($ticket_detail_page_id);
+				if ($page && $page->post_status === 'publish') {
+					$ticket_url = add_query_arg(
+						array('ticket_id' => $ticket_id),
+						get_permalink($ticket_detail_page_id)
+					);
+				}
+			}
+
+			$message = sprintf(
+				/* translators: 1: customer name, 2: ticket number, 3: subject, 4: priority, 5: description, 6: ticket URL, 7: staff name, 8: site name */
+				__('Hello %1$s,', 'pnpc-pocket-service-desk') . "nn" .
+				__('A support ticket has been created for you by our support team.', 'pnpc-pocket-service-desk') . "nn" .
+				__('Ticket Number: %2$s', 'pnpc-pocket-service-desk') . "n" .
+				__('Subject: %3$s', 'pnpc-pocket-service-desk') . "n" .
+				__('Priority: %4$s', 'pnpc-pocket-service-desk') . "nn" .
+				__('Description:', 'pnpc-pocket-service-desk') . "n%5$snn" .
+				__('You can view and respond to this ticket here:', 'pnpc-pocket-service-desk') . "n%6$snn" .
+				__('Created by: %7$s', 'pnpc-pocket-service-desk') . "nn" .
+				__('Thank you,', 'pnpc-pocket-service-desk') . "n" .
+				__('%8$s Support Team', 'pnpc-pocket-service-desk'),
+				$customer->display_name,
+				$ticket->ticket_number,
+				$ticket->subject,
+				ucfirst($ticket->priority),
+				$ticket->description,
+				$ticket_url,
+				$staff->display_name,
+				get_bloginfo('name')
+			);
+
+			$headers = array('Content-Type: text/plain; charset=UTF-8');
+
+			$result = wp_mail($to, $subject, $message, $headers);
+			
+			if (!$result) {
+				error_log('PNPC PSD: Failed to send notification email to ' . $to);
+			}
+			
+			return $result;
+			
+		} catch (Exception $e) {
+			error_log('PNPC PSD: Exception in send_staff_created_ticket_notification: ' . $e->getMessage());
 			return false;
 		}
-
-		$to = $customer->user_email;
-		$subject = sprintf(
-			/* translators: 1: site name, 2: ticket number */
-			__('[%1$s] Support Ticket Created - #%2$s', 'pnpc-pocket-service-desk'),
-			get_bloginfo('name'),
-			$ticket->ticket_number
-		);
-
-		// Try to get customer-facing ticket detail page, fallback to admin URL
-		$ticket_detail_page_id = absint(get_option('pnpc_psd_ticket_detail_page_id', 0));
-		if ($ticket_detail_page_id > 0 && get_post($ticket_detail_page_id)) {
-			$ticket_url = add_query_arg(
-				array('ticket_id' => $ticket_id),
-				get_permalink($ticket_detail_page_id)
-			);
-		} else {
-			// Fallback to admin URL if no customer portal is configured
-			$ticket_url = admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket_id);
-		}
-
-		$message = sprintf(
-			/* translators: 1: customer name, 2: ticket number, 3: subject, 4: priority, 5: description, 6: ticket URL, 7: staff name, 8: site name */
-			__('Hello %1$s,', 'pnpc-pocket-service-desk') . "nn" .
-			__('A support ticket has been created for you by our support team.', 'pnpc-pocket-service-desk') . "nn" .
-			__('Ticket Number: %2$s', 'pnpc-pocket-service-desk') . "n" .
-			__('Subject: %3$s', 'pnpc-pocket-service-desk') . "n" .
-			__('Priority: %4$s', 'pnpc-pocket-service-desk') . "nn" .
-			__('Description:', 'pnpc-pocket-service-desk') . "n%5$snn" .
-			__('You can view and respond to this ticket here:', 'pnpc-pocket-service-desk') . "n%6$snn" .
-			__('Created by: %7$s', 'pnpc-pocket-service-desk') . "nn" .
-			__('Thank you,', 'pnpc-pocket-service-desk') . "n" .
-			__('%8$s Support Team', 'pnpc-pocket-service-desk'),
-			$customer->display_name,
-			$ticket->ticket_number,
-			$ticket->subject,
-			ucfirst($ticket->priority),
-			$ticket->description,
-			$ticket_url,
-			$staff->display_name,
-			get_bloginfo('name')
-		);
-
-		$headers = array('Content-Type: text/plain; charset=UTF-8');
-
-		return wp_mail($to, $subject, $message, $headers);
 	}
 
 
