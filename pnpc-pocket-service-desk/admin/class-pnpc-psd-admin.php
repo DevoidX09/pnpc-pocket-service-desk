@@ -3511,27 +3511,35 @@ public function display_tickets_page()
 				}
 			}
 
-			$message = sprintf(
-				/* translators: 1: customer name, 2: ticket number, 3: subject, 4: priority, 5: description, 6: ticket URL, 7: staff name, 8: site name */
-				__('Hello %1$s,', 'pnpc-pocket-service-desk') . "\n\n" .
-				__('A support ticket has been created for you by our support team.', 'pnpc-pocket-service-desk') . "\n\n" .
-				__('Ticket Number: %2$s', 'pnpc-pocket-service-desk') . "\n" .
-				__('Subject: %3$s', 'pnpc-pocket-service-desk') . "\n" .
-				__('Priority: %4$s', 'pnpc-pocket-service-desk') . "\n\n" .
-				__('Description:', 'pnpc-pocket-service-desk') . "\n%5$s\n\n" .
-				__('You can view and respond to this ticket here:', 'pnpc-pocket-service-desk') . "\n%6$s\n\n" .
-				__('Created by: %7$s', 'pnpc-pocket-service-desk') . "\n\n" .
-				__('Thank you,', 'pnpc-pocket-service-desk') . "\n" .
-				__('%8$s Support Team', 'pnpc-pocket-service-desk'),
-				$customer->display_name,
-				$ticket->ticket_number,
-				$ticket->subject,
-				ucfirst($ticket->priority),
-				$ticket->description,
-				$ticket_url,
-				$staff->display_name,
-				get_bloginfo('name')
-			);
+			// Build message using array and implode to avoid sprintf format specifier issues
+			$message_parts = array();
+
+			/* translators: %s: customer display name */
+			$message_parts[] = sprintf( __( 'Hello %s,', 'pnpc-pocket-service-desk' ), $customer->display_name );
+			$message_parts[] = '';
+			$message_parts[] = __( 'A support ticket has been created for you by our support team.', 'pnpc-pocket-service-desk' );
+			$message_parts[] = '';
+			/* translators: %s: ticket number */
+			$message_parts[] = sprintf( __( 'Ticket Number: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
+			/* translators: %s: ticket subject */
+			$message_parts[] = sprintf( __( 'Subject: %s', 'pnpc-pocket-service-desk' ), $ticket->subject );
+			/* translators: %s: ticket priority */
+			$message_parts[] = sprintf( __( 'Priority: %s', 'pnpc-pocket-service-desk' ), ucfirst( $ticket->priority ) );
+			$message_parts[] = '';
+			$message_parts[] = __( 'Description:', 'pnpc-pocket-service-desk' );
+			$message_parts[] = $ticket->description;
+			$message_parts[] = '';
+			$message_parts[] = __( 'You can view and respond to this ticket here:', 'pnpc-pocket-service-desk' );
+			$message_parts[] = $ticket_url;
+			$message_parts[] = '';
+			/* translators: %s: staff display name */
+			$message_parts[] = sprintf( __( 'Created by: %s', 'pnpc-pocket-service-desk' ), $staff->display_name );
+			$message_parts[] = '';
+			$message_parts[] = __( 'Thank you,', 'pnpc-pocket-service-desk' );
+			/* translators: %s: site name */
+			$message_parts[] = sprintf( __( '%s Support Team', 'pnpc-pocket-service-desk' ), get_bloginfo( 'name' ) );
+
+			$message = implode( "\n", $message_parts );
 
 			$headers = array('Content-Type: text/plain; charset=UTF-8');
 
