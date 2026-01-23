@@ -31,6 +31,7 @@ if (isset($_GET['ticket_id']) && is_user_logged_in() && current_user_can('pnpc_p
 global $wpdb;
 $att_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 $ticket_attachments = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND (response_id IS NULL OR response_id = '' OR response_id = 0) ORDER BY id ASC",
@@ -38,6 +39,7 @@ $ticket_attachments = $wpdb->get_results(
 	)
 );
 $response_attachments_map = array();
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 $all_response_atts = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND response_id IS NOT NULL AND response_id <> 0 ORDER BY id ASC",
