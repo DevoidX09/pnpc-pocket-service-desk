@@ -48,7 +48,6 @@ if (! function_exists('pnpc_psd_get_ticket_detail_page_id')) {
             'post_type'      => 'page',
             'posts_per_page' => -1,
             'post_status'    => array('publish', 'private', 'draft'),
-            'suppress_filters' => true,
             'fields'         => 'ids',
         ));
 
@@ -109,7 +108,6 @@ if (! function_exists('pnpc_psd_get_my_tickets_page_id')) {
             'post_type'      => 'page',
             'posts_per_page' => -1,
             'post_status'    => array('publish', 'private', 'draft'),
-            'suppress_filters' => true,
             'fields'         => 'ids',
         ));
 
