@@ -195,10 +195,19 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 					<?php
 					$title = isset( $a['title'] ) ? (string) $a['title'] : '';
 					$body  = isset( $a['body'] ) ? (string) $a['body'] : '';
+					$url   = isset( $a['url'] ) ? (string) $a['url'] : '';
+					$button_text = isset( $a['button_text'] ) ? (string) $a['button_text'] : __( 'View', 'pnpc-pocket-service-desk' );
 					?>
 					<div class="psd-alert">
 						<p class="psd-alert-title"><?php echo esc_html( $title ); ?></p>
 						<p class="psd-alert-body"><?php echo esc_html( $body ); ?></p>
+						<?php if ( $url ) : ?>
+							<p class="psd-alert-actions">
+								<a href="<?php echo esc_url( $url ); ?>" class="button button-small">
+									<?php echo esc_html( $button_text ); ?>
+								</a>
+							</p>
+						<?php endif; ?>
 					</div>
 				<?php endforeach; ?>
 			<?php endif; ?>

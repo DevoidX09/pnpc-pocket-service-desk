@@ -62,54 +62,86 @@
 
 
 
-		// Auto-save info tooltip (works even if AJAX nonce localization fails)
-		// Use click for primary interaction
-		$(document).on('click', '#pnpc-psd-autosave-tip', function(e) {
-			e.preventDefault();
-			var $link = $(this);
-			var $panel = $('#pnpc-psd-autosave-tip-panel');
-			if (!$panel.length) {
-				return;
-			}
-			var isOpen = $panel.is(':visible');
-			if (isOpen) {
-				$panel.hide();
-				$link.attr('aria-expanded', 'false');
-			} else {
-				$panel.show();
-				$link.attr('aria-expanded', 'true');
-			}
-		});
-
-		// Also support hover/focus for accessibility and classic tooltip behavior
-		$(document).on('mouseenter focus', '#pnpc-psd-autosave-tip', function() {
-			var $panel = $('#pnpc-psd-autosave-tip-panel');
-			if ($panel.length) {
-				$panel.show();
-				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'true');
-			}
-		});
+		// ==============================================
+		// Auto-save tooltip (hover + click)
+		// ==============================================
+		var $tip = $('#pnpc-psd-autosave-tip');
+		var $panel = $('#pnpc-psd-autosave-tip-panel');
 		
-		$(document).on('mouseleave blur', '#pnpc-psd-autosave-tip', function() {
-			var $panel = $('#pnpc-psd-autosave-tip-panel');
-			if ($panel.length) {
-				$panel.hide();
-				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
-			}
-		});
+		// Exit if elements don't exist
+		if (!$tip.length || !$panel.length) {
+			// Not the ticket detail screen; do not halt the rest of the admin JS.
+		} else {
+			var isPinnedOpen = false; // toggled via click
+			var isHovering = false;
 
-		// Close tooltip when clicking outside
-		$(document).on('click', function(e) {
-			var $t = $(e.target);
-			if ($t.closest('#pnpc-psd-autosave-tip').length || $t.closest('#pnpc-psd-autosave-tip-panel').length) {
-				return;
-			}
-			var $panel = $('#pnpc-psd-autosave-tip-panel');
-			if ($panel.length && $panel.is(':visible')) {
-				$panel.hide();
-				$('#pnpc-psd-autosave-tip').attr('aria-expanded', 'false');
-			}
-		});
+			var renderTip = function() {
+				var shouldOpen = isPinnedOpen || isHovering;
+				if (shouldOpen) {
+					$panel.show();
+					$tip.attr('aria-expanded', 'true');
+				} else {
+					$panel.hide();
+					$tip.attr('aria-expanded', 'false');
+				}
+			};
+
+			// Toggle pinned open/closed on click
+			$tip.on('click', function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+
+				isPinnedOpen = !isPinnedOpen;
+				renderTip();
+			});
+
+			// Hover/focus behavior (non-pinned)
+			$tip.on('mouseenter focus', function() {
+				isHovering = true;
+				renderTip();
+			});
+
+			$tip.on('mouseleave blur', function() {
+				isHovering = false;
+				renderTip();
+			});
+
+			// Keep open while hovering the panel itself
+			$panel.on('mouseenter', function() {
+				isHovering = true;
+				renderTip();
+			});
+
+			$panel.on('mouseleave', function() {
+				isHovering = false;
+				renderTip();
+			});
+
+			// Close pinned tooltip on outside click
+			$(document).on('click', function(e) {
+				if (!isPinnedOpen) {
+					return;
+				}
+
+				var $target = $(e.target);
+				if ($target.closest('#pnpc-psd-autosave-tip').length || $target.closest('#pnpc-psd-autosave-tip-panel').length) {
+					return;
+				}
+
+				isPinnedOpen = false;
+				isHovering = false;
+				renderTip();
+			});
+
+			// Close on ESC
+			$(document).on('keydown', function(e) {
+				if (e.key === 'Escape' && (isPinnedOpen || isHovering)) {
+					isPinnedOpen = false;
+					isHovering = false;
+					renderTip();
+				}
+			});
+		}
 
 		if (! adminNonce) {
 			return;
@@ -599,9 +631,17 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 					success: function(result) {
 						if (result && result.success) {
 							showMessage('success', result.data.message || 'Priority updated.', 'pnpc-psd-admin-action-message');
-							setTimeout(function() {
-								location.reload();
-							}, 600);
+
+							// Update the on-screen priority indicator without forcing a full page reload.
+							var $pri = $('.pnpc-psd-priority');
+							if ($pri.length) {
+								$pri.text(pr.charAt(0).toUpperCase() + pr.slice(1));
+								$pri.removeClass(function(i, cls) {
+									var matches = cls.match(/(^|\s)pnpc-psd-priority-\S+/g) || [];
+									return matches.join(' ');
+								});
+								$pri.addClass('pnpc-psd-priority-' + pr);
+							}
 						} else if (result && result.data && result.data.message) {
 							showMessage('error', result.data.message, 'pnpc-psd-admin-action-message');
 						} else {

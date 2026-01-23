@@ -518,6 +518,53 @@ ob_start();
 			wp_send_json_success( $payload );
 		};
 
+		// Defensive: catch non-Throwable fatals during this AJAX request and return a JSON error instead of a white-screen/critical error.
+		$__pnpc_fatal_ref = function_exists( 'wp_generate_uuid4' ) ? wp_generate_uuid4() : uniqid( 'pnpc_psd_', true );
+		register_shutdown_function(
+			function () use ( $__pnpc_fatal_ref, &$__pnpc_ob_started ) {
+				$err = error_get_last();
+				if ( empty( $err ) ) {
+					return;
+				}
+				$fatal_types = array( E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR );
+				if ( ! in_array( (int) $err['type'], $fatal_types, true ) ) {
+					return;
+				}
+				// Best-effort: clear any buffered output so JSON is not corrupted.
+				while ( ob_get_level() > 0 ) {
+					ob_end_clean();
+				}
+				// Persist the last fatal for admin review (lightweight, no PII).
+				update_option(
+					'pnpc_psd_last_create_ticket_fatal',
+					array(
+						'ts'   => time(),
+						'ref'  => $__pnpc_fatal_ref,
+						'msg'  => isset( $err['message'] ) ? (string) $err['message'] : '',
+						'file' => isset( $err['file'] ) ? (string) $err['file'] : '',
+						'line' => isset( $err['line'] ) ? (int) $err['line'] : 0,
+					),
+					false
+				);
+				// Return a generic error to the browser; the ticket may still have been created.
+				nocache_headers();
+				header( 'Content-Type: application/json; charset=' . get_option( 'blog_charset' ) );
+				echo wp_json_encode(
+					array(
+						'success' => false,
+						'data'    => array(
+							'message' => __( 'An internal error occurred while finalizing your ticket. The ticket may still have been created—please refresh your tickets list. If the issue persists, contact support and provide reference:', 'pnpc-pocket-service-desk' ) . ' ' . $__pnpc_fatal_ref,
+							'ref'     => $__pnpc_fatal_ref,
+						),
+					)
+				);
+				exit;
+			}
+		);
+
+
+		try {
+
 		$nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
 		if (! wp_verify_nonce($nonce, 'pnpc_psd_public_nonce') && ! wp_verify_nonce($nonce, 'pnpc_psd_admin_nonce')) {
 			$__pnpc_json_error( __('Security check failed.  Please refresh and try again.', 'pnpc-pocket-service-desk') );
@@ -767,10 +814,17 @@ ob_start();
 
 		$__pnpc_json_success( array(
 			'message' => __('Ticket created successfully. ', 'pnpc-pocket-service-desk') . $note,
-			'ticket_number' => $ticket->ticket_number,
+			'ticket_number' => ( is_object( $ticket ) && isset( $ticket->ticket_number ) ) ? $ticket->ticket_number : '',
 			'ticket_id' => $ticket_id,
 			'ticket_detail_url' => $detail_url,
 		) );
+		} catch (\Throwable $e) {
+			if ( function_exists( 'pnpc_psd_debug_log' ) ) {
+				pnpc_psd_debug_log( 'ajax_create_ticket_fatal', array( 'message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine() ) );
+			}
+			$__pnpc_json_error( __( 'An unexpected error occurred while creating the ticket. Please reload and try again.', 'pnpc-pocket-service-desk' ) );
+		}
+
 	}
 
 	/**

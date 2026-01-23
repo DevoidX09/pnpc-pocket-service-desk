@@ -891,21 +891,36 @@ body.pnpc-psd-flash-active {
 
 /* Auto-save tooltip */
 .pnpc-psd-autosave-tip-wrap {
+	position: relative;
 	text-align: right;
 	margin: 0 0 10px 0;
 }
 
 .pnpc-psd-autosave-tip {
 	text-decoration: none;
+	cursor: help;
+}
+
+.pnpc-psd-autosave-tip-container {
+	position: relative;
+	display: inline-block;
 }
 
 .pnpc-psd-autosave-tip-panel {
-	margin: 8px 0 0 0;
-	padding: 10px 12px;
-	background: #fff;
-	border: 1px solid #dcdcde;
-	border-radius: 4px;
-	max-width: 340px;
-	display: inline-block;
 	text-align: left;
+	position: absolute;
+	right: 0;
+	bottom: 100%;
+	top: auto;
+	margin: 0 0 8px 0;
+	padding: 8px 12px;
+	background: #fff;
+	border: 1px solid #ccc;
+	border-radius: 3px;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	z-index: 99999;
+	white-space: normal;
+	max-width: 340px;
+	overflow-wrap: anywhere;
+	word-break: break-word;
 }

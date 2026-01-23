@@ -111,16 +111,58 @@ class PNPC_PSD_Activator {
 
 		// Flush rewrite rules.
 		flush_rewrite_rules();
-
 		// First-run setup wizard prompt (non-destructive).
+		// Auto-redirect ONLY when a dashboard page has not been configured yet
+		// AND there is no existing ticket history (clean install).
 		$dash_id = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
-		if ( $dash_id <= 0 || 'trash' === get_post_status( $dash_id ) ) {
+
+		$has_dashboard = false;
+		if ( $dash_id > 0 ) {
+			$status = get_post_status( $dash_id );
+			if ( ! empty( $status ) && 'trash' !== $status && 'auto-draft' !== $status ) {
+				$created_by_builder = (bool) get_post_meta( $dash_id, '_pnpc_psd_created_by_builder', true );
+				if ( $created_by_builder ) {
+					$has_dashboard = true;
+				} else {
+					$post = get_post( $dash_id );
+					$haystack = ( $post instanceof WP_Post ) ? (string) $post->post_content : '';
+					$elementor_data = (string) get_post_meta( $dash_id, '_elementor_data', true );
+					if ( ! empty( $elementor_data ) ) {
+						$haystack .= "\n" . $elementor_data;
+					}
+					$tags = array( 'pnpc_profile_settings', 'pnpc_service_desk', 'pnpc_create_ticket', 'pnpc_services', 'pnpc_my_tickets' );
+					foreach ( $tags as $tag ) {
+						if ( false !== strpos( $haystack, '[' . $tag ) ) {
+							$has_dashboard = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+		$has_tickets   = false;
+
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+
+		// Determine whether the tickets table exists.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$table_exists = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name );
+
+		if ( $table_exists ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$ticket_count = (int) $wpdb->get_var( "SELECT COUNT(1) FROM {$table_name}" );
+			$has_tickets  = ( $ticket_count > 0 );
+		}
+
+		if ( ! $has_dashboard && ! $has_tickets ) {
 			update_option( 'pnpc_psd_needs_setup_wizard', 1 );
 			update_option( 'pnpc_psd_setup_notice_dismissed', 0 );
 			// Redirect into the wizard once after activation (clean installs only).
 			// Use an option (not a transient) so this survives object cache variance.
 			update_option( 'pnpc_psd_do_setup_redirect', 1 );
 		}
+
 
 	}
 

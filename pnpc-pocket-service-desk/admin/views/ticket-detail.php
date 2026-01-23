@@ -174,9 +174,9 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 					<?php esc_html_e('Created by:', 'pnpc-pocket-service-desk'); ?>
 					<?php
 					if ($ticket_user_edit_link) {
-						echo '<a href="' . esc_url($ticket_user_edit_link) . '">' . $ticket_user_name . '</a>';
+						echo '<a href="' . esc_url($ticket_user_edit_link) . '">' . esc_html( $ticket_user_name ) . '</a>';
 					} else {
-						echo $ticket_user_name;
+						echo esc_html( $ticket_user_name );
 					}
 					
 					// Display user_url if present
@@ -190,8 +190,10 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 
 		<div class="pnpc-psd-ticket-actions">
 			<div class="pnpc-psd-autosave-tip-wrap">
-				<a href="#" id="pnpc-psd-autosave-tip" class="pnpc-psd-autosave-tip" aria-expanded="false"><span class="dashicons dashicons-info-outline"></span> +Auto-save info</a>
-				<div id="pnpc-psd-autosave-tip-panel" class="pnpc-psd-autosave-tip-panel" style="display:none;"><?php esc_html_e( 'Your selections will auto-save; buttons are available if needed.', 'pnpc-pocket-service-desk' ); ?></div>
+				<div class="pnpc-psd-autosave-tip-container">
+				<a href="#" id="pnpc-psd-autosave-tip" class="pnpc-psd-autosave-tip" aria-expanded="false" aria-controls="pnpc-psd-autosave-tip-panel"><span class="dashicons dashicons-info-outline" aria-hidden="true"></span> <?php echo esc_html__( 'Auto-save help', 'pnpc-pocket-service-desk' ); ?></a>
+<div id="pnpc-psd-autosave-tip-panel" class="pnpc-psd-autosave-tip-panel" style="display:none;"><?php echo esc_html__( 'Agent, Status, and Priority save automatically when you change them. If anything fails, use the Save buttons.', 'pnpc-pocket-service-desk' ); ?></div>
+				</div>
 			</div>
 			<?php if (current_user_can('pnpc_psd_assign_tickets')) : ?>
 				<div class="pnpc-psd-field">
@@ -266,9 +268,9 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 			<?php esc_html_e('Requestor:', 'pnpc-pocket-service-desk'); ?>
 			<?php
 			if ($ticket_user_edit_link) {
-				echo '<a href="' . esc_url($ticket_user_edit_link) . '">' . $ticket_user_name . '</a>';
+				echo '<a href="' . esc_url($ticket_user_edit_link) . '">' . esc_html( $ticket_user_name ) . '</a>';
 			} else {
-				echo $ticket_user_name;
+				echo esc_html( $ticket_user_name );
 			}
 			?>
 		</p>
