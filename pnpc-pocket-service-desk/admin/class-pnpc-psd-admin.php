@@ -3808,9 +3808,9 @@ public function display_tickets_page()
 		$file_d = esc_html( basename( $file ) );
 		echo '<div class="notice notice-error"><p><strong>' . esc_html__( 'Service Desk:', 'pnpc-pocket-service-desk' ) . '</strong> ' .
 			esc_html__( 'A critical error was captured during ticket creation.', 'pnpc-pocket-service-desk' ) .
-			' ' . esc_html__( 'Reference:', 'pnpc-pocket-service-desk' ) . ' <code>' . $ref_d . '</code>' .
-			( $file_d ? ' &mdash; <code>' . $file_d . ':' . (int) $line . '</code>' : '' ) .
-			( $msg_d ? '<br/><span style="display:inline-block;margin-top:6px;max-width:900px;">' . $msg_d . '</span>' : '' ) .
+			' ' . esc_html__( 'Reference:', 'pnpc-pocket-service-desk' ) . ' <code>' . esc_html( $ref_d ) . '</code>' .
+			( $file_d ? ' &mdash; <code>' . esc_html( $file_d ) . ':' . (int) $line . '</code>' : '' ) .
+			( $msg_d ? '<br/><span style="display:inline-block;margin-top:6px;max-width:900px;">' . esc_html( $msg_d ) . '</span>' : '' ) .
 			'</p></div>';
 	}
 
