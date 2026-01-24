@@ -23,7 +23,7 @@ if ( ! empty( $error ) ) {
 	delete_option( 'pnpc_psd_setup_error' );
 }
 
-$canonical = "[pnpc_profile_settings]\n\n[pnpc_service_desk]\n\n[pnpc_create_ticket]\n\n[pnpc_services]\n\n[pnpc_my_tickets]\n";
+$canonical = "[pnpc_profile_settings]\n\n[pnpc_service_desk]\n\n[pnpc_create_ticket]\n\n[pnpc_services]\n\n[pnpc_my_tickets]\n\n[pnpc_ticket_detail]\n";
 
 if ( 'done' === $step ) {
 	$step = 'complete';
