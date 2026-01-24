@@ -1653,7 +1653,15 @@ public function display_tickets_page()
 		// Attachment size limit in MB (v1.1.0). Clamped at runtime by plan.
 		register_setting( 'pnpc_psd_settings', 'pnpc_psd_max_attachment_mb', array( 'type' => 'integer', 'sanitize_callback' => 'pnpc_psd_sanitize_max_attachment_mb', 'default' => 5 ) );
 
-		register_setting('pnpc_psd_settings', 'pnpc_psd_auto_assign_tickets');
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_auto_assign_tickets',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'absint',
+				'default'           => 0,
+			)
+		);
 		// Default agent assignment (staff user ID). 0 = no default.
 		register_setting(
 			'pnpc_psd_settings',
