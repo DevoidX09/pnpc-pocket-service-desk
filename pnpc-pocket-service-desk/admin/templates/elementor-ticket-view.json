@@ -182,43 +182,6 @@
               "isInner": false,
               "widgetType": "heading",
               "elType": "widget"
-            },
-            {
-              "id": "7b1b0af9",
-              "settings": {
-                "editor": "<p>This view reads the <code>?ticket=ID</code> query parameter. Example: <em>/ticket-view/?ticket=123</em>.</p>",
-                "_background_image": {
-                  "url": "",
-                  "id": "",
-                  "size": ""
-                },
-                "_background_video_fallback": {
-                  "url": "",
-                  "id": "",
-                  "size": ""
-                },
-                "_background_slideshow_gallery": [],
-                "_background_hover_image": {
-                  "url": "",
-                  "id": "",
-                  "size": ""
-                },
-                "_background_hover_video_fallback": {
-                  "url": "",
-                  "id": "",
-                  "size": ""
-                },
-                "_background_hover_slideshow_gallery": [],
-                "_mask_image": {
-                  "url": "",
-                  "id": "",
-                  "size": ""
-                }
-              },
-              "elements": [],
-              "isInner": false,
-              "widgetType": "text-editor",
-              "elType": "widget"
             }
           ],
           "isInner": false,
@@ -376,7 +339,7 @@
             {
               "id": "601b73ee",
               "settings": {
-                "shortcode": "[pnpc_ticket_view]",
+                "shortcode": "[pnpc_ticket_detail]",
                 "_background_image": {
                   "url": "",
                   "id": "",

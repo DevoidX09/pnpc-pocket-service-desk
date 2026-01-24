@@ -693,7 +693,7 @@ add_submenu_page(
  *
  * A Ticket View page is considered configured if:
  * - It exists and is a published page (not trashed), and
- * - It either contains the [pnpc_ticket_view] shortcode, or it was created by the wizard/builder.
+ * - It either contains the [pnpc_ticket_detail] shortcode, or it was created by the wizard/builder.
  *
  * @param int $page_id Page ID.
  * @return bool
@@ -721,7 +721,7 @@ private function is_ticket_view_configured( $page_id ) {
 	}
 
 	$content = (string) $post->post_content;
-	if ( false !== strpos( $content, '[pnpc_ticket_view' ) ) {
+	if ( false !== strpos( $content, '[pnpc_ticket_detail' ) ) {
 		return true;
 	}
 
@@ -760,7 +760,7 @@ private function is_ticket_view_configured( $page_id ) {
 			'pnpc_create_ticket',
 			'pnpc_services',
 			'pnpc_my_tickets',
-			'pnpc_ticket_view',
+			'pnpc_ticket_detail',
 		);
 
 		foreach ( $shortcodes as $tag ) {
@@ -1130,7 +1130,7 @@ private function is_ticket_view_configured( $page_id ) {
 					'post_type'      => 'page',
 					'post_status'    => array( 'publish', 'private', 'draft' ),
 					'posts_per_page' => 25,
-					's'              => 'pnpc_ticket_view',
+					's'              => 'pnpc_ticket_detail',
 					'fields'         => 'ids',
 				)
 			);
@@ -1138,7 +1138,7 @@ private function is_ticket_view_configured( $page_id ) {
 			if ( ! empty( $candidates ) ) {
 				foreach ( $candidates as $candidate_id ) {
 					$post = get_post( (int) $candidate_id );
-					if ( $post instanceof WP_Post && false !== strpos( (string) $post->post_content, '[pnpc_ticket_view' ) ) {
+					if ( $post instanceof WP_Post && false !== strpos( (string) $post->post_content, '[pnpc_ticket_detail' ) ) {
 						return (int) $candidate_id;
 					}
 				}
@@ -1264,7 +1264,7 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Error loading E
 		$editor = isset( $args['editor'] ) ? sanitize_key( (string) $args['editor'] ) : 'elementor';
 
 		// Default shortcode fallback.
-		$content = "[pnpc_ticket_view]";
+		$content = "[pnpc_ticket_detail]";
 
 		$page_data = array(
 			'post_title'   => $title,
