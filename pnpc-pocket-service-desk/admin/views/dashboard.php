@@ -71,20 +71,18 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 
 			<?php if ( $support_url ) : ?>
 				<a class="button" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $support_url ); ?>">
-					<?php echo esc_html( $is_pro ? __( 'Priority Support', 'pnpc-pocket-service-desk' ) : __( 'Support', 'pnpc-pocket-service-desk' ) ); ?>
+					<?php echo esc_html__( 'Support', 'pnpc-pocket-service-desk' ); ?>
 				</a>
 			<?php else : ?>
 				<span class="psd-muted"><?php echo esc_html__( 'Support link not configured.', 'pnpc-pocket-service-desk' ); ?></span>
 			<?php endif; ?>
 
-			<?php if ( ! $is_pro ) : ?>
-				<?php if ( $upgrade_url ) : ?>
-					<a class="button button-secondary" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $upgrade_url ); ?>">
-						<?php echo esc_html__( 'Upgrade to Pro', 'pnpc-pocket-service-desk' ); ?>
-					</a>
-				<?php else : ?>
-					<span class="psd-muted"><?php echo esc_html__( 'Upgrade link not configured.', 'pnpc-pocket-service-desk' ); ?></span>
-				<?php endif; ?>
+			<?php if ( $upgrade_url ) : ?>
+				<a class="button button-secondary" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $upgrade_url ); ?>">
+					<?php echo esc_html__( 'Upgrade to Pro', 'pnpc-pocket-service-desk' ); ?>
+				</a>
+			<?php else : ?>
+				<span class="psd-muted"><?php echo esc_html__( 'Upgrade link not configured.', 'pnpc-pocket-service-desk' ); ?></span>
 			<?php endif; ?>
 		</div>
 	</div>
@@ -213,11 +211,11 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 			<div class="psd-cta">
 				<?php if ( $support_url ) : ?>
 					<a class="button button-primary" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $support_url ); ?>">
-						<?php echo esc_html( $is_pro ? __( 'Priority Support', 'pnpc-pocket-service-desk' ) : __( 'Get Support', 'pnpc-pocket-service-desk' ) ); ?>
+						<?php echo esc_html__( 'Get Support', 'pnpc-pocket-service-desk' ); ?>
 					</a>
 				<?php endif; ?>
 
-				<?php if ( ! $is_pro && $upgrade_url ) : ?>
+				<?php if ( $upgrade_url ) : ?>
 					<a class="button" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $upgrade_url ); ?>">
 						<?php echo esc_html__( 'Upgrade for more', 'pnpc-pocket-service-desk' ); ?>
 					</a>
