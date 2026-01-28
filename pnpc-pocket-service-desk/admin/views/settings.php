@@ -286,15 +286,13 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 			</p>
 			<?php if ( function_exists( 'pnpc_psd_get_max_agents_limit' ) ) : ?>
 				<?php $agent_limit = (int) pnpc_psd_get_max_agents_limit(); ?>
-				<p class="description" style="margin-top:4px;">
-					<?php
-					if ( $agent_limit > 0 ) {
-						printf( esc_html__( 'Plan limit: up to %d enabled agents (Free). Extra enabled users will be automatically disabled on save.', 'pnpc-pocket-service-desk' ), (int) $agent_limit );
-					} else {
-						esc_html_e( 'Plan limit: unlimited enabled agents (Pro).', 'pnpc-pocket-service-desk' );
-					}
-					?>
-				</p>
+				<?php if ( $agent_limit > 0 ) : ?>
+					<p class="description" style="margin-top:4px;">
+						<?php
+						printf( esc_html__( 'Maximum enabled agents: %d. Extra enabled users will be automatically disabled on save.', 'pnpc-pocket-service-desk' ), (int) $agent_limit );
+						?>
+					</p>
+				<?php endif; ?>
 			<?php endif; ?>
 
 			<?php
@@ -516,19 +514,6 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 						<p class="description"><?php esc_html_e( 'If enabled, the Services shortcode will show general published products to viewers (unless user-specific products are enabled).', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
-				<?php if ( function_exists( 'pnpc_psd_is_pro_active' ) && pnpc_psd_is_pro_active() ) : ?>
-<tr>
-					<th scope="row"><?php esc_html_e( 'Enable User-specific Products (Pro)', 'pnpc-pocket-service-desk' ); ?></th>
-					<td>
-						<label>
-							<input type="hidden" name="pnpc_psd_user_specific_products" value="0" />
-							<input type="checkbox" name="pnpc_psd_user_specific_products" value="1" <?php checked( 1, get_option( 'pnpc_psd_user_specific_products', 0 ) ); ?> />
-							<?php esc_html_e( 'Restrict product listings to products allocated to an individual user (pro feature).', 'pnpc-pocket-service-desk' ); ?>
-						</label>
-						<p class="description"><?php esc_html_e( 'When enabled, the Services block will show only products explicitly allocated to the viewing user (user-specific takes precedence).', 'pnpc-pocket-service-desk' ); ?></p>
-					</td>
-				</tr>
-<?php endif; ?>
 			</table>
 
 		</div>

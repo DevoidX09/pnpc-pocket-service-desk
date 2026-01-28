@@ -58,13 +58,6 @@ class PNPC_PSD_Admin
 
 			// For non-admin service desk staff, keep wp-admin access but limit menus to reduce confusion.
 			add_action('admin_menu', array($this, 'restrict_non_admin_menus'), 999);
-			if ( function_exists( 'pnpc_psd_is_pro_active' ) && pnpc_psd_is_pro_active() ) {
-				add_action( 'show_user_profile', array( $this, 'render_user_allocated_products_field' ) );
-				add_action( 'edit_user_profile', array( $this, 'render_user_allocated_products_field' ) );
-
-				add_action( 'personal_options_update', array( $this, 'save_user_allocated_products' ) );
-				add_action( 'edit_user_profile_update', array( $this, 'save_user_allocated_products' ) );
-			}
 			add_action('admin_init', array($this, 'register_settings'));
 			add_action('admin_init', array($this, 'process_admin_create_ticket'));
 			add_action('admin_init', array($this, 'process_admin_update_ticket_priority'));
@@ -457,19 +450,6 @@ class PNPC_PSD_Admin
 			'pnpc-service-desk-create-ticket',
 			array($this, 'display_create_ticket_page')
 		);
-
-		// Saved Replies is a Pro feature, but the menu slot location is reserved here
-		// so ordering remains consistent across Free and Pro.
-		if ( function_exists( 'pnpc_psd_is_pro_active' ) && pnpc_psd_is_pro_active() && method_exists( $this, 'display_saved_replies_page' ) ) {
-			add_submenu_page(
-				'pnpc-service-desk',
-				esc_html__( 'Saved Replies', 'pnpc-pocket-service-desk' ),
-				esc_html__( 'Saved Replies', 'pnpc-pocket-service-desk' ),
-				'pnpc_psd_view_tickets',
-				'pnpc-service-desk-saved-replies',
-				array( $this, 'display_saved_replies_page' )
-			);
-		}
 
 		add_submenu_page(
 			'pnpc-service-desk',
@@ -1973,97 +1953,6 @@ public function display_tickets_page()
 				'default'           => 0,
 			)
 		);
-	}
-
-	/**
-	* Render user allocated products field.
-	*
-	* @param mixed $user
-	*
-	* @since 1.1.1.4
-	*
-	* @return mixed
-	*/
-	public function render_user_allocated_products_field($user)
-	{
-		if (! current_user_can('manage_options')) {
-			return;
-		}
-
-		$allocated = get_user_meta($user->ID, 'pnpc_psd_allocated_products', true);
-		$selected_ids = array();
-		if (! empty($allocated)) {
-			$selected_ids = array_filter(array_map('absint', array_map('trim', explode(',', (string) $allocated))));
-		}
-
-		$products = array();
-		if (class_exists('WooCommerce')) {
-			$products = wc_get_products(array('status' => 'publish', 'limit' => 200));
-		}
-
-?>
-		<h2><?php esc_html_e('Allocated Products', 'pnpc-pocket-service-desk'); ?></h2>
-		<table class="form-table">
-			<tr>
-				<th><label for="pnpc_psd_allocated_products"><?php esc_html_e('Allocated Products', 'pnpc-pocket-service-desk'); ?></label></th>
-				<td>
-					<?php if (! class_exists('WooCommerce')) :  ?>
-						<p class="description"><?php esc_html_e('WooCommerce is not active — you cannot allocate products until WooCommerce is installed and activated.', 'pnpc-pocket-service-desk'); ?></p>
-					<?php else :  ?>
-						<select name="pnpc_psd_allocated_products[]" id="pnpc_psd_allocated_products" multiple size="8" style="width: 100%;max-width:540px;">
-							<?php foreach ($products as $product) :
-								$p_id   = (int) $product->get_id();
-								$p_name = $product->get_name();
-							?>
-								<option value="<?php echo esc_attr($p_id); ?>" <?php echo in_array($p_id, $selected_ids, true) ? 'selected' : ''; ?>>
-									<?php echo esc_html($p_name .  ' (ID: ' . $p_id . ')'); ?>
-								</option>
-							<?php endforeach; ?>
-						</select>
-						<p class="description">
-							<?php esc_html_e('Select one or more products to allocate to this user.  Hold Ctrl (Windows) or Cmd (Mac) to select multiple. ', 'pnpc-pocket-service-desk'); ?>
-						</p>
-						<?php wp_nonce_field('pnpc_psd_save_allocated_products', 'pnpc_psd_allocated_products_nonce'); ?>
-					<?php endif; ?>
-				</td>
-			</tr>
-		</table>
-<?php
-	}
-
-	/**
-	* Save user allocated products.
-	*
-	* @param mixed $user_id
-	*
-	* @since 1.1.1.4
-	*
-	* @return mixed
-	*/
-	public function save_user_allocated_products($user_id)
-	{
-		if (! current_user_can('manage_options')) {
-			return;
-		}
-
-		if (! isset($_POST['pnpc_psd_allocated_products_nonce']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['pnpc_psd_allocated_products_nonce'])), 'pnpc_psd_save_allocated_products')) {
-			return;
-		}
-
-		if (! isset($_POST['pnpc_psd_allocated_products'])) {
-			delete_user_meta($user_id, 'pnpc_psd_allocated_products');
-			return;
-		}
-
-		$posted = (array) wp_unslash( $_POST['pnpc_psd_allocated_products'] );
-		$ids = array_filter(array_map('absint', $posted));
-		$ids = array_values(array_unique($ids));
-
-		if (empty($ids)) {
-			delete_user_meta($user_id, 'pnpc_psd_allocated_products');
-		} else {
-			update_user_meta($user_id, 'pnpc_psd_allocated_products', implode(',', $ids));
-		}
 	}
 
 	/**

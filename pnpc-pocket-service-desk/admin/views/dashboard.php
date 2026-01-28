@@ -9,8 +9,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$is_pro = function_exists( 'pnpc_psd_is_pro_active' ) && pnpc_psd_is_pro_active();
-
 $upgrade_url = apply_filters( 'pnpc_psd_upgrade_url', '' );
 $support_url = apply_filters( 'pnpc_psd_support_url', '' );
 

@@ -670,14 +670,16 @@ if ( ! function_exists( 'pnpc_psd_sync_roles_caps' ) ) {
 			'pnpc_psd_assign_tickets'     => true,
 		);
 
-		// Manager is a Pro-unlocked role in the long-term plan.
-		// In Free, the role exists for forward compatibility, but elevated caps stay disabled.
+		// Manager role capabilities can be extended via filter.
 		$manager_caps = $agent_caps;
-		if ( function_exists( 'pnpc_psd_is_pro' ) && pnpc_psd_is_pro() ) {
-			$manager_caps = $manager_caps + array(
-				'pnpc_psd_delete_tickets'  => true,
-				'pnpc_psd_manage_settings' => true,
-			);
+		/**
+		 * Filter: manager role additional capabilities.
+		 * 
+		 * @param array $caps Additional capabilities for manager role.
+		 */
+		$manager_additional_caps = apply_filters( 'pnpc_psd_manager_additional_caps', array() );
+		if ( is_array( $manager_additional_caps ) && ! empty( $manager_additional_caps ) ) {
+			$manager_caps = $manager_caps + $manager_additional_caps;
 		}
 
 		// Roles: Agent.
@@ -898,55 +900,7 @@ if ( ! function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
 	}
 }
 
-/**
- * Determine whether this installation is running the Pro build.
- *
- * Pro is enabled if any of the following are true:
- * - Constant PNPC_PSD_IS_PRO is defined and truthy.
- * - Option pnpc_psd_plan is set to 'pro'.
- * - Filter 'pnpc_psd_is_pro' returns true.
- *
- * @return bool
- */
-if ( ! function_exists( 'pnpc_psd_is_pro' ) ) {
-/**
- * Pnpc psd is pro.
- *
- * @since 1.1.1.4
- *
- * @return mixed
- */
-	function pnpc_psd_is_pro() {
-		$is_pro = false;
-		if ( defined( 'PNPC_PSD_IS_PRO' ) && PNPC_PSD_IS_PRO ) {
-			$is_pro = true;
-		}
-		/**
-		 * Allow themes/addons to declare Pro status.
-		 */
-		$is_pro = (bool) apply_filters( 'pnpc_psd_is_pro', $is_pro );
-		return $is_pro;
-	}
-}
 
-
-/**
- * Back-compat helper: determine whether Pro is active/available.
- *
- * @return bool
- */
-if ( ! function_exists( 'pnpc_psd_is_pro_active' ) ) {
-/**
- * Pnpc psd is pro active.
- *
- * @since 1.1.1.4
- *
- * @return mixed
- */
-	function pnpc_psd_is_pro_active() {
-		return pnpc_psd_is_pro();
-	}
-}
 
 /**
  * Whether the Service Desk Manager role should be enabled.
@@ -1025,7 +979,12 @@ if ( ! function_exists( 'pnpc_psd_get_max_agents_limit' ) ) {
  * @return mixed
  */
 	function pnpc_psd_get_max_agents_limit() {
-		return pnpc_psd_is_pro() ? 0 : 2;
+		/**
+		 * Filter: maximum number of agents allowed.
+		 * 
+		 * @param int $limit Maximum agents (0 = unlimited).
+		 */
+		return (int) apply_filters( 'pnpc_psd_max_agents_limit', 2 );
 	}
 }
 
@@ -1048,10 +1007,14 @@ if ( ! function_exists( 'pnpc_psd_get_max_attachment_mb' ) ) {
  * @return mixed
  */
 	function pnpc_psd_get_max_attachment_mb() {
-		$default = pnpc_psd_is_pro() ? 20 : 5;
+		/**
+		 * Filter: maximum attachment size in megabytes.
+		 * 
+		 * @param int $max Maximum size in MB.
+		 */
+		$max     = (int) apply_filters( 'pnpc_psd_max_attachment_mb', 5 );
 		$min     = 1;
-		$max     = pnpc_psd_is_pro() ? 20 : 5;
-		$raw     = absint( get_option( 'pnpc_psd_max_attachment_mb', $default ) );
+		$raw     = absint( get_option( 'pnpc_psd_max_attachment_mb', $max ) );
 		$raw     = max( $min, $raw );
 		$raw     = min( $max, $raw );
 		return (int) $raw;
@@ -1077,9 +1040,14 @@ if ( ! function_exists( 'pnpc_psd_sanitize_max_attachment_mb' ) ) {
  * @return mixed
  */
 	function pnpc_psd_sanitize_max_attachment_mb( $value ) {
+		/**
+		 * Filter: maximum attachment size cap in megabytes.
+		 * 
+		 * @param int $cap Maximum size cap in MB.
+		 */
+		$cap = (int) apply_filters( 'pnpc_psd_max_attachment_mb', 5 );
 		$val = absint( $value );
 		$val = max( 1, $val );
-		$cap = pnpc_psd_is_pro() ? 20 : 5;
 		$val = min( $cap, $val );
 		return (int) $val;
 	}
