@@ -9,13 +9,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$is_pro = function_exists( 'pnpc_psd_is_pro_active' ) && pnpc_psd_is_pro_active();
-
-$upgrade_url = apply_filters( 'pnpc_psd_upgrade_url', '' );
 $support_url = apply_filters( 'pnpc_psd_support_url', '' );
 
+// Default to the bundled dashboard logo if none is provided by a theme/site filter.
 $logo_url = apply_filters( 'pnpc_psd_dashboard_logo_url', '' );
-$logo_alt = apply_filters( 'pnpc_psd_dashboard_logo_alt', 'PNPC' );
+if ( ! $logo_url ) {
+	$logo_url = plugins_url( 'assets/images/pnpc-pocket-service-desk.png', dirname( __FILE__, 3 ) . '/pnpc-pocket-service-desk.php' );
+}
+$logo_alt = apply_filters( 'pnpc_psd_dashboard_logo_alt', 'PNPC Pocket Service Desk' );
 
 $alerts = apply_filters( 'pnpc_psd_dashboard_alerts', array() );
 if ( ! is_array( $alerts ) ) {
@@ -73,21 +74,13 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 
 			<?php if ( $support_url ) : ?>
 				<a class="button" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $support_url ); ?>">
-					<?php echo esc_html( $is_pro ? __( 'Priority Support', 'pnpc-pocket-service-desk' ) : __( 'Support', 'pnpc-pocket-service-desk' ) ); ?>
+					<?php echo esc_html__( 'Support', 'pnpc-pocket-service-desk' ); ?>
 				</a>
 			<?php else : ?>
 				<span class="psd-muted"><?php echo esc_html__( 'Support link not configured.', 'pnpc-pocket-service-desk' ); ?></span>
 			<?php endif; ?>
 
-			<?php if ( ! $is_pro ) : ?>
-				<?php if ( $upgrade_url ) : ?>
-					<a class="button button-secondary" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $upgrade_url ); ?>">
-						<?php echo esc_html__( 'Upgrade to Pro', 'pnpc-pocket-service-desk' ); ?>
-					</a>
-				<?php else : ?>
-					<span class="psd-muted"><?php echo esc_html__( 'Upgrade link not configured.', 'pnpc-pocket-service-desk' ); ?></span>
-				<?php endif; ?>
-			<?php endif; ?>
+			<?php /* No upgrade/promotional CTAs in the Free build. */ ?>
 		</div>
 	</div>
 
@@ -215,13 +208,7 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 			<div class="psd-cta">
 				<?php if ( $support_url ) : ?>
 					<a class="button button-primary" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $support_url ); ?>">
-						<?php echo esc_html( $is_pro ? __( 'Priority Support', 'pnpc-pocket-service-desk' ) : __( 'Get Support', 'pnpc-pocket-service-desk' ) ); ?>
-					</a>
-				<?php endif; ?>
-
-				<?php if ( ! $is_pro && $upgrade_url ) : ?>
-					<a class="button" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $upgrade_url ); ?>">
-						<?php echo esc_html__( 'Upgrade for more', 'pnpc-pocket-service-desk' ); ?>
+						<?php echo esc_html__( 'Support', 'pnpc-pocket-service-desk' ); ?>
 					</a>
 				<?php endif; ?>
 			</div>

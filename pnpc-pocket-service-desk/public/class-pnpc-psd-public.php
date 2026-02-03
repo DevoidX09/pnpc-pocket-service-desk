@@ -54,6 +54,15 @@ class PNPC_PSD_Public
 			'all'
 		);
 
+		// Attachment lightbox styles (used on public Ticket Detail view).
+		wp_enqueue_style(
+			$this->plugin_name . '-attachments',
+			PNPC_PSD_PLUGIN_URL . 'assets/css/pnpc-psd-attachments.css',
+			array(),
+			$this->version,
+			'all'
+		);
+
 		// Apply admin-configured button colors (including the Profile Settings Logout button).
 		// Sanitize/normalize hex colors defensively (prevents empty/invalid values from producing "no-op" CSS).
 		$primary          = sanitize_hex_color( (string) get_option('pnpc_psd_primary_button_color', '#2b9f6a') ) ?: '#2b9f6a';
@@ -129,6 +138,15 @@ class PNPC_PSD_Public
 			true
 		);
 
+		// Attachment lightbox behaviour (used on public Ticket Detail view).
+		wp_enqueue_script(
+			$this->plugin_name . '-attachments',
+			PNPC_PSD_PLUGIN_URL . 'assets/js/pnpc-psd-attachments.js',
+			array('jquery'),
+			$js_ver,
+			true
+		);
+
 		wp_localize_script(
 			$this->plugin_name,
 			'pnpcPsdPublic',
@@ -153,6 +171,9 @@ class PNPC_PSD_Public
 			'pnpc_create_ticket'    => 'render_create_ticket',
 			'pnpc_my_tickets'       => 'render_my_tickets',
 			'pnpc_ticket_detail'    => 'render_ticket_detail',
+			// Back-compat aliases (older page templates / customer sites).
+			'pnpc_ticket_details'   => 'render_ticket_detail',
+			'pnpc_ticket_view'      => 'render_ticket_detail',
 			'pnpc_profile_settings' => 'render_profile_settings',
 			'pnpc_services'         => 'render_services',
 		);
@@ -446,12 +467,30 @@ ob_start();
 	*/
 	public function render_services($atts)
 	{
+		// Services is a neutral extension seam in the Free plugin.
+		// - Wizard templates may include [pnpc_services] in the customer dashboard layout.
+		// - Free should not show notices, gating, or dependency warnings.
+		// - Pro (or other add-ons) may inject output via the filter below.
+		if ( ! is_user_logged_in() ) {
+			return $this->render_login_gate( function_exists('pnpc_psd_get_dashboard_url') ? pnpc_psd_get_dashboard_url() : home_url('/') );
+		}
+
 		$atts = shortcode_atts(array('limit' => 4), (array) $atts, 'pnpc_services');
-		$pnpc_psd_services_limit = max( 1, absint( $atts['limit'] ) );
-		$pnpc_psd_services_page  = isset( $_GET['psd_services_page'] ) ? max( 1, absint( wp_unslash( $_GET['psd_services_page'] ) ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination parameter.
-		ob_start();
-		include PNPC_PSD_PLUGIN_DIR . 'public/views/services.php';
-		return ob_get_clean();
+		/**
+		 * Filter: render services block output.
+		 *
+		 * Free returns an empty string by default.
+		 * Add-ons (e.g., Pro) can hook this to output a services/products UI.
+		 *
+		 * @param string $output Default output (empty).
+		 * @param array  $atts   Shortcode attributes.
+		 */
+		$output = apply_filters( 'pnpc_psd_services_output', '', (array) $atts );
+
+		// Allow add-ons to enqueue assets when the block is present.
+		do_action( 'pnpc_psd_services_enqueue_assets', (array) $atts );
+
+		return (string) $output;
 	}
 
 	/**

@@ -59,6 +59,7 @@ class PNPC_PSD
 		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-ticket.php';
 		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-ticket-response.php';
 		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-audit-log.php';
+		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-internal-notes.php';
 
 		$this->loader = new PNPC_PSD_Loader();
 	}
@@ -86,11 +87,19 @@ class PNPC_PSD
 	private function define_admin_hooks()
 	{
 		$plugin_admin = new PNPC_PSD_Admin($this->get_plugin_name(), $this->get_version());
+		$internal_notes = new PNPC_PSD_Internal_Notes( $this->get_version() );
 
 		$this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
 		$this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
+		$this->loader->add_action('admin_enqueue_scripts', $internal_notes, 'enqueue_admin_assets');
 		$this->loader->add_action('admin_menu', $plugin_admin, 'add_plugin_admin_menu');
 		$this->loader->add_action('admin_init', $plugin_admin, 'register_settings');
+
+		// Agent-facing signatures (Free): personal signature stored in user profile; group signature stored in settings.
+		$this->loader->add_action( 'show_user_profile', $plugin_admin, 'render_service_desk_user_profile_fields' );
+		$this->loader->add_action( 'edit_user_profile', $plugin_admin, 'render_service_desk_user_profile_fields' );
+		$this->loader->add_action( 'personal_options_update', $plugin_admin, 'save_service_desk_user_profile_fields' );
+		$this->loader->add_action( 'edit_user_profile_update', $plugin_admin, 'save_service_desk_user_profile_fields' );
 
 		$this->loader->add_action('wp_ajax_pnpc_psd_admin_respond_to_ticket', $plugin_admin, 'ajax_respond_to_ticket');
 		$this->loader->add_action('wp_ajax_pnpc_psd_assign_ticket', $plugin_admin, 'ajax_assign_ticket');
@@ -111,6 +120,11 @@ class PNPC_PSD
 		// Real-time update AJAX handlers
 		$this->loader->add_action('wp_ajax_pnpc_psd_get_new_ticket_count', $plugin_admin, 'ajax_get_new_ticket_count');
 		$this->loader->add_action('wp_ajax_pnpc_psd_refresh_ticket_list', $plugin_admin, 'ajax_refresh_ticket_list');
+
+		// Client Notes (free): list/add/delete via AJAX.
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_client_notes_list', $internal_notes, 'ajax_list' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_client_notes_add', $internal_notes, 'ajax_add' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_client_notes_delete', $internal_notes, 'ajax_delete' );
 
 		// Admin-post handlers (non-AJAX): archive/restore + CSV export.
 		$this->loader->add_action('admin_post_pnpc_psd_archive_ticket', $plugin_admin, 'handle_archive_ticket');

@@ -155,13 +155,19 @@ class PNPC_PSD_Activator {
 			$has_tickets  = ( $ticket_count > 0 );
 		}
 
-		if ( ! $has_dashboard && ! $has_tickets ) {
-			update_option( 'pnpc_psd_needs_setup_wizard', 1 );
-			update_option( 'pnpc_psd_setup_notice_dismissed', 0 );
-			// Redirect into the wizard once after activation (clean installs only).
-			// Use an option (not a transient) so this survives object cache variance.
-			update_option( 'pnpc_psd_do_setup_redirect', 1 );
-		}
+		// First-run Setup Wizard flags.
+// On a clean install (no ticket history) we want to nudge admins into the Setup Wizard,
+// even if a dashboard page ID was pre-populated by a host/site-template.
+// The wizard will detect/repair existing pages as needed.
+$setup_completed_at = (int) get_option( 'pnpc_psd_setup_completed_at', 0 );
+
+if ( ! $has_tickets && $setup_completed_at <= 0 ) {
+	update_option( 'pnpc_psd_needs_setup_wizard', 1 );
+	update_option( 'pnpc_psd_setup_notice_dismissed', 0 );
+	// Redirect into the wizard once after activation (clean installs only).
+	// Use an option (not a transient) so this survives object cache variance.
+	update_option( 'pnpc_psd_do_setup_redirect', 1 );
+}
 
 
 	}

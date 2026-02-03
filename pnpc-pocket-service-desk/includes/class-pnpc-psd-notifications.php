@@ -134,6 +134,8 @@ class PNPC_PSD_Notifications {
 		}
 
 		if ( self::opt_bool( 'pnpc_psd_notify_customer_on_create', 1 ) ) {
+			$dashboard_url   = function_exists( 'pnpc_psd_get_dashboard_url' ) ? pnpc_psd_get_dashboard_url() : '';
+			$ticket_view_url = function_exists( 'pnpc_psd_get_ticket_detail_url' ) ? pnpc_psd_get_ticket_detail_url( $ticket_id ) : '';
 			$subj = sprintf( __( 'Ticket created: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 			$msg  = sprintf(
 				__( "Hello %1\$s,\n\nYour support ticket has been created.\n\nTicket: %2\$s\nSubject: %3\$s\n\nWe will respond as soon as possible.", 'pnpc-pocket-service-desk' ),
@@ -141,10 +143,17 @@ class PNPC_PSD_Notifications {
 				(string) $ticket->ticket_number,
 				(string) $ticket->subject
 			);
+			if ( ! empty( $dashboard_url ) ) {
+				$msg .= "\n\n" . __( 'Dashboard:', 'pnpc-pocket-service-desk' ) . "\n" . $dashboard_url;
+			}
+			if ( ! empty( $ticket_view_url ) ) {
+				$msg .= "\n\n" . __( 'View this ticket:', 'pnpc-pocket-service-desk' ) . "\n" . $ticket_view_url;
+			}
 			self::send( (string) $user->user_email, $subj, $msg );
 		}
 
 		if ( self::opt_bool( 'pnpc_psd_notify_staff_on_create', 1 ) ) {
+			$admin_ticket_url = admin_url( 'admin.php?page=pnpc-service-desk-ticket&ticket_id=' . absint( $ticket_id ) );
 			$to = self::get_staff_recipients_for_ticket( $ticket );
 			if ( ! empty( $to ) ) {
 				$subj = sprintf( __( 'New ticket: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
@@ -154,6 +163,9 @@ class PNPC_PSD_Notifications {
 					(string) $user->display_name,
 					(string) $ticket->subject
 				);
+						if ( ! empty( $admin_ticket_url ) ) {
+							$msg .= "\n\n" . __( 'Admin ticket link:', 'pnpc-pocket-service-desk' ) . "\n" . $admin_ticket_url;
+						}
 				self::send( $to, $subj, $msg );
 			}
 		}
@@ -181,6 +193,12 @@ class PNPC_PSD_Notifications {
 			return;
 		}
 
+		// Context-aware links for both customer and staff messages.
+		$resolved_ticket_id = isset( $ticket->id ) ? absint( $ticket->id ) : absint( $response->ticket_id );
+		$dashboard_url      = function_exists( 'pnpc_psd_get_dashboard_url' ) ? pnpc_psd_get_dashboard_url() : '';
+		$ticket_view_url    = function_exists( 'pnpc_psd_get_ticket_detail_url' ) ? pnpc_psd_get_ticket_detail_url( (int) $resolved_ticket_id ) : '';
+		$admin_ticket_url   = admin_url( 'admin.php?page=pnpc-service-desk-ticket&ticket_id=' . absint( $resolved_ticket_id ) );
+
 		if ( $is_staff ) {
 			if ( self::opt_bool( 'pnpc_psd_notify_customer_on_staff_reply', 1 ) ) {
 				$subj = sprintf( __( 'Update on ticket %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
@@ -190,6 +208,12 @@ class PNPC_PSD_Notifications {
 					(string) $ticket->ticket_number,
 					(string) $ticket->subject
 				);
+				if ( ! empty( $dashboard_url ) ) {
+					$msg .= "\n\n" . __( 'Dashboard:', 'pnpc-pocket-service-desk' ) . "\n" . $dashboard_url;
+				}
+				if ( ! empty( $ticket_view_url ) ) {
+					$msg .= "\n\n" . __( 'View this ticket:', 'pnpc-pocket-service-desk' ) . "\n" . $ticket_view_url;
+				}
 				self::send( (string) $customer->user_email, $subj, $msg );
 			}
 		} else {
@@ -203,6 +227,9 @@ class PNPC_PSD_Notifications {
 						(string) $customer->display_name,
 						(string) $ticket->subject
 					);
+						if ( ! empty( $admin_ticket_url ) ) {
+							$msg .= "\n\n" . __( 'Admin ticket link:', 'pnpc-pocket-service-desk' ) . "\n" . $admin_ticket_url;
+						}
 					self::send( $to, $subj, $msg );
 				}
 			}
