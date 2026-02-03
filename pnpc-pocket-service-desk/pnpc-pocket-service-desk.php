@@ -120,6 +120,46 @@ function deactivate_pnpc_pocket_service_desk()
 }
 register_deactivation_hook(__FILE__, 'deactivate_pnpc_pocket_service_desk');
 
+
+/**
+ * Fallback: redirect to Setup Wizard after activation on clean installs.
+ *
+ * (The primary redirect logic lives in the admin class, but this keeps first-run UX
+ * stable even if the admin bootstrap order changes.)
+ */
+add_action(
+	'admin_init',
+	function () {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			return;
+		}
+		if ( ! is_admin() ) {
+			return;
+		}
+		// Don't loop if we're already in the wizard.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only.
+		if ( isset( $_GET['page'] ) && 'pnpc-service-desk-setup' === sanitize_text_field( wp_unslash( $_GET['page'] ) ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'pnpc_psd_manage_settings' ) ) {
+			return;
+		}
+		// Do not redirect on bulk activation.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only.
+		if ( isset( $_GET['activate-multi'] ) ) {
+			return;
+		}
+		$do_redirect = (int) get_option( 'pnpc_psd_do_setup_redirect', 0 );
+		$setup_completed_at = (int) get_option( 'pnpc_psd_setup_completed_at', 0 );
+		if ( $do_redirect && $setup_completed_at <= 0 ) {
+			update_option( 'pnpc_psd_do_setup_redirect', 0 );
+			wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup' ) );
+			exit;
+		}
+	},
+	1
+);
+
 /**
  * Defensive bootstrap: require core files if present and avoid fatals.
  * Logs missing files so issues are visible without white-screens.

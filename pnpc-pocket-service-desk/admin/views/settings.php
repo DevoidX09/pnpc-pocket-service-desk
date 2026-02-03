@@ -27,7 +27,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 	<h1><?php esc_html_e( 'PNPC Pocket Service Desk Settings', 'pnpc-pocket-service-desk' ); ?></h1>
 	<?php if ( get_transient( 'pnpc_psd_agents_trimmed' ) ) : ?>
 		<?php delete_transient( 'pnpc_psd_agents_trimmed' ); ?>
-		<div class="notice notice-warning"><p><?php esc_html_e( 'Some enabled agents were automatically disabled to comply with your current plan limits. (Free supports up to 2 enabled agents.)', 'pnpc-pocket-service-desk' ); ?></p></div>
+		<div class="notice notice-warning"><p><?php esc_html_e( 'Some enabled agents were automatically disabled. Choose 2 agents from the list below to activate.', 'pnpc-pocket-service-desk' ); ?></p></div>
 	<?php endif; ?>
 
 	<h2 class="nav-tab-wrapper" style="margin-bottom: 16px;">
@@ -87,6 +87,13 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 					<td>
 						<input type="email" name="pnpc_psd_notify_from_email" id="pnpc_psd_notify_from_email" value="<?php echo esc_attr( get_option( 'pnpc_psd_notify_from_email', '' ) ); ?>" class="regular-text" />
 						<p class="description"><?php esc_html_e( 'Optional. Use a domain email address that is authorized by your SMTP provider.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="pnpc_psd_group_signature"><?php esc_html_e( 'Group Signature', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<td>
+						<textarea name="pnpc_psd_group_signature" id="pnpc_psd_group_signature" rows="4" class="large-text" placeholder="<?php esc_attr_e( 'Optional. Appended to ticket replies when Group is selected.', 'pnpc-pocket-service-desk' ); ?>"><?php echo esc_textarea( get_option( 'pnpc_psd_group_signature', '' ) ); ?></textarea>
+						<p class="description"><?php esc_html_e( 'Used for customer-visible ticket replies when an agent chooses the Group signature option. Managers and administrators can edit this setting.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 			</table>
@@ -282,7 +289,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				<?php esc_html_e( 'Disable per-agent notification email overrides (use the agent\'s WordPress account email)', 'pnpc-pocket-service-desk' ); ?>
 			</label>
 			<p class="description" style="margin-top:4px;">
-				<?php esc_html_e( 'Recommended for WordPress.org review: keeps notification routing predictable. If unchecked, the per-agent email field below will be used when provided.', 'pnpc-pocket-service-desk' ); ?>
+				<?php esc_html_e( 'Choose 2 agents from the list below to activate. Unchecked agents will be unable to work on tickets.', 'pnpc-pocket-service-desk' ); ?>
 			</p>
 			<?php if ( function_exists( 'pnpc_psd_get_max_agents_limit' ) ) : ?>
 				<?php $agent_limit = (int) pnpc_psd_get_max_agents_limit(); ?>

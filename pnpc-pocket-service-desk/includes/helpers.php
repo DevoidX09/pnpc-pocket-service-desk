@@ -206,7 +206,13 @@ if (! function_exists('pnpc_psd_get_dashboard_url')) {
         }
 
         // Prefer a stable, human-friendly dashboard slug.
-        // Order: explicit setting -> /dashboard/ page -> legacy /dashboard-single/ page -> my tickets.
+        // Order: explicit setting -> /support-dashboard/ page -> /dashboard/ page -> legacy /dashboard-single/ page -> my tickets.
+        $page = get_page_by_path('support-dashboard');
+        if ($page && ! is_wp_error($page)) {
+            $cached = get_permalink($page->ID);
+            return $cached;
+        }
+
         $page = get_page_by_path('dashboard');
         if ($page && ! is_wp_error($page)) {
             $cached = get_permalink($page->ID);

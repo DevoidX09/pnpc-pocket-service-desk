@@ -18,6 +18,19 @@ if (! defined('ABSPATH')) {
  */
 class PNPC_PSD_Admin
 {
+	/**
+	 * User meta key for per-agent personal signature.
+	 *
+	 * @var string
+	 */
+	const USERMETA_PERSONAL_SIGNATURE = 'pnpc_psd_personal_signature';
+
+	/**
+	 * Option key for global/group signature.
+	 *
+	 * @var string
+	 */
+	const OPTION_GROUP_SIGNATURE = 'pnpc_psd_group_signature';
 
 	private $plugin_name;
 	private $version;
@@ -46,6 +59,9 @@ class PNPC_PSD_Admin
 
 			// One-time setup wizard prompt if the customer dashboard page is not configured.
 			add_action( 'admin_notices', array( $this, 'maybe_show_setup_wizard_notice' ) );
+
+			// UX polish: explain why dashboard links show as ?page_id=... when permalinks are set to Plain.
+			add_action( 'admin_notices', array( $this, 'maybe_show_permalinks_notice' ) );
 
 			// After first activation on a clean install, redirect admins straight into the Setup Wizard.
 			add_action( 'admin_init', array( $this, 'maybe_redirect_to_setup_wizard' ), 1 );
@@ -268,6 +284,12 @@ class PNPC_PSD_Admin
 			$admin_js_ver = (string) filemtime( $admin_js_path );
 		}
 		if ($this->is_plugin_page() || $force_load) {
+			$personal_signature = (string) get_user_meta( get_current_user_id(), self::USERMETA_PERSONAL_SIGNATURE, true );
+			$group_signature    = (string) get_option( self::OPTION_GROUP_SIGNATURE, '' );
+			$has_personal_sig   = '' !== trim( $personal_signature );
+			$has_group_sig      = '' !== trim( $group_signature );
+			$default_sig_mode   = $has_personal_sig ? 'personal' : ( $has_group_sig ? 'group' : 'none' );
+
 			wp_enqueue_script(
 				$this->plugin_name,
 				PNPC_PSD_PLUGIN_URL . 'assets/js/pnpc-psd-admin.js',
@@ -283,9 +305,18 @@ class PNPC_PSD_Admin
 					'ajax_url' => admin_url('admin-ajax.php', 'relative'),
 					'nonce'    => wp_create_nonce('pnpc_psd_admin_nonce'),
 					'tickets_url' => admin_url( 'admin.php?page=pnpc-service-desk-tickets' ),
+					// Reply signatures (Free): personal signature stored in user profile; group signature stored in settings.
+					'personal_signature'     => $personal_signature,
+					'group_signature'        => $group_signature,
+					'has_personal_signature' => $has_personal_sig,
+					'has_group_signature'    => $has_group_sig,
+					'default_signature_mode' => $default_sig_mode,
 					'i18n' => array(
 						'new_ticket_singular' => __('1 new ticket arrived', 'pnpc-pocket-service-desk'),
 						'new_tickets_plural' => __('new tickets arrived', 'pnpc-pocket-service-desk'),
+						'signature_none'     => __( 'None', 'pnpc-pocket-service-desk' ),
+						'signature_personal' => __( 'Personal', 'pnpc-pocket-service-desk' ),
+						'signature_group'    => __( 'Group', 'pnpc-pocket-service-desk' ),
 					),
 				)
 			);
@@ -595,7 +626,7 @@ add_submenu_page(
 				$page_id = $this->create_dashboard_page_from_wizard(
 					array(
 						'title'  => esc_html__( 'Support Dashboard', 'pnpc-pocket-service-desk' ),
-						'slug'   => 'dashboard',
+						'slug'   => 'support-dashboard',
 						'editor' => $editor,
 					)
 				);
@@ -988,6 +1019,16 @@ private function is_ticket_view_configured( $page_id ) {
 				$resolved_id = $this->resolve_existing_dashboard_page_id();
 				if ( $resolved_id > 0 ) {
 					update_option( 'pnpc_psd_dashboard_page_id', (int) $resolved_id );
+					// Ensure the canonical dashboard slug when possible.
+					$desired = get_page_by_path( 'support-dashboard' );
+					if ( ! $desired || (int) $desired->ID === (int) $resolved_id ) {
+						wp_update_post(
+							array(
+								'ID'        => (int) $resolved_id,
+								'post_name' => 'support-dashboard',
+							)
+						);
+					}
 					$summary[] = sprintf(
 						/* translators: %d: page ID */
 						esc_html__( 'Dashboard page linked to page ID %d.', 'pnpc-pocket-service-desk' ),
@@ -997,7 +1038,7 @@ private function is_ticket_view_configured( $page_id ) {
 					$created = $this->create_dashboard_page_from_wizard(
 						array(
 							'title'  => esc_html__( 'Support Dashboard', 'pnpc-pocket-service-desk' ),
-							'slug'   => 'dashboard',
+							'slug'   => 'support-dashboard',
 							'editor' => 'block',
 						)
 					);
@@ -1006,6 +1047,15 @@ private function is_ticket_view_configured( $page_id ) {
 						$summary[] = esc_html__( 'Dashboard page could not be created (WP error).', 'pnpc-pocket-service-desk' );
 					} else {
 						update_option( 'pnpc_psd_dashboard_page_id', (int) $created );
+						$desired = get_page_by_path( 'support-dashboard' );
+						if ( ! $desired || (int) $desired->ID === (int) $created ) {
+							wp_update_post(
+								array(
+									'ID'        => (int) $created,
+									'post_name' => 'support-dashboard',
+								)
+							);
+						}
 						$summary[] = sprintf(
 							/* translators: %d: page ID */
 							esc_html__( 'Dashboard page created (page ID %d).', 'pnpc-pocket-service-desk' ),
@@ -1014,7 +1064,44 @@ private function is_ticket_view_configured( $page_id ) {
 					}
 				}
 			} else {
-				$summary[] = esc_html__( 'Dashboard page already configured; no changes made.', 'pnpc-pocket-service-desk' );
+				// Even when configured, ensure the canonical dashboard slug so the editor doesn't display the page ID.
+				$dash_post = get_post( $dashboard_page_id );
+				if ( $dash_post instanceof WP_Post ) {
+					$current_slug = (string) $dash_post->post_name;
+					$needs_fix    = ( 'support-dashboard' !== $current_slug ) || ( '' !== $current_slug && ctype_digit( $current_slug ) );
+					if ( $needs_fix ) {
+						$desired = get_page_by_path( 'support-dashboard' );
+						if ( ! $desired || (int) $desired->ID === (int) $dashboard_page_id ) {
+							wp_update_post(
+								array(
+									'ID'        => (int) $dashboard_page_id,
+									'post_name' => 'support-dashboard',
+								)
+							);
+							$summary[] = esc_html__( 'Dashboard page slug updated to support-dashboard.', 'pnpc-pocket-service-desk' );
+						} else {
+							$summary[] = esc_html__( 'Dashboard page slug not changed because support-dashboard is already used by another page.', 'pnpc-pocket-service-desk' );
+						}
+					} else {
+						$summary[] = esc_html__( 'Dashboard page already configured; no changes made.', 'pnpc-pocket-service-desk' );
+					}
+				} else {
+					$summary[] = esc_html__( 'Dashboard page already configured; no changes made.', 'pnpc-pocket-service-desk' );
+				}
+			}
+
+
+			// Finalize: guarantee the canonical dashboard slug so users can link to a stable URL.
+			$dashboard_page_id = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
+			if ( $dashboard_page_id > 0 ) {
+				$canonical_id = (int) $this->ensure_canonical_page_slug( $dashboard_page_id, 'support-dashboard', '[pnpc_service_desk' );
+				if ( $canonical_id > 0 && $canonical_id !== $dashboard_page_id ) {
+					update_option( 'pnpc_psd_dashboard_page_id', (int) $canonical_id );
+					$summary[] = esc_html__( 'Dashboard page re-linked to the canonical support-dashboard page.', 'pnpc-pocket-service-desk' );
+				} else {
+					$summary[] = esc_html__( 'Dashboard page slug enforced as support-dashboard.', 'pnpc-pocket-service-desk' );
+				}
+				flush_rewrite_rules( false );
 			}
 
 			// Ticket View page.
@@ -1067,7 +1154,7 @@ private function is_ticket_view_configured( $page_id ) {
 		 */
 		private function resolve_existing_dashboard_page_id() {
 			// First try by canonical slug.
-			$page = get_page_by_path( 'dashboard', OBJECT, 'page' );
+			$page = get_page_by_path( 'support-dashboard', OBJECT, 'page' );
 			if ( $page instanceof WP_Post ) {
 				return (int) $page->ID;
 			}
@@ -1099,6 +1186,94 @@ private function is_ticket_view_configured( $page_id ) {
 		 *
 		 * @return int Page ID or 0.
 		 */
+
+		/**
+		 * Ensure a predictable, human-friendly slug for a wizard-managed page.
+		 *
+		 * Some environments end up with numeric slugs (often the page ID), which breaks predictable routing and
+		 * confuses users linking to pages. This enforces the canonical slug by:
+		 *  - preferring an existing correctly-configured page already using the desired slug
+		 *  - otherwise moving aside any conflicting page using that slug
+		 *  - and finally forcing the target page to use the desired slug.
+		 *
+		 * @param int    $target_id         Page ID we want to canonicalize.
+		 * @param string $desired_slug      Canonical slug (post_name), e.g. 'support-dashboard'.
+		 * @param string $content_marker    Optional marker string to detect a correctly configured page by content.
+		 * @return int Canonical page ID now using $desired_slug (may differ from $target_id).
+		 */
+		private function ensure_canonical_page_slug( $target_id, $desired_slug, $content_marker = '' ) {
+			$target_id    = (int) $target_id;
+			$desired_slug = sanitize_title( (string) $desired_slug );
+			if ( $target_id <= 0 || '' === $desired_slug ) {
+				return $target_id;
+			}
+
+			// If a page already exists at the desired slug and it looks like our intended page, prefer it.
+			$existing = get_posts(
+				array(
+					'name'           => $desired_slug,
+					'post_type'      => 'page',
+					'post_status'    => 'any',
+					'numberposts'    => 1,
+					'suppress_filters' => false,
+				)
+			);
+			if ( ! empty( $existing ) && $existing[0] instanceof WP_Post ) {
+				$existing_post = $existing[0];
+
+				$existing_is_ours = (bool) get_post_meta( (int) $existing_post->ID, '_pnpc_psd_created_by_builder', true );
+				if ( '' !== $content_marker && false !== strpos( (string) $existing_post->post_content, (string) $content_marker ) ) {
+					// Correct page already owns the slug; ensure our option points to it.
+					return (int) $existing_post->ID;
+				}
+
+				// Slug is taken by a different page. Move it aside so we can guarantee the canonical slug.
+				if ( (int) $existing_post->ID !== $target_id ) {
+					$move_to = $desired_slug . '-old-' . (int) $existing_post->ID;
+					wp_update_post(
+						array(
+							'ID'        => (int) $existing_post->ID,
+							'post_name' => $move_to,
+						)
+					);
+
+					// If this was one of our pages, mark that we moved it (helps troubleshooting).
+					if ( $existing_is_ours ) {
+						update_post_meta( (int) $existing_post->ID, '_pnpc_psd_slug_moved_aside', 1 );
+					}
+				}
+			}
+
+			// Force the target page to use the canonical slug.
+			// Use a direct posts-table update to avoid environments that preserve numeric slugs.
+			wp_update_post(
+				array(
+					'ID'        => $target_id,
+					'post_name' => $desired_slug,
+				)
+			);
+
+			// Hard enforce in DB as a backstop.
+			global $wpdb;
+			$wpdb->update(
+				$wpdb->posts,
+				array( 'post_name' => $desired_slug ),
+				array( 'ID' => $target_id ),
+				array( '%s' ),
+				array( '%d' )
+			);
+			clean_post_cache( $target_id );
+
+			// Verify enforcement (debug meta helps if a host/migration tool overrides post_name after save).
+			$reloaded = get_post( $target_id );
+			if ( $reloaded instanceof WP_Post && (string) $reloaded->post_name !== (string) $desired_slug ) {
+				update_post_meta( $target_id, '_pnpc_psd_slug_enforce_failed', time() );
+			}
+
+			return $target_id;
+		}
+
+
 		private function resolve_existing_ticket_view_page_id() {
 			$page = get_page_by_path( 'ticket-view', OBJECT, 'page' );
 			if ( $page instanceof WP_Post ) {
@@ -1132,7 +1307,9 @@ private function is_ticket_view_configured( $page_id ) {
 
 function create_dashboard_page_from_wizard( $args ) {
 		$title  = isset( $args['title'] ) ? sanitize_text_field( (string) $args['title'] ) : esc_html__( 'Support Dashboard', 'pnpc-pocket-service-desk' );
-		$slug   = isset( $args['slug'] ) ? sanitize_title( (string) $args['slug'] ) : 'dashboard';
+		// Canonical slug: "dashboard" is too generic and numeric slugs cause permalink editors to show the page ID.
+		// Keep the public Support Dashboard predictable for users and internal URL helpers.
+		$slug   = 'support-dashboard';
 		$editor = isset( $args['editor'] ) ? sanitize_key( (string) $args['editor'] ) : 'block';
 
 		// Debug output.
@@ -1164,8 +1341,31 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Creating dashbo
 			return $page_id;
 		}
 
+		// If WordPress had to de-dupe the slug, try to force the desired slug if it is still available.
+		$desired = get_page_by_path( $slug );
+		if ( ! $desired || (int) $desired->ID === (int) $page_id ) {
+			wp_update_post(
+				array(
+					'ID'        => (int) $page_id,
+					'post_name' => $slug,
+				)
+			);
+		}
+
 		// Mark as wizard-created so detection remains reliable even if the content is later edited.
 		update_post_meta( $page_id, '_pnpc_psd_created_by_builder', 1 );
+
+		// If WordPress had to de-dupe the slug or a numeric slug slipped in, try to force the canonical slug
+		// when it is still available.
+		$desired = get_page_by_path( 'support-dashboard' );
+		if ( ! $desired || (int) $desired->ID === (int) $page_id ) {
+			wp_update_post(
+				array(
+					'ID'        => (int) $page_id,
+					'post_name' => 'support-dashboard',
+				)
+			);
+		}
 
 		// Debug output.
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
@@ -1629,6 +1829,17 @@ public function display_tickets_page()
 		register_setting( 'pnpc_psd_settings', 'pnpc_psd_notify_customer_on_close', array( 'type' => 'boolean', 'sanitize_callback' => 'absint', 'default' => 1 ) );
 		register_setting( 'pnpc_psd_settings', 'pnpc_psd_notify_from_name', array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field', 'default' => '' ) );
 		register_setting( 'pnpc_psd_settings', 'pnpc_psd_notify_from_email', array( 'type' => 'string', 'sanitize_callback' => 'sanitize_email', 'default' => '' ) );
+
+		// Group/team signature appended to staff replies (Free).
+		register_setting(
+			'pnpc_psd_settings',
+			self::OPTION_GROUP_SIGNATURE,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_textarea_field',
+				'default'           => '',
+			)
+		);
 
 		// Attachment size limit in MB (v1.1.0). Clamped at runtime by plan.
 		register_setting( 'pnpc_psd_settings', 'pnpc_psd_max_attachment_mb', array( 'type' => 'integer', 'sanitize_callback' => 'pnpc_psd_sanitize_max_attachment_mb', 'default' => 5 ) );
@@ -3666,6 +3877,45 @@ public function display_tickets_page()
 		echo '<p><strong>' . esc_html__( 'Service Desk setup is almost done.', 'pnpc-pocket-service-desk' ) . '</strong> ' . esc_html__( 'Run the Setup Wizard to create or link your customer dashboard page.', 'pnpc-pocket-service-desk' ) . '</p>';
 		echo '<p><a class="button button-primary" href="' . esc_url( $wizard_url ) . '">' . esc_html__( 'Run Setup Wizard', 'pnpc-pocket-service-desk' ) . '</a> ';
 		echo '<a class="button" href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss', 'pnpc-pocket-service-desk' ) . '</a></p>';
+		echo '</div>';
+	}
+
+	/**
+	 * Show a helpful notice when permalinks are set to "Plain".
+	 *
+	 * The Service Desk dashboard is intended to have a stable, human-readable URL (e.g. /support-dashboard/).
+	 * With Plain permalinks enabled, WordPress will show links as ?page_id=123 regardless of the page slug.
+	 *
+	 * @return void
+	 */
+	public function maybe_show_permalinks_notice() {
+		if ( ! current_user_can( 'pnpc_psd_manage_settings' ) ) {
+			return;
+		}
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			return;
+		}
+		// Only show when permalinks are Plain.
+		if ( '' !== (string) get_option( 'permalink_structure', '' ) ) {
+			return;
+		}
+
+		// Keep the notice scoped to Service Desk screens (and wp-admin Dashboard).
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( $screen ) {
+			$screen_id = isset( $screen->id ) ? (string) $screen->id : '';
+			$base      = isset( $screen->base ) ? (string) $screen->base : '';
+			$allowed   = ( false !== strpos( $screen_id, 'pnpc-service-desk' ) ) || ( 'dashboard' === $base );
+			if ( ! $allowed ) {
+				return;
+			}
+		}
+
+		$permalink_url = admin_url( 'options-permalink.php' );
+		echo '<div class="notice notice-warning">';
+		echo '<p><strong>' . esc_html__( 'Pretty permalinks are disabled.', 'pnpc-pocket-service-desk' ) . '</strong> ';
+		echo esc_html__( 'Support Desk pages use pretty permalinks (e.g. /support-dashboard/). With Plain permalinks enabled, WordPress will show links like ?page_id=123 even when the slug is correct.', 'pnpc-pocket-service-desk' ) . '</p>';
+		echo '<p><a class="button button-primary" href="' . esc_url( $permalink_url ) . '">' . esc_html__( 'Open Permalink Settings', 'pnpc-pocket-service-desk' ) . '</a></p>';
 		echo '</div>';
 	}
 

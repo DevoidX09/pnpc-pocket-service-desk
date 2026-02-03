@@ -25,6 +25,121 @@
 		var adminResponseFiles = [];
 		var MAX_ATTACHMENTS = 10;
 
+		// ================================
+		// Reply Signatures (Free): None / Personal / Group
+		// ================================
+		var SIGNATURE_MODE_KEY = 'pnpc_psd_signature_mode';
+
+		function normalizeNewlines(str) {
+			return (str || '').toString().replace(/\r\n/g, '\n');
+		}
+
+		function getSignatureText(mode) {
+			if (typeof pnpcPsdAdmin === 'undefined') {
+				return '';
+			}
+			if ('personal' === mode) {
+				return normalizeNewlines(pnpcPsdAdmin.personal_signature || '');
+			}
+			if ('group' === mode) {
+				return normalizeNewlines(pnpcPsdAdmin.group_signature || '');
+			}
+			return '';
+		}
+
+		function getSelectedSignatureMode() {
+			var $checked = $('#pnpc-psd-signature-controls input[name="pnpc_psd_signature_mode"]:checked');
+			return $checked.length ? $checked.val() : '';
+		}
+
+		function setSelectedSignatureMode(mode) {
+			$('#pnpc-psd-signature-controls input[name="pnpc_psd_signature_mode"]').prop('checked', false);
+			$('#pnpc-psd-signature-controls input[name="pnpc_psd_signature_mode"][value="' + mode + '"]').prop('checked', true);
+		}
+
+		function removeTrailingSignature(text) {
+			var out = normalizeNewlines(text);
+			['personal', 'group'].forEach(function(mode) {
+				var sig = getSignatureText(mode);
+				sig = sig.trim();
+				if (!sig) {
+					return;
+				}
+				var suffix = '\n\n' + sig;
+				if (out.endsWith(suffix)) {
+					out = out.slice(0, out.length - suffix.length);
+					out = out.replace(/\s+$/, '');
+				}
+			});
+			return out;
+		}
+
+		function applySignatureToTextarea($textarea) {
+			if (!$textarea || !$textarea.length) {
+				return;
+			}
+			var mode = getSelectedSignatureMode() || (typeof pnpcPsdAdmin !== 'undefined' ? pnpcPsdAdmin.default_signature_mode : 'none');
+			var base = removeTrailingSignature($textarea.val() || '');
+			if ('none' === mode) {
+				$textarea.val(base);
+				return;
+			}
+			var sigText = getSignatureText(mode).trim();
+			if (!sigText) {
+				$textarea.val(base);
+				return;
+			}
+			var next = (base.trim().length ? base.replace(/\s+$/, '') + '\n\n' : '') + sigText;
+			$textarea.val(next);
+		}
+
+		function initSignatureControls() {
+			var $controls = $('#pnpc-psd-signature-controls');
+			if (!$controls.length || typeof pnpcPsdAdmin === 'undefined') {
+				return;
+			}
+
+			// Hide entirely if nothing is configured.
+			if (!pnpcPsdAdmin.has_personal_signature && !pnpcPsdAdmin.has_group_signature) {
+				$controls.hide();
+				return;
+			}
+
+			var stored = '';
+			try {
+				stored = window.localStorage ? window.localStorage.getItem(SIGNATURE_MODE_KEY) : '';
+			} catch (e) {
+				stored = '';
+			}
+
+			var initial = stored || pnpcPsdAdmin.default_signature_mode || 'none';
+			// If personal/group is selected but not available, fall back.
+			if ('personal' === initial && !pnpcPsdAdmin.has_personal_signature) {
+				initial = pnpcPsdAdmin.has_group_signature ? 'group' : 'none';
+			}
+			if ('group' === initial && !pnpcPsdAdmin.has_group_signature) {
+				initial = pnpcPsdAdmin.has_personal_signature ? 'personal' : 'none';
+			}
+
+			setSelectedSignatureMode(initial);
+
+			$controls.on('change', 'input[name="pnpc_psd_signature_mode"]', function() {
+				var mode = getSelectedSignatureMode();
+				try {
+					if (window.localStorage) {
+						window.localStorage.setItem(SIGNATURE_MODE_KEY, mode);
+					}
+				} catch (e) {
+					// ignore
+				}
+				// If signature was already appended, re-apply based on new mode.
+				applySignatureToTextarea($('#response-text'));
+			});
+		}
+
+		// Initialize signature controls if present on the current screen.
+		initSignatureControls();
+
 		function renderAttachmentList(files, $list, $input) {
 			if (!$list || !$list.length) {
 				return;
@@ -670,6 +785,9 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 
 				var $form = $(this);
 				var formTicketId = $form.data('ticket-id');
+
+				// Apply selected signature (if any) before validation and send.
+				applySignatureToTextarea($('#response-text'));
 				var response = $('#response-text').val();
 
 				if (!response.trim()) {

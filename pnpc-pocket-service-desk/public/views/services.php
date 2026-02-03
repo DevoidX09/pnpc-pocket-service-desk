@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Public services/products view (standalone).
+ * Public services view (standalone).
  *
  * Display mode:
  *  - Display Public Products: shows general published products

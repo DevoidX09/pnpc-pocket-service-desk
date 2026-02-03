@@ -12,8 +12,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 $upgrade_url = apply_filters( 'pnpc_psd_upgrade_url', '' );
 $support_url = apply_filters( 'pnpc_psd_support_url', '' );
 
+// Default to the bundled dashboard logo if none is provided by a theme/site filter.
 $logo_url = apply_filters( 'pnpc_psd_dashboard_logo_url', '' );
-$logo_alt = apply_filters( 'pnpc_psd_dashboard_logo_alt', 'PNPC' );
+if ( ! $logo_url ) {
+	$logo_url = plugins_url( 'assets/images/pnpc-pocket-service-desk.png', dirname( __FILE__, 3 ) . '/pnpc-pocket-service-desk.php' );
+}
+$logo_alt = apply_filters( 'pnpc_psd_dashboard_logo_alt', 'PNPC Pocket Service Desk' );
 
 $alerts = apply_filters( 'pnpc_psd_dashboard_alerts', array() );
 if ( ! is_array( $alerts ) ) {

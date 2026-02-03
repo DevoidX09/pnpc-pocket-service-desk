@@ -188,6 +188,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 					?>
 				</p>
 			</div>
+			<div id="pnpc-psd-client-notes-anchor"></div>
 		</div>
 
 		<div class="pnpc-psd-ticket-actions">
@@ -197,6 +198,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 <div id="pnpc-psd-autosave-tip-panel" class="pnpc-psd-autosave-tip-panel" style="display:none;"><?php echo esc_html__( 'Agent, Status, and Priority save automatically when you change them. If anything fails, use the Save buttons.', 'pnpc-pocket-service-desk' ); ?></div>
 				</div>
 			</div>
+			<div id="pnpc-psd-client-notes-controls-anchor"></div>
 			<?php if (current_user_can('pnpc_psd_assign_tickets')) : ?>
 				<div class="pnpc-psd-field">
 					<label for="pnpc-psd-assign-agent"><?php esc_html_e('Assign Agent', 'pnpc-pocket-service-desk'); ?></label>
@@ -353,6 +355,16 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 		</div>
 	<?php endif; ?>
 
+	<?php
+	/**
+	 * Allow add-ons (e.g., Pro) to render staff-only panels before the public conversation.
+	 *
+	 * @since 1.1.1.4
+	 */
+	do_action( 'pnpc_psd_admin_ticket_detail_before_conversation', $ticket );
+	?>
+	<div id="pnpc-psd-pro-internal-collab-anchor"></div>
+
 	<h3><?php esc_html_e('Conversation', 'pnpc-pocket-service-desk'); ?></h3>
 
 	<?php if (! empty($responses)) : ?>
@@ -370,7 +382,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 					</span>
 				</div>
 				<div class="pnpc-psd-response-content">
-					<?php echo wp_kses_post($r->response); ?>
+					<?php echo wp_kses_post( wpautop( $r->response ) ); ?>
 				</div>
 				<?php if (! empty($atts_for_response)) : ?>
 					<div class="pnpc-psd-response-attachments">
@@ -452,6 +464,21 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 				<?php wp_nonce_field('pnpc_psd_admin_nonce', 'nonce'); ?>
 				<div>
 					<textarea id="response-text" name="response" rows="6" style="width:100%;"></textarea>
+				</div>
+				<div id="pnpc-psd-signature-controls" class="pnpc-psd-signature-controls" style="margin-top:8px;">
+					<strong><?php esc_html_e( 'Signature:', 'pnpc-pocket-service-desk' ); ?></strong>
+					<label style="margin-left:10px;">
+						<input type="radio" name="pnpc_psd_signature_mode" value="none" />
+						<?php esc_html_e( 'None', 'pnpc-pocket-service-desk' ); ?>
+					</label>
+					<label style="margin-left:10px;">
+						<input type="radio" name="pnpc_psd_signature_mode" value="personal" />
+						<?php esc_html_e( 'Personal', 'pnpc-pocket-service-desk' ); ?>
+					</label>
+					<label style="margin-left:10px;">
+						<input type="radio" name="pnpc_psd_signature_mode" value="group" />
+						<?php esc_html_e( 'Group', 'pnpc-pocket-service-desk' ); ?>
+					</label>
 				</div>
 				<div style="margin-top:8px;">
 					<label for="admin-response-attachments"><?php esc_html_e('Attachments (optional)', 'pnpc-pocket-service-desk'); ?></label>
