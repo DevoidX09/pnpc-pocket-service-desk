@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+$upgrade_url = apply_filters( 'pnpc_psd_upgrade_url', '' );
 $support_url = apply_filters( 'pnpc_psd_support_url', '' );
 
 // Default to the bundled dashboard logo if none is provided by a theme/site filter.
@@ -80,7 +81,13 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 				<span class="psd-muted"><?php echo esc_html__( 'Support link not configured.', 'pnpc-pocket-service-desk' ); ?></span>
 			<?php endif; ?>
 
-			<?php /* No upgrade/promotional CTAs in the Free build. */ ?>
+			<?php if ( $upgrade_url ) : ?>
+				<a class="button button-secondary" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $upgrade_url ); ?>">
+					<?php echo esc_html__( 'Upgrade to Pro', 'pnpc-pocket-service-desk' ); ?>
+				</a>
+			<?php else : ?>
+				<span class="psd-muted"><?php echo esc_html__( 'Upgrade link not configured.', 'pnpc-pocket-service-desk' ); ?></span>
+			<?php endif; ?>
 		</div>
 	</div>
 
@@ -208,7 +215,13 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 			<div class="psd-cta">
 				<?php if ( $support_url ) : ?>
 					<a class="button button-primary" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $support_url ); ?>">
-						<?php echo esc_html__( 'Support', 'pnpc-pocket-service-desk' ); ?>
+						<?php echo esc_html__( 'Get Support', 'pnpc-pocket-service-desk' ); ?>
+					</a>
+				<?php endif; ?>
+
+				<?php if ( $upgrade_url ) : ?>
+					<a class="button" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $upgrade_url ); ?>">
+						<?php echo esc_html__( 'Upgrade for more', 'pnpc-pocket-service-desk' ); ?>
 					</a>
 				<?php endif; ?>
 			</div>

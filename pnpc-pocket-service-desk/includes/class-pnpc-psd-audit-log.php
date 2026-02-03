@@ -70,38 +70,9 @@ class PNPC_PSD_Audit_Log {
 			return false;
 		}
 
-		// Free retention cap: keep the most recent N rows.
-		$cap = pnpc_psd_is_pro() ? 0 : 200;
-		if ( $cap > 0 ) {
-			self::enforce_retention_cap( $cap );
-		}
-
 		return true;
 	}
 
-	/**
-	 * Enforce a max row count for the audit log.
-	 *
-	 * @param int $cap Maximum number of rows to retain.
-	 * @return void
-	 */
-	private static function enforce_retention_cap( $cap ) {
-		global $wpdb;
-		$table = $wpdb->prefix . 'pnpc_psd_audit_log';
-		$cap   = absint( $cap );
-		if ( $cap < 1 ) {
-			return;
-		}
-
-		// MySQL requires a derived table when deleting with a subquery on the same table.
-		// Use prepared statement for security compliance.
-		$sql = $wpdb->prepare(
-			"DELETE FROM {$table} WHERE id NOT IN (SELECT id FROM (SELECT id FROM {$table} ORDER BY id DESC LIMIT %d) t)",
-			$cap
-		);
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$wpdb->query( $sql );
-	}
 
 	/**
 	 * Get audit log rows for a ticket.

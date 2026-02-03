@@ -24,20 +24,6 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 
 	/**
-	 * Whether Pro is enabled.
-	 *
-	 * @var bool
-	 */
-	protected $is_pro = false;
-
-	/**
-	 * Free retention cap.
-	 *
-	 * @var int
-	 */
-	protected $free_cap = 250;
-
-	/**
 	 * Constructor.
 	 */
 	public function __construct() {
@@ -48,10 +34,6 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 				'ajax'     => false,
 			)
 		);
-
-		$this->is_pro = function_exists( 'pnpc_psd_is_pro' ) ? (bool) pnpc_psd_is_pro() : false;
-		$default_cap  = (int) apply_filters( 'pnpc_psd_audit_free_retention_cap', 250 );
-		$this->free_cap = max( 1, $default_cap );
 	}
 
 	/**
