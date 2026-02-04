@@ -70,8 +70,8 @@ class PNPC_PSD_Audit_Log {
 			return false;
 		}
 
-		// Free retention cap: keep the most recent N rows.
-		$cap = pnpc_psd_is_pro() ? 0 : 200;
+		// Retention cap: keep the most recent N rows.
+		$cap = function_exists( 'pnpc_psd_get_audit_log_cap' ) ? (int) pnpc_psd_get_audit_log_cap() : 250;
 		if ( $cap > 0 ) {
 			self::enforce_retention_cap( $cap );
 		}

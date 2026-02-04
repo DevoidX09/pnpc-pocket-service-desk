@@ -173,7 +173,6 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 							$free_cap = 5;
 							$pro_cap  = 20;
 							printf(
-								esc_html__( 'Recommended: %1$dMB for Free and up to %2$dMB for Pro. Your plan may clamp this value automatically.', 'pnpc-pocket-service-desk' ),
 								(int) $free_cap,
 								(int) $pro_cap
 							);
@@ -361,7 +360,6 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 			</table>
 
 			<h2><?php esc_html_e( 'Logout Redirect', 'pnpc-pocket-service-desk' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Controls where users are sent after logging out via the Profile Settings shortcode.', 'pnpc-pocket-service-desk' ); ?></p>
 			<table class="form-table">
 				<tr>
 					<th scope="row"><label for="pnpc_psd_logout_redirect_page_id"><?php esc_html_e( 'Logout Redirect', 'pnpc-pocket-service-desk' ); ?></label></th>
@@ -381,7 +379,6 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 							}
 							?>
 						</select>
-						<p class="description"><?php esc_html_e( 'Where users are sent after clicking Logout in the Profile Settings screen.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 			</table>
@@ -413,7 +410,6 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 			<p class="description"><?php esc_html_e( 'Control optional welcome headings shown in public shortcodes. Disable these if you are providing your own headings via a page builder.', 'pnpc-pocket-service-desk' ); ?></p>
 			<table class="form-table">
 				<tr>
-					<th scope="row"><?php esc_html_e( 'Profile Settings', 'pnpc-pocket-service-desk' ); ?></th>
 					<td>
 						<label>
 							<input type="hidden" name="pnpc_psd_show_welcome_profile" value="0" />
@@ -498,11 +494,9 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				</tr>
 			</table>
 
-			<h2><?php esc_html_e( 'Product / Services Display', 'pnpc-pocket-service-desk' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Controls which products are shown in the Services area (when WooCommerce is active).', 'pnpc-pocket-service-desk' ); ?></p>
 			<table class="form-table">
 				<tr>
-					<th scope="row"><?php esc_html_e( 'Display Public Products', 'pnpc-pocket-service-desk' ); ?></th>
 					<td>
 						<label>
 							<input type="hidden" name="pnpc_psd_show_products" value="0" />
@@ -512,20 +506,6 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 						<p class="description"><?php esc_html_e( 'If enabled, the Services shortcode will show general published products to viewers (unless user-specific products are enabled).', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
-				<?php if ( function_exists( 'pnpc_psd_is_pro_active' ) && pnpc_psd_is_pro_active() ) : ?>
-<tr>
-					<th scope="row"><?php esc_html_e( 'Enable User-specific Products (Pro)', 'pnpc-pocket-service-desk' ); ?></th>
-					<td>
-						<label>
-							<input type="hidden" name="pnpc_psd_user_specific_products" value="0" />
-							<input type="checkbox" name="pnpc_psd_user_specific_products" value="1" <?php checked( 1, get_option( 'pnpc_psd_user_specific_products', 0 ) ); ?> />
-							<?php esc_html_e( 'Restrict product listings to products allocated to an individual user (pro feature).', 'pnpc-pocket-service-desk' ); ?>
-						</label>
-						<p class="description"><?php esc_html_e( 'When enabled, the Services block will show only products explicitly allocated to the viewing user (user-specific takes precedence).', 'pnpc-pocket-service-desk' ); ?></p>
-					</td>
-				</tr>
-<?php endif; ?>
-			</table>
 
 		</div>
 
@@ -537,24 +517,19 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 			<p class="description"><?php esc_html_e( 'Customize colors used across shortcodes and cards. Values are stored as hex colors (e.g., #2b9f6a).', 'pnpc-pocket-service-desk' ); ?></p>
 			<table class="form-table">
 				<tr>
-					<th scope="row"><label for="pnpc_psd_primary_button_color"><?php esc_html_e( 'Edit Profile Button color', 'pnpc-pocket-service-desk' ); ?></label></th>
 					<td>
 						<input type="color" id="pnpc_psd_primary_button_color" name="pnpc_psd_primary_button_color" value="<?php echo esc_attr( get_option( 'pnpc_psd_primary_button_color', '#2b9f6a' ) ); ?>" />
-						<p class="description"><?php esc_html_e( 'Used for the Edit Profile button and other primary actions.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 				<tr>
-					<th scope="row"><label for="pnpc_psd_primary_button_hover_color"><?php esc_html_e( 'Edit Profile Button hover color', 'pnpc-pocket-service-desk' ); ?></label></th>
 					<td>
 						<input type="color" id="pnpc_psd_primary_button_hover_color" name="pnpc_psd_primary_button_hover_color" value="<?php echo esc_attr( get_option( 'pnpc_psd_primary_button_hover_color', '#238a56' ) ); ?>" />
-						<p class="description"><?php esc_html_e( 'Hover state for the Edit Profile button.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="pnpc_psd_logout_button_color"><?php esc_html_e( 'Logout Button color', 'pnpc-pocket-service-desk' ); ?></label></th>
 					<td>
 						<input type="color" id="pnpc_psd_logout_button_color" name="pnpc_psd_logout_button_color" value="<?php echo esc_attr( get_option( 'pnpc_psd_logout_button_color', '#dc3545' ) ); ?>" />
-						<p class="description"><?php esc_html_e( 'Used for the Logout button shown in Profile Settings.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 				<tr>

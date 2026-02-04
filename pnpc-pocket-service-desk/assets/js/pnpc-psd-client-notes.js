@@ -2,7 +2,7 @@
 	'use strict';
 
 	function buildUI() {
-		var cfg = window.PNPC_PSD_PRO_INTERNAL_NOTES || {};
+		var cfg = window.PNPC_PSD_CLIENT_NOTES || {};
 		var i18n = cfg.i18n || {};
 
 		var ticketId = parseInt(cfg.ticketId, 10) || 0;
@@ -10,7 +10,7 @@
 			return;
 		}
 
-		var $toolbar = $('.pnpc-psd-pro-reply-toolbar').first();
+		var $toolbar = $('.pnpc-psd-reply-toolbar').first();
 		// Toolbar is optional (some screens may not load Saved Replies).
 		var hasToolbar = !!$toolbar.length;
 
@@ -180,7 +180,7 @@ var $panel = $('<div/>', {
 	}
 
 	function loadList(ticketId, $list, $status, i18n, badges) {
-		var cfg = window.PNPC_PSD_PRO_INTERNAL_NOTES || {};
+		var cfg = window.PNPC_PSD_CLIENT_NOTES || {};
 		$status.text(i18n.loading || 'Loading...');
 		$.ajax({
 			url: cfg.ajaxUrl,
@@ -216,7 +216,7 @@ var $panel = $('<div/>', {
 		});
 	}
 	function addNote(ticketId, content, $list, $status, $input, $add, i18n, badges) {
-		var cfg = window.PNPC_PSD_PRO_INTERNAL_NOTES || {};
+		var cfg = window.PNPC_PSD_CLIENT_NOTES || {};
 		$add.prop('disabled', true);
 		$status.text(i18n.loading || 'Loading...');
 		$.ajax({
@@ -252,7 +252,7 @@ var $panel = $('<div/>', {
 	}
 
 	function deleteNote(ticketId, noteId, $row, $list, $status, i18n, badges) {
-		var cfg = window.PNPC_PSD_PRO_INTERNAL_NOTES || {};
+		var cfg = window.PNPC_PSD_CLIENT_NOTES || {};
 		$status.text(i18n.loading || 'Loading...');
 		$.ajax({
 			url: cfg.ajaxUrl,
@@ -285,7 +285,7 @@ var $panel = $('<div/>', {
 	}
 
 	function renderList(resp, $list, i18n) {
-		var cfg = window.PNPC_PSD_PRO_INTERNAL_NOTES || {};
+		var cfg = window.PNPC_PSD_CLIENT_NOTES || {};
 		$list.empty();
 		if (!(resp && resp.success && resp.data && $.isArray(resp.data.items))) {
 			$list.append($('<div/>', {
@@ -308,7 +308,7 @@ var $panel = $('<div/>', {
 	}
 
 	function appendItem(item, $list, i18n) {
-		var cfg = window.PNPC_PSD_PRO_INTERNAL_NOTES || {};
+		var cfg = window.PNPC_PSD_CLIENT_NOTES || {};
 		var $empty = $list.find('.pnpc-psd-client-notes-empty');
 		if ($empty.length) {
 			$list.empty();

@@ -24,18 +24,15 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 
 	/**
-	 * Whether Pro is enabled.
-	 *
-	 * @var bool
-	 */
-	protected $is_pro = false;
-
-	/**
-	 * Free retention cap.
+	 * Retention cap for visible rows.
 	 *
 	 * @var int
 	 */
-	protected $free_cap = 250;
+	protected $cap = 250;
+
+	/**
+
+	/**
 
 	/**
 	 * Constructor.
@@ -49,9 +46,8 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 			)
 		);
 
-		$this->is_pro = function_exists( 'pnpc_psd_is_pro' ) ? (bool) pnpc_psd_is_pro() : false;
-		$default_cap  = (int) apply_filters( 'pnpc_psd_audit_free_retention_cap', 250 );
-		$this->free_cap = max( 1, $default_cap );
+		$this->cap = function_exists( 'pnpc_psd_get_audit_log_cap' ) ? (int) pnpc_psd_get_audit_log_cap() : 250;
+		$this->cap = max( 0, $this->cap );
 	}
 
 	/**
@@ -259,16 +255,18 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 			$params[] = $filters['actor_id'];
 		}
 
-		// Count.
+		
+// Count.
 		$sql_count = "SELECT COUNT(*) FROM {$table} {$where}";
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$total_items = (int) $wpdb->get_var( $wpdb->prepare( $sql_count, $params ) );
 
-		if ( ! $this->is_pro ) {
-			$total_items = min( $total_items, $this->free_cap );
-		}
+		/*
+		 * Free uses a capped dataset, so enforce newest-first ordering to keep paging and cap
+		 * semantics consistent even if a user tries to sort ascending.
+		 */
+		$order = 'desc';
 
-		// For Free, we cap via LIMIT on the overall set by applying an upper bound using id DESC; since our default sort is newest first, this works as intended.
 		$offset = ( $paged - 1 ) * $per_page;
 
 		$limit_clause = $wpdb->prepare( 'LIMIT %d OFFSET %d', $per_page, $offset );
@@ -276,14 +274,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 		// Main select.
 		$sql = "SELECT id, ticket_id, actor_id, action, context, created_at FROM {$table} {$where} ORDER BY {$orderby} {$order} {$limit_clause}";
 
-		// For Free, ensure the query cannot page beyond the capped set by forcing the same ordering expectation.
-		if ( ! $this->is_pro ) {
-			// If a user sorts ascending (older first), cap semantics become confusing; enforce DESC for Free.
-			$order = 'desc';
-			$sql   = "SELECT id, ticket_id, actor_id, action, context, created_at FROM {$table} {$where} ORDER BY {$orderby} {$order} {$limit_clause}";
-		}
-
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
 
 		$items = array();

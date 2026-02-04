@@ -173,39 +173,39 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 	}
 
 	/**
-	 * Upgrade database schema for existing installations.
+	 * Update database schema for existing installations.
 	 *
 	 * @since 1.1.0
 	 */
 	public static function maybe_upgrade_database() {
 		$current_db_version = get_option( 'pnpc_psd_db_version', '1.0.0' );
 
-		// Upgrade to 1.1.0 if needed.
+		// Update to 1.1.0 if needed.
 		if ( version_compare( $current_db_version, '1.1.0', '<' ) ) {
 			self::upgrade_to_1_1_0();
 		}
 
-		// Upgrade to 1.2.0 if needed.
+		// Update to 1.2.0 if needed.
 		if ( version_compare( $current_db_version, '1.2.0', '<' ) ) {
 			self::upgrade_to_1_2_0();
 		}
 
-		// Upgrade to 1.3.0 if needed.
+		// Update to 1.3.0 if needed.
 		if ( version_compare( $current_db_version, '1.3.0', '<' ) ) {
 			self::upgrade_to_1_3_0();
 		}
 
-		// Upgrade to 1.4.0 if needed.
+		// Update to 1.4.0 if needed.
 		if ( version_compare( $current_db_version, '1.4.0', '<' ) ) {
 			self::upgrade_to_1_4_0();
 		}
 
-		// Upgrade to 1.5.0 if needed (unread/activity tracking + attachment settings baseline).
+		// Update to 1.5.0 if needed (unread/activity tracking + attachment settings baseline).
 		if ( version_compare( $current_db_version, '1.5.0', '<' ) ) {
 			self::upgrade_to_1_5_0();
 		}
 
-		// Upgrade to 1.6.0 if needed (audit log, archiving, csv export scaffolding).
+		// Update to 1.6.0 if needed (audit log, archiving, csv export scaffolding).
 		if ( version_compare( $current_db_version, '1.6.0', '<' ) ) {
 			self::upgrade_to_1_6_0();
 		}
@@ -274,7 +274,7 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 	}
 
 	/**
-	 * Upgrade database to version 1.4.0 (delete review queue).
+	 * Update database to version 1.4.0 (delete review queue).
 	 *
 	 * Adds pending delete fields so agent/staff deletion requests can be reviewed
 	 * before being moved to trash.
@@ -430,7 +430,7 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 	}
 
 	/**
-	 * Upgrade database to version 1.1.0 (trash system).
+	 * Update database to version 1.1.0 (trash system).
 	 *
 	 * @since 1.1.0
 	 */
@@ -530,7 +530,7 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 	}
 
 	/**
-	 * Upgrade database to version 1.2.0 (delete reason tracking).
+	 * Update database to version 1.2.0 (delete reason tracking).
 	 *
 	 * @since 1.2.0
 	 */
@@ -593,7 +593,7 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 	}
 
 	/**
-	 * Upgrade database to version 1.3.0 (staff-created tickets tracking).
+	 * Update database to version 1.3.0 (staff-created tickets tracking).
 	 *
 	 * @since 1.3.0
 	 */
@@ -655,7 +655,7 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 			)
 		);
 
-		// Add Service Desk Manager role (Pro-only; enabled by add-on via filter).
+		// Add Service Desk Manager role (extension-controlled via filter).
 		$enable_manager = (bool) apply_filters( 'pnpc_psd_enable_manager_role', false );
 		if ( $enable_manager ) {
 			add_role(

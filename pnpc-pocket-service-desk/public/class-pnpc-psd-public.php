@@ -186,14 +186,14 @@ class PNPC_PSD_Public
 	}
 
 	/**
-	 * Render a consistent login-required gate for public shortcodes.
+	 * Render a consistent login-required prompt for public shortcodes.
 	 *
 	 * @param string $redirect_url Where to send the user after login.
 	 * @return string
 	 */
 	private function render_login_gate( $redirect_url = '' ) {
 		// Multiple public shortcodes are often placed on a single dashboard page.
-		// Only render the login gate once per request to avoid showing multiple login forms.
+		// Only render the login prompt once per request to avoid showing multiple login forms.
 		static $pnpc_psd_login_gate_rendered = false;
 		if ( $pnpc_psd_login_gate_rendered ) {
 			return '';
@@ -231,7 +231,7 @@ class PNPC_PSD_Public
 			)
 		);
 
-		return '<div class="pnpc-psd-login-gate">'
+		return '<div class="pnpc-psd-login-required">'
 			. '<p>' . esc_html__( 'Please log in to continue.', 'pnpc-pocket-service-desk' ) . '</p>'
 			. $form
 			. '</div>';
@@ -469,8 +469,8 @@ ob_start();
 	{
 		// Services is a neutral extension seam in the Free plugin.
 		// - Wizard templates may include [pnpc_services] in the customer dashboard layout.
-		// - Free should not show notices, gating, or dependency warnings.
-		// - Pro (or other add-ons) may inject output via the filter below.
+		// - Free should not show notices or dependency warnings.
+		// - Extensions may inject output via the filter below.
 		if ( ! is_user_logged_in() ) {
 			return $this->render_login_gate( function_exists('pnpc_psd_get_dashboard_url') ? pnpc_psd_get_dashboard_url() : home_url('/') );
 		}
@@ -480,14 +480,14 @@ ob_start();
 		 * Filter: render services block output.
 		 *
 		 * Free returns an empty string by default.
-		 * Add-ons (e.g., Pro) can hook this to output a services/products UI.
+		 * Extensions can hook this to output a services/products UI.
 		 *
 		 * @param string $output Default output (empty).
 		 * @param array  $atts   Shortcode attributes.
 		 */
 		$output = apply_filters( 'pnpc_psd_services_output', '', (array) $atts );
 
-		// Allow add-ons to enqueue assets when the block is present.
+		// Allow extensions to enqueue assets when the block is present.
 		do_action( 'pnpc_psd_services_enqueue_assets', (array) $atts );
 
 		return (string) $output;
@@ -719,7 +719,7 @@ ob_start();
 					);
 					continue;
 				}
-				// Enforce attachment size cap (plan-aware).
+				// Enforce attachment size cap (limit-aware).
 				$max_bytes = function_exists( 'pnpc_psd_get_max_attachment_bytes' ) ? (int) pnpc_psd_get_max_attachment_bytes() : (5 * 1024 * 1024);
 				$server_max_bytes = function_exists( 'wp_max_upload_size' ) ? (int) wp_max_upload_size() : 0;
 				$effective_max_bytes = ( $server_max_bytes > 0 ) ? min( $max_bytes, $server_max_bytes ) : $max_bytes;

@@ -52,7 +52,6 @@ if ( $delete_data ) {
 	delete_option( 'pnpc_psd_my_tickets_card_bg_hover_color' );
 	delete_option( 'pnpc_psd_my_tickets_view_button_color' );
 	delete_option( 'pnpc_psd_my_tickets_view_button_hover_color' );
-	delete_option( 'pnpc_psd_products_premium_only' );
 	delete_option( 'pnpc_psd_delete_data_on_uninstall' );
 }
 

@@ -52,7 +52,7 @@
 
 			// Allow other admin scripts to request an immediate refresh (e.g., after bulk actions)
 			$(document).on('pnpc_psd_force_refresh', function() {
-				// Bypass cacheTimeout gate and refresh immediately
+				// Bypass cacheTimeout guard and refresh immediately
 				lastRefreshTime = 0;
 				refreshTicketList();
 			});

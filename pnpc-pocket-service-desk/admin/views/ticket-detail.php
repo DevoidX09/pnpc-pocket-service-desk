@@ -54,7 +54,6 @@ if ($all_response_atts) {
 
 $status_options = array(
 	'open'        => __('Open', 'pnpc-pocket-service-desk'),
-	'in-progress' => __('In Progress', 'pnpc-pocket-service-desk'),
 	'waiting'     => __('Waiting', 'pnpc-pocket-service-desk'),
 	'closed'      => __('Closed', 'pnpc-pocket-service-desk'),
 );
@@ -357,13 +356,12 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 
 	<?php
 	/**
-	 * Allow add-ons (e.g., Pro) to render staff-only panels before the public conversation.
 	 *
 	 * @since 1.1.1.4
 	 */
 	do_action( 'pnpc_psd_admin_ticket_detail_before_conversation', $ticket );
 	?>
-	<div id="pnpc-psd-pro-internal-collab-anchor"></div>
+	<div id="pnpc-psd-internal-collab-anchor"></div>
 
 	<h3><?php esc_html_e('Conversation', 'pnpc-pocket-service-desk'); ?></h3>
 

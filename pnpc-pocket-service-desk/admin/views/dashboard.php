@@ -80,7 +80,7 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 				<span class="psd-muted"><?php echo esc_html__( 'Support link not configured.', 'pnpc-pocket-service-desk' ); ?></span>
 			<?php endif; ?>
 
-			<?php /* No upgrade/promotional CTAs in the Free build. */ ?>
+			<?php /* The Free build intentionally contains no promotional CTAs. */ ?>
 		</div>
 	</div>
 
@@ -156,7 +156,6 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 
 			<?php
 			/**
-			 * Allow Pro (or extensions) to add additional stats blocks/cards.
 			 *
 			 * @param array $stats Dashboard stats array.
 			 */

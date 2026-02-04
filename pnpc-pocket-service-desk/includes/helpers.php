@@ -676,50 +676,6 @@ if ( ! function_exists( 'pnpc_psd_sync_roles_caps' ) ) {
 			'pnpc_psd_assign_tickets'     => true,
 		);
 
-		// Manager is a Pro-unlocked role in the long-term plan.
-		// In Free, the role exists for forward compatibility, but elevated caps stay disabled.
-		$manager_caps = $agent_caps;
-		if ( function_exists( 'pnpc_psd_is_pro' ) && pnpc_psd_is_pro() ) {
-			$manager_caps = $manager_caps + array(
-				'pnpc_psd_delete_tickets'  => true,
-				'pnpc_psd_manage_settings' => true,
-			);
-		}
-
-		// Roles: Agent.
-		$agent_role = get_role( 'pnpc_psd_agent' );
-		if ( ! $agent_role ) {
-			add_role( 'pnpc_psd_agent', __( 'Service Desk Agent', 'pnpc-pocket-service-desk' ), $agent_caps );
-			$agent_role = get_role( 'pnpc_psd_agent' );
-		}
-		if ( $agent_role ) {
-			foreach ( $agent_caps as $cap => $grant ) {
-				if ( $grant ) { $agent_role->add_cap( $cap ); }
-			}
-		}
-
-		// Roles: Manager (Pro-only).
-		if ( function_exists( 'pnpc_psd_enable_manager_role' ) && pnpc_psd_enable_manager_role() ) {
-			$manager_role = get_role( 'pnpc_psd_manager' );
-			if ( ! $manager_role ) {
-				add_role( 'pnpc_psd_manager', __( 'Service Desk Manager', 'pnpc-pocket-service-desk' ), $manager_caps );
-				$manager_role = get_role( 'pnpc_psd_manager' );
-			}
-			if ( $manager_role ) {
-				// Always ensure baseline staff caps.
-				foreach ( $agent_caps as $cap => $grant ) {
-					if ( $grant ) { $manager_role->add_cap( $cap ); }
-				}
-				// Elevated caps are Pro-only; if manager role is enabled, grant them.
-				$elevated = array( 'pnpc_psd_delete_tickets', 'pnpc_psd_manage_settings' );
-				foreach ( $elevated as $cap ) {
-					$manager_role->add_cap( $cap );
-				}
-			}
-		} else {
-			// If manager role is not enabled, do not create it and do not maintain its caps.
-		}
-
 		// Ensure Administrators always have staff caps (menu visibility relies on these).
 		$admin_role = get_role( 'administrator' );
 		if ( $admin_role ) {
@@ -738,10 +694,76 @@ if ( ! function_exists( 'pnpc_psd_sync_roles_caps' ) ) {
 				$r->add_cap( 'pnpc_psd_view_own_tickets' );
 			}
 		}
-	}
+	
+		/**
+		 * Extension seam: allow additional roles/caps to be registered by other plugins.
+		 */
+		do_action( 'pnpc_psd_roles_sync' );
+		do_action( 'pnpc_psd_register_caps' );
+}
 }
 
 add_action( 'init', 'pnpc_psd_sync_roles_caps', 1 );
+
+/**
+ * Get core plugin limits.
+ *
+ * This is an extension seam intended for developers and extensions.
+ * The Free plugin uses neutral defaults.
+ *
+ * @since 1.1.1.4
+ *
+ * @return array{max_enabled_agents:int,audit_log_cap:int}
+ */
+if ( ! function_exists( 'pnpc_psd_get_limits' ) ) {
+	function pnpc_psd_get_limits() {
+		$limits = array(
+			'max_enabled_agents' => 2,
+			'audit_log_cap'      => 250,
+		);
+
+		/**
+		 * Filter the core limits used by the plugin.
+		 *
+		 * @param array $limits Current limits.
+		 */
+		$limits = apply_filters( 'pnpc_psd_limits', $limits );
+
+		$limits = is_array( $limits ) ? $limits : array();
+		$limits['max_enabled_agents'] = isset( $limits['max_enabled_agents'] ) ? (int) $limits['max_enabled_agents'] : 2;
+		$limits['audit_log_cap']      = isset( $limits['audit_log_cap'] ) ? (int) $limits['audit_log_cap'] : 250;
+
+		return $limits;
+	}
+}
+
+/**
+ * Maximum enabled agents allowed.
+ *
+ * @return int
+ */
+if ( ! function_exists( 'pnpc_psd_get_max_enabled_agents' ) ) {
+	function pnpc_psd_get_max_enabled_agents() {
+		$limits = pnpc_psd_get_limits();
+		$max    = isset( $limits['max_enabled_agents'] ) ? (int) $limits['max_enabled_agents'] : 2;
+		return max( 1, $max );
+	}
+}
+
+/**
+ * Maximum audit log entries retained.
+ *
+ * Return 0 to disable pruning.
+ *
+ * @return int
+ */
+if ( ! function_exists( 'pnpc_psd_get_audit_log_cap' ) ) {
+	function pnpc_psd_get_audit_log_cap() {
+		$limits = pnpc_psd_get_limits();
+		$cap    = isset( $limits['audit_log_cap'] ) ? (int) $limits['audit_log_cap'] : 250;
+		return max( 0, $cap );
+	}
+}
 
 /**
  * Sanitize Agents option array.
@@ -784,8 +806,8 @@ if ( ! function_exists( 'pnpc_psd_sanitize_agents_option' ) ) {
 			);
 		}
 
-		// Enforce plan limits (Free vs Pro). Free is intentionally small.
-		$limit = function_exists( 'pnpc_psd_get_max_agents_limit' ) ? (int) pnpc_psd_get_max_agents_limit() : 2;
+		// Enforce enabled-agent limit.
+		$limit = function_exists( 'pnpc_psd_get_max_enabled_agents' ) ? (int) pnpc_psd_get_max_enabled_agents() : 2;
 		if ( $limit > 0 ) {
 			$enabled_ids = array();
 			foreach ( $out as $uid => $row ) {
@@ -854,7 +876,7 @@ if ( ! function_exists( 'pnpc_psd_get_assignable_agents' ) ) {
 		// Fallback: original behavior based on staff roles.
 		return get_users(
 			array(
-				'role__in' => ( ( function_exists( 'pnpc_psd_enable_manager_role' ) && pnpc_psd_enable_manager_role() ) ? array( 'administrator', 'pnpc_psd_manager', 'pnpc_psd_agent' ) : array( 'administrator', 'pnpc_psd_agent' ) ),
+				'role__in' => array( 'administrator', 'pnpc_psd_agent' ),
 				'orderby'  => 'display_name',
 				'order'    => 'ASC',
 			)
@@ -904,170 +926,37 @@ if ( ! function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
 	}
 }
 
-/**
- * Determine whether this installation is running the Pro build.
- *
- * Pro is enabled if any of the following are true:
- * - Constant PNPC_PSD_IS_PRO is defined and truthy.
- * - Option pnpc_psd_plan is set to 'pro'.
- * - Filter 'pnpc_psd_is_pro' returns true.
- *
- * @return bool
- */
-if ( ! function_exists( 'pnpc_psd_is_pro' ) ) {
-/**
- * Pnpc psd is pro.
- *
- * @since 1.1.1.4
- *
- * @return mixed
- */
-	function pnpc_psd_is_pro() {
-		$is_pro = false;
-		if ( defined( 'PNPC_PSD_IS_PRO' ) && PNPC_PSD_IS_PRO ) {
-			$is_pro = true;
-		}
-		/**
-		 * Allow themes/addons to declare Pro status.
-		 */
-		$is_pro = (bool) apply_filters( 'pnpc_psd_is_pro', $is_pro );
-		return $is_pro;
-	}
-}
 
-
-/**
- * Back-compat helper: determine whether Pro is active/available.
- *
- * @return bool
- */
-if ( ! function_exists( 'pnpc_psd_is_pro_active' ) ) {
-/**
- * Pnpc psd is pro active.
- *
- * @since 1.1.1.4
- *
- * @return mixed
- */
-	function pnpc_psd_is_pro_active() {
-		return pnpc_psd_is_pro();
-	}
-}
-
-/**
- * Whether the Service Desk Manager role should be enabled.
- *
- * Free: false by default.
- * Pro : enabled by Pro add-on via filter.
- *
- * @return bool
- */
-if ( ! function_exists( 'pnpc_psd_enable_manager_role' ) ) {
-/**
- * Pnpc psd enable manager role.
- *
- * @since 1.1.1.4
- *
- * @return mixed
- */
-	function pnpc_psd_enable_manager_role() {
-		$enabled = false;
-		/**
-		 * Filter: enable manager role support.
-		 *
-		 * @param bool $enabled
-		 */
-		return (bool) apply_filters( 'pnpc_psd_enable_manager_role', $enabled );
-	}
-}
-
-/**
- * Filter visible WooCommerce product IDs for the current user.
- * Free: passthrough by default.
- * Pro : restrict via add-on.
- *
- * @param int[] $product_ids
- * @param int   $user_id
- *
- * @return int[]
- */
-if ( ! function_exists( 'pnpc_psd_filter_visible_products_for_user' ) ) {
-/**
- * Pnpc psd filter visible products for user.
- *
- * @param mixed $product_ids 
- * @param mixed $user_id 
- *
- * @since 1.1.1.4
- *
- * @return mixed
- */
-	function pnpc_psd_filter_visible_products_for_user( $product_ids, $user_id ) {
-		/**
-		 * Filter: visible products for a given user.
-		 *
-		 * @param int[] $product_ids
-		 * @param int   $user_id
-		 */
-		$product_ids = apply_filters( 'pnpc_psd_visible_products_for_user', (array) $product_ids, (int) $user_id );
-		return array_values( array_unique( array_map( 'absint', (array) $product_ids ) ) );
-	}
-}
-
-/**
- * Get the max number of eligible agents allowed by plan.
- *
- * Free: 2
- * Pro : unlimited (0)
- *
- * @return int 0 = unlimited.
- */
-if ( ! function_exists( 'pnpc_psd_get_max_agents_limit' ) ) {
-/**
- * Pnpc psd get max agents limit.
- *
- * @since 1.1.1.4
- *
- * @return mixed
- */
-	function pnpc_psd_get_max_agents_limit() {
-		return pnpc_psd_is_pro() ? 0 : 2;
-	}
-}
-
-/**
- * Get max attachment size in megabytes for current plan.
- *
- * Free default: 5MB
- * Pro  default: 20MB
- *
- * Stored setting (pnpc_psd_max_attachment_mb) is clamped by plan defaults.
- *
- * @return int
- */
 if ( ! function_exists( 'pnpc_psd_get_max_attachment_mb' ) ) {
-/**
- * Pnpc psd get max attachment mb.
- *
- * @since 1.1.1.4
- *
- * @return mixed
- */
+	/**
+	 * Maximum attachment size in megabytes.
+	 *
+	 * Extensions may raise this limit via the 'pnpc_psd_max_attachment_mb_cap' filter.
+	 *
+	 * @return int
+	 */
 	function pnpc_psd_get_max_attachment_mb() {
-		$default = pnpc_psd_is_pro() ? 20 : 5;
-		$min     = 1;
-		$max     = pnpc_psd_is_pro() ? 20 : 5;
-		$raw     = absint( get_option( 'pnpc_psd_max_attachment_mb', $default ) );
-		$raw     = max( $min, $raw );
-		$raw     = min( $max, $raw );
+		$cap = (int) apply_filters( 'pnpc_psd_max_attachment_mb_cap', 5 );
+		$cap = max( 1, $cap );
+
+		$raw = absint( get_option( 'pnpc_psd_max_attachment_mb', $cap ) );
+
+		if ( $raw < 1 ) {
+			$raw = 1;
+		}
+
+		if ( $raw > $cap ) {
+			$raw = $cap;
+		}
+
 		return (int) $raw;
 	}
 }
 
 /**
- * Sanitize max attachment size (MB) and clamp by plan.
+ * Sanitize max attachment size (MB) and clamp by cap.
  *
- * This ensures the stored option reflects the effective plan limit, avoiding UI confusion.
+ * This ensures the stored option reflects the effective cap limit, avoiding UI confusion.
  *
  * @param mixed $value Raw value.
  * @return int
@@ -1085,7 +974,8 @@ if ( ! function_exists( 'pnpc_psd_sanitize_max_attachment_mb' ) ) {
 	function pnpc_psd_sanitize_max_attachment_mb( $value ) {
 		$val = absint( $value );
 		$val = max( 1, $val );
-		$cap = pnpc_psd_is_pro() ? 20 : 5;
+		$cap = (int) apply_filters( 'pnpc_psd_max_attachment_mb_cap', 5 );
+		$cap = max( 1, $cap );
 		$val = min( $cap, $val );
 		return (int) $val;
 	}
@@ -1426,4 +1316,3 @@ if ( ! function_exists( 'pnpc_psd_sanitize_public_login_url' ) ) {
 		return $value ? esc_url_raw( $value ) : '';
 	}
 }
-

@@ -314,7 +314,17 @@ if ( $dashboard_page_id > 0 && 'trash' !== get_post_status( $dashboard_page_id )
 						<td>
 							<label>
 								<input type="radio" name="editor" value="elementor" <?php checked( $editor, 'elementor' ); ?> <?php disabled( ! defined( 'ELEMENTOR_VERSION' ) ); ?> />
-								<?php echo esc_html__( 'Elementor (recommended if installed)', 'pnpc-pocket-service-desk' ); ?>
+								<?php
+								$elementor_affiliate = 'https://be.elementor.com/visit/?bta=222608&brand=elementor';
+								echo wp_kses_post(
+									sprintf(
+										/* translators: 1: Elementor label. 2: Elementor affiliate URL. */
+										__( '%1$s — <a href="%2$s" target="_blank" rel="noopener noreferrer">Get Elementor</a>', 'pnpc-pocket-service-desk' ),
+										esc_html__( 'Elementor (recommended if installed)', 'pnpc-pocket-service-desk' ),
+										esc_url( $elementor_affiliate )
+									)
+								);
+								?>
 							</label><br />
 							<label>
 								<input type="radio" name="editor" value="block" <?php checked( $editor, 'block' ); ?> />

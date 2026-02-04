@@ -74,13 +74,6 @@ class PNPC_PSD_Admin
 
 			// For non-admin service desk staff, keep wp-admin access but limit menus to reduce confusion.
 			add_action('admin_menu', array($this, 'restrict_non_admin_menus'), 999);
-			if ( function_exists( 'pnpc_psd_is_pro_active' ) && pnpc_psd_is_pro_active() ) {
-				add_action( 'show_user_profile', array( $this, 'render_user_allocated_products_field' ) );
-				add_action( 'edit_user_profile', array( $this, 'render_user_allocated_products_field' ) );
-
-				add_action( 'personal_options_update', array( $this, 'save_user_allocated_products' ) );
-				add_action( 'edit_user_profile_update', array( $this, 'save_user_allocated_products' ) );
-			}
 			add_action('admin_init', array($this, 'register_settings'));
 			add_action('admin_init', array($this, 'process_admin_create_ticket'));
 			add_action('admin_init', array($this, 'process_admin_update_ticket_priority'));
@@ -117,7 +110,7 @@ class PNPC_PSD_Admin
 			update_option( 'pnpc_psd_do_setup_redirect', 0 );
 			return;
 		}
-// If there is existing ticket history, do not auto-redirect (upgrade / reinstatement).
+// If there is existing ticket history, do not auto-redirect (reinstatement).
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 		$ticket_count = 0;
@@ -236,6 +229,12 @@ class PNPC_PSD_Admin
 				array(),
 				$admin_css_ver,
 				'all'
+			);
+
+			// Emphasize the most-used admin link (All Tickets) to improve navigation.
+			wp_add_inline_style(
+				$this->plugin_name,
+				'#toplevel_page_pnpc-service-desk .wp-submenu a[href="admin.php?page=pnpc-service-desk-tickets"]{font-weight:600;}'
 			);
 
 // Enqueue attachments viewer CSS
@@ -433,7 +432,7 @@ class PNPC_PSD_Admin
 	public function add_plugin_admin_menu()
 	{
 		$all_count      = PNPC_PSD_Ticket::get_count();
-				$open_count = 0;
+		$open_count = 0;
 		if (class_exists('PNPC_PSD_Ticket')) {
 			$open_count  = (int) PNPC_PSD_Ticket::get_count('open');
 			$open_count += (int) PNPC_PSD_Ticket::get_count('in-progress');
@@ -471,10 +470,23 @@ class PNPC_PSD_Admin
 		);
 
 
+		$all_tickets_title = esc_html__( 'All Tickets', 'pnpc-pocket-service-desk' );
+		if ( $open_count > 0 ) {
+			$badge = sprintf(
+				'<span class="update-plugins count-%1$d"><span class="plugin-count">%1$d</span></span>',
+				absint( $open_count )
+			);
+			$all_tickets_title = sprintf(
+				'%1$s %2$s',
+				esc_html__( 'All Tickets', 'pnpc-pocket-service-desk' ),
+				$badge
+			);
+		}
+
 		add_submenu_page(
 			'pnpc-service-desk',
-			__('All Tickets', 'pnpc-pocket-service-desk'),
-			__('All Tickets', 'pnpc-pocket-service-desk'),
+			__( 'All Tickets', 'pnpc-pocket-service-desk' ),
+			$all_tickets_title,
 			'pnpc_psd_view_tickets',
 			'pnpc-service-desk-tickets',
 			array($this, 'display_tickets_page')
@@ -489,19 +501,7 @@ class PNPC_PSD_Admin
 			array($this, 'display_create_ticket_page')
 		);
 
-		// Saved Replies is a Pro feature, but the menu slot location is reserved here
-		// so ordering remains consistent across Free and Pro.
-		if ( function_exists( 'pnpc_psd_is_pro_active' ) && pnpc_psd_is_pro_active() && method_exists( $this, 'display_saved_replies_page' ) ) {
-			add_submenu_page(
-				'pnpc-service-desk',
-				esc_html__( 'Saved Replies', 'pnpc-pocket-service-desk' ),
-				esc_html__( 'Saved Replies', 'pnpc-pocket-service-desk' ),
-				'pnpc_psd_view_tickets',
-				'pnpc-service-desk-saved-replies',
-				array( $this, 'display_saved_replies_page' )
-			);
-		}
-
+		
 		add_submenu_page(
 			'pnpc-service-desk',
 			esc_html__( 'Setup Wizard', 'pnpc-pocket-service-desk' ),
@@ -1861,7 +1861,7 @@ public function display_tickets_page()
 			)
 		);
 
-		// Attachment size limit in MB (v1.1.0). Clamped at runtime by plan.
+		// Attachment size limit in MB (v1.1.0). Clamped at runtime by the configured limit.
 		register_setting( 'pnpc_psd_settings', 'pnpc_psd_max_attachment_mb', array( 'type' => 'integer', 'sanitize_callback' => 'pnpc_psd_sanitize_max_attachment_mb', 'default' => 5 ) );
 
 		register_setting(
@@ -2164,15 +2164,6 @@ public function display_tickets_page()
 			)
 		);
 
-		register_setting(
-			'pnpc_psd_settings',
-			'pnpc_psd_products_premium_only',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'absint',
-				'default'           => 0,
-			)
-		);
 
 		// Data retention: only delete settings/data on uninstall when explicitly enabled.
 		register_setting(
@@ -3669,10 +3660,10 @@ public function display_tickets_page()
 				$files = $_FILES['attachments'];
 				$file_count = count($files['name']);
 				
-				// Plan-aware size cap, additionally clamped by the server/WP upload cap.
-				$plan_max_bytes = function_exists( 'pnpc_psd_get_max_attachment_bytes' ) ? (int) pnpc_psd_get_max_attachment_bytes() : (5 * 1024 * 1024);
+				// Size cap, additionally clamped by the server/WP upload cap.
+				$cap_max_bytes = function_exists( 'pnpc_psd_get_max_attachment_bytes' ) ? (int) pnpc_psd_get_max_attachment_bytes() : (5 * 1024 * 1024);
 				$server_max_bytes = function_exists( 'wp_max_upload_size' ) ? (int) wp_max_upload_size() : 0;
-				$effective_max_bytes = ( $server_max_bytes > 0 ) ? min( $plan_max_bytes, $server_max_bytes ) : $plan_max_bytes;
+				$effective_max_bytes = ( $server_max_bytes > 0 ) ? min( $cap_max_bytes, $server_max_bytes ) : $cap_max_bytes;
 
 				for ($i = 0; $i < $file_count; $i++) {
 					// Skip if no file
@@ -3695,7 +3686,7 @@ public function display_tickets_page()
 						continue;
 					}
 
-					// Check file size (plan-aware cap clamped by server/WP max upload size).
+					// Check file size (configured cap clamped by server/WP max upload size).
 					if ( isset( $files['size'][$i] ) && (int) $files['size'][$i] > $effective_max_bytes ) {
 						$size_human = function_exists( 'pnpc_psd_format_filesize' ) ? pnpc_psd_format_filesize( (int) $files['size'][$i] ) : ( (int) $files['size'][$i] . ' bytes' );
 						$max_human  = function_exists( 'pnpc_psd_format_filesize' ) ? pnpc_psd_format_filesize( (int) $effective_max_bytes ) : ( (int) $effective_max_bytes . ' bytes' );
@@ -4117,11 +4108,28 @@ public function display_tickets_page()
 			}
 		}
 
+		$user_id = get_current_user_id();
+		if ( $user_id && get_user_meta( $user_id, 'pnpc_psd_dismiss_plain_permalinks_notice', true ) ) {
+			return;
+		}
+
+		// Handle dismiss (per-user).
+		if ( isset( $_GET['pnpc_psd_dismiss_plain_permalinks'] ) && $user_id ) {
+			check_admin_referer( 'pnpc_psd_dismiss_plain_permalinks' );
+			update_user_meta( $user_id, 'pnpc_psd_dismiss_plain_permalinks_notice', 1 );
+			return;
+		}
+
 		$permalink_url = admin_url( 'options-permalink.php' );
-		echo '<div class="notice notice-warning">';
-		echo '<p><strong>' . esc_html__( 'Pretty permalinks are disabled.', 'pnpc-pocket-service-desk' ) . '</strong> ';
-		echo esc_html__( 'Support Desk pages use pretty permalinks (e.g. /support-dashboard/). With Plain permalinks enabled, WordPress will show links like ?page_id=123 even when the slug is correct.', 'pnpc-pocket-service-desk' ) . '</p>';
-		echo '<p><a class="button button-primary" href="' . esc_url( $permalink_url ) . '">' . esc_html__( 'Open Permalink Settings', 'pnpc-pocket-service-desk' ) . '</a></p>';
+		$dismiss_url   = wp_nonce_url(
+			add_query_arg( array( 'pnpc_psd_dismiss_plain_permalinks' => 1 ) ),
+			'pnpc_psd_dismiss_plain_permalinks'
+		);
+		echo '<div class="notice notice-warning is-dismissible pnpc-psd-plain-permalinks-notice" style="max-width:50%;">';
+		echo '<p><strong>' . esc_html__( 'Plain permalinks are enabled.', 'pnpc-pocket-service-desk' ) . '</strong> ';
+		echo esc_html__( 'Your Service Desk pages will still work, but their URLs will look like ?page_id=123 (this is normal with Plain permalinks). If you prefer human-readable URLs like /support-dashboard/, update your permalink settings.', 'pnpc-pocket-service-desk' ) . '</p>';
+		echo '<p><a class="button button-primary" href="' . esc_url( $permalink_url ) . '">' . esc_html__( 'Open Permalink Settings', 'pnpc-pocket-service-desk' ) . '</a> ';
+		echo '<a class="button" href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss', 'pnpc-pocket-service-desk' ) . '</a></p>';
 		echo '</div>';
 	}
 

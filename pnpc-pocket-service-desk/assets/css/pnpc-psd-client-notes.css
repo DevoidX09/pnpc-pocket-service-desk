@@ -5,6 +5,9 @@
 	background: #FAFFA1;
 	border: 1px solid #dcdcde;
 	border-radius: 4px;
+	max-width: 30%;
+	flex: 0 1 30%;
+	min-width: 260px;
 }
 
 .pnpc-psd-client-notes-header {
@@ -77,6 +80,10 @@
 	background: #FFFDE6;
 	flex: 1;
 	min-height: 70px;
+	max-height: 110px;
+	overflow-y: auto;
+	resize: vertical;
+	box-sizing: border-box;
 }
 
 /* When pinned in the ticket summary area, make the notes read like a staff flag. */
@@ -109,7 +116,7 @@
 	line-height: 1;
 }
 
-.pnpc-psd-pro-client-notes-indicator{display:inline-block;margin-left:6px;font-weight:700;}
+.pnpc-psd-client-notes-indicator{display:inline-block;margin-left:6px;font-weight:700;}
 
 
 .pnpc-psd-client-notes-body {
@@ -153,4 +160,13 @@
 	width: 18px;
 	height: 18px;
 	font-size: 18px;
+}
+
+
+@media (max-width: 960px) {
+	.pnpc-psd-client-notes-panel {
+		max-width: 100%;
+		flex-basis: 100%;
+		min-width: 0;
+	}
 }

@@ -3,7 +3,7 @@
 /**
  * Notification service for PNPC Pocket Service Desk.
  *
- * Centralizes all outbound email notifications so Free/Pro gating, recipients,
+ * Centralizes all outbound email notifications so access control, recipients,
  * and user-configurable switches are handled consistently.
  *
  * @package PNPC_Pocket_Service_Desk

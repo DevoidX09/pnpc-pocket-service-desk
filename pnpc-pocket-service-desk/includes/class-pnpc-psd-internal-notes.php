@@ -82,7 +82,7 @@ class PNPC_PSD_Internal_Notes {
 
 		wp_localize_script(
 			'pnpc-psd-client-notes',
-			'PNPC_PSD_PRO_INTERNAL_NOTES',
+			'PNPC_PSD_CLIENT_NOTES',
 			array(
 				'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
 				'nonce'    => wp_create_nonce( 'pnpc_psd_client_notes' ),
