@@ -174,7 +174,6 @@ class PNPC_PSD_Admin
 		exit;
 	}
 
-
 	/**
 	 * Restrict wp-admin menus for non-admin service desk staff (Agent/Manager).
 	 * This complements legacy-cap allowances (edit_posts/level_0) used on some sites to permit backend access.
@@ -1387,11 +1386,6 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Creating dashbo
 			);
 		}
 
-		// Debug output.
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Page created successfully with ID: ' . $page_id ); }
-		}
-
 		// Only attempt Elementor if it's active and specifically requested.
 		if ( 'elementor' === $editor && defined( 'ELEMENTOR_VERSION' ) && class_exists( '\Elementor\Plugin' ) ) {
 			try {
@@ -1399,12 +1393,18 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Page created su
 				$template_path = PNPC_PSD_PLUGIN_DIR . 'admin/assets/dashboard-template-elementor.json';
 
 				if ( file_exists( $template_path ) ) {
-					$template_json = file_get_contents( $template_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-					
-					if ( false === $template_json ) {
-						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Failed to read Elementor template file' ); }
-						}
+					global $wp_filesystem;
+					if ( ! function_exists( 'WP_Filesystem' ) ) {
+						require_once ABSPATH . 'wp-admin/includes/file.php';
+					}
+					WP_Filesystem();
+
+					$template_json = '';
+					if ( $wp_filesystem && $wp_filesystem->exists( $template_path ) ) {
+						$template_json = (string) $wp_filesystem->get_contents( $template_path );
+					}
+
+					if ( '' === $template_json ) {
 						return (int) $page_id;
 					}
 					
@@ -1423,22 +1423,13 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Failed to read 
 							\Elementor\Plugin::$instance->files_manager->clear_cache();
 						}
 					} else {
-						// JSON invalid - fall back to shortcodes.
-						if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Invalid Elementor template JSON, using shortcode fallback' ); }
-						}
+						// JSON invalid - fall back to shortcode-based content.
 					}
 				} else {
-					// Template file missing - fall back to shortcodes.
-					if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Elementor template file not found at ' . $template_path ); }
-					}
+					// Template file missing - fall back to shortcode-based content.
 				}
 			} catch ( Exception $e ) {
-				// Any error - fall back to shortcodes.
-				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Error loading Elementor template - ' . $e->getMessage() ); }
-				}
+				// Any error - fall back to shortcode-based content.
 			}
 		}
 
@@ -1487,8 +1478,18 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Error loading E
 		if ( 'elementor' === $editor && defined( 'ELEMENTOR_VERSION' ) ) {
 			$template_path = PNPC_PSD_PLUGIN_DIR . 'admin/templates/elementor-ticket-view.json';
 			if ( file_exists( $template_path ) ) {
-				$template_json = file_get_contents( $template_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-				if ( false !== $template_json ) {
+				global $wp_filesystem;
+				if ( ! function_exists( 'WP_Filesystem' ) ) {
+					require_once ABSPATH . 'wp-admin/includes/file.php';
+				}
+				WP_Filesystem();
+
+				$template_json = '';
+				if ( $wp_filesystem && $wp_filesystem->exists( $template_path ) ) {
+					$template_json = (string) $wp_filesystem->get_contents( $template_path );
+				}
+
+				if ( '' !== $template_json ) {
 					$template_data = json_decode( $template_json, true );
 					if ( JSON_ERROR_NONE === json_last_error() && isset( $template_data['content'] ) && is_array( $template_data['content'] ) ) {
 						update_post_meta( $page_id, '_elementor_edit_mode', 'builder' );
@@ -1527,7 +1528,7 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Error loading E
 		$month_start = strtotime( date( 'Y-m-01 00:00:00', $now_ts ) );
 		$year_start  = strtotime( date( 'Y-01-01 00:00:00', $now_ts ) );
 
-				$week_start_dt  = date( 'Y-m-d H:i:s', $week_start );
+		$week_start_dt  = date( 'Y-m-d H:i:s', $week_start );
 		$month_start_dt = date( 'Y-m-d H:i:s', $month_start );
 		$year_start_dt  = date( 'Y-m-d H:i:s', $year_start );
 
