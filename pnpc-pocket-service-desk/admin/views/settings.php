@@ -170,12 +170,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 					<input type="number" min="1" step="1" name="pnpc_psd_max_attachment_mb" id="pnpc_psd_max_attachment_mb" value="<?php echo esc_attr( $effective_mb ); ?>" class="small-text" />
 						<p class="description">
 							<?php
-							$free_cap = 5;
-							$pro_cap  = 20;
-							printf(
-								(int) $free_cap,
-								(int) $pro_cap
-							);
+							esc_html_e( 'This limit applies to newly uploaded attachments and is constrained by your server's PHP upload limits.', 'pnpc-pocket-service-desk' );
 							?>
 						</p>
 					</td>

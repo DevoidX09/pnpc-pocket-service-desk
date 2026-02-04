@@ -80,7 +80,7 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 				<span class="psd-muted"><?php echo esc_html__( 'Support link not configured.', 'pnpc-pocket-service-desk' ); ?></span>
 			<?php endif; ?>
 
-			<?php /* The Free build intentionally contains no promotional CTAs. */ ?>
+			<?php /* This screen intentionally contains no promotional CTAs. */ ?>
 		</div>
 	</div>
 
