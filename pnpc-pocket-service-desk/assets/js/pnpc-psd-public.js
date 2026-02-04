@@ -4,6 +4,8 @@
 (function( $ ) {
 	'use strict';
 
+	var pnpcPsdDebug = ( 'undefined' !== typeof window.PNPC_PSD_DEBUG ) && !! window.PNPC_PSD_DEBUG;
+
 	$(document).ready(function() {
 		var createFiles = [];
 		var responseFiles = [];
@@ -53,7 +55,7 @@
 					}
 				},
 				error: function(xhr, status, err) {
-					console.error('pnpc-psd-public.js profile upload error', status, err, xhr && xhr.responseText);
+					if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-public.js profile upload error', status, err, xhr && xhr.responseText); }
 					showProfileImageMessage('error', 'Upload failed. Please try again.');
 				}
 			});
@@ -103,7 +105,7 @@
 					}
 				},
 				error: function(xhr, status, err) {
-					console.error('pnpc-psd-public.js my tickets refresh error', status, err, xhr && xhr.responseText);
+					if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-public.js my tickets refresh error', status, err, xhr && xhr.responseText); }
 					setMyTicketsStatus('');
 				}
 			});
@@ -227,7 +229,7 @@
 					}
 				},
 				error: function(xhr, status, err) {
-					console.error('pnpc-psd-public.js create ticket error', status, err, xhr && xhr.responseText);
+					if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-public.js create ticket error', status, err, xhr && xhr.responseText); }
 					showCreateMessage('error', 'Request failed. Please reload and try again.', $form);
 					$submitBtn.prop('disabled', false);
 				},
@@ -300,7 +302,7 @@
 					}
 				},
 				error: function(xhr, status, err) {
-					console.error('pnpc-psd-public.js AJAX error', status, err, xhr && xhr.responseText);
+					if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-public.js AJAX error', status, err, xhr && xhr.responseText); }
 					showResponseMessage('error', 'An error occurred. Please try again.');
 				}
 			});

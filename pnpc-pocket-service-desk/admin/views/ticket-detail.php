@@ -325,7 +325,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 								/* translators: %s: file size limit */
 								printf(
 									esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
-									esc_html(pnpc_psd_format_filesize(PNPC_PSD_FREE_PREVIEW_LIMIT))
+									esc_html(pnpc_psd_format_filesize(PNPC_PSD_PREVIEW_LIMIT))
 								);
 								?>
 							</span>
@@ -421,7 +421,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 											/* translators: %s: file size limit */
 											printf(
 												esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
-												esc_html(pnpc_psd_format_filesize(PNPC_PSD_FREE_PREVIEW_LIMIT))
+												esc_html(pnpc_psd_format_filesize(PNPC_PSD_PREVIEW_LIMIT))
 											);
 											?>
 										</span>

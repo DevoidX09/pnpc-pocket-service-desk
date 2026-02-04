@@ -5,6 +5,8 @@
 (function($) {
 	'use strict';
 
+	var pnpcPsdDebug = ( 'undefined' !== typeof window.PNPC_PSD_DEBUG ) && !! window.PNPC_PSD_DEBUG;
+
 	// Configuration
 	var config = {
 		menuBadgeInterval: 30000, // 30 seconds
@@ -128,7 +130,7 @@
 			},
 			error: function(jqXHR, textStatus, errorThrown) {
 				// Silently fail - don't disrupt user experience
-				console.log('Menu badge update failed:', textStatus);
+				if ( pnpcPsdDebug && window.console && console.log ) { console.log('Menu badge update failed:', textStatus); }
 			}
 		});
 	}
@@ -663,7 +665,7 @@
 				}
 			},
 			error: function(jqXHR, textStatus, errorThrown) {
-				console.log('Ticket list refresh failed:', textStatus);
+				if ( pnpcPsdDebug && window.console && console.log ) { console.log('Ticket list refresh failed:', textStatus); }
 			},
 			complete: function() {
 				$('.pnpc-psd-refresh-indicator').removeClass('active');

@@ -4,6 +4,8 @@
 (function( $ ) {
 	'use strict';
 
+	var pnpcPsdDebug = ( 'undefined' !== typeof window.PNPC_PSD_DEBUG ) && !! window.PNPC_PSD_DEBUG;
+
 	$(document).ready(function() {
 		var $ticketDetail = $('#pnpc-psd-ticket-detail');
 		var ticketId = $ticketDetail.data('ticket-id');
@@ -641,7 +643,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 					$btn.prop('disabled', false).val('Apply');
 				},
 				error: function(jqXHR, textStatus, errorThrown) {
-					console.error('pnpc-psd-admin.js bulk action AJAX error', textStatus, errorThrown);
+					if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-admin.js bulk action AJAX error', textStatus, errorThrown); }
 					showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-bulk-message');
 					$btn.prop('disabled', false).val('Apply');
 				},
@@ -680,7 +682,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 						}
 					},
 					error: function(jqXHR, textStatus, errorThrown) {
-						console.error('pnpc-psd-admin.js assign AJAX error', textStatus, errorThrown);
+						if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-admin.js assign AJAX error', textStatus, errorThrown); }
 						showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-admin-action-message');
 					}
 				});
@@ -716,7 +718,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 						}
 					},
 					error: function(jqXHR, textStatus, errorThrown) {
-						console.error('pnpc-psd-admin.js status AJAX error', textStatus, errorThrown);
+						if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-admin.js status AJAX error', textStatus, errorThrown); }
 						showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-admin-action-message');
 					}
 				});
@@ -764,7 +766,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 						}
 					},
 					error: function(jqXHR, textStatus, errorThrown) {
-						console.error('pnpc-psd-admin.js priority AJAX error', textStatus, errorThrown);
+						if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-admin.js priority AJAX error', textStatus, errorThrown); }
 						showMessage('error', 'An error occurred. Please try again.', 'pnpc-psd-admin-action-message');
 					}
 				});
@@ -833,7 +835,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 						}
 					},
 					error: function(jqXHR, textStatus, errorThrown) {
-						console.error('pnpc-psd-admin.js AJAX error', textStatus, errorThrown);
+						if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-admin.js AJAX error', textStatus, errorThrown); }
 						showMessage('error', 'An error occurred. Please try again.', 'response-message');
 					}
 				});

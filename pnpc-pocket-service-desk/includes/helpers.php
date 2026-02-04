@@ -512,8 +512,8 @@ if (! function_exists('pnpc_psd_format_filesize')) {
 /**
  * Define preview file size limit for free version (5MB in bytes).
  */
-if (! defined('PNPC_PSD_FREE_PREVIEW_LIMIT')) {
-    define('PNPC_PSD_FREE_PREVIEW_LIMIT', 5 * 1024 * 1024);
+if (! defined('PNPC_PSD_PREVIEW_LIMIT')) {
+    define('PNPC_PSD_PREVIEW_LIMIT', 5 * 1024 * 1024);
 }
 
 /**
@@ -607,7 +607,7 @@ if (! function_exists('pnpc_psd_can_preview_attachment')) {
  */
     function pnpc_psd_can_preview_attachment($file_size)
     {
-        return intval($file_size) <= PNPC_PSD_FREE_PREVIEW_LIMIT;
+        return intval($file_size) <= PNPC_PSD_PREVIEW_LIMIT;
     }
 }
 
