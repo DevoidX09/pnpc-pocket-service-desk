@@ -3,7 +3,7 @@
 /**
  * Public create ticket view (patched to include attachments field and preview/remove UI)
  */
-if (! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>

@@ -624,7 +624,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 						// Reload back to the same tab so counts + pagination are consistent (matches prior behavior).
 						try {
 							var url = new URL(window.location.href);
-							url.searchParams.set('page', 'pnpc-service-desk-tickets');
+							url.searchParams.set('page', 'pnpc-service-desk');
 							window.location = url.toString();
 						} catch (e) {
 							window.location = (typeof pnpcPsdAdmin !== 'undefined' && pnpcPsdAdmin.tickets_url) ? pnpcPsdAdmin.tickets_url : window.location.href;
@@ -912,7 +912,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 							deleteReasonModal.hide();
 							// Redirect to the All Tickets tab after a successful delete request.
 							// All Tickets is the default view for the ticket list page.
-							window.location.href = (pnpcPsdAdmin.tickets_url ? pnpcPsdAdmin.tickets_url : 'admin.php?page=pnpc-service-desk-tickets');
+							window.location.href = (pnpcPsdAdmin.tickets_url ? pnpcPsdAdmin.tickets_url : 'admin.php?page=pnpc-service-desk');
 						} else {
 							$('#pnpc-psd-delete-error-message')
 								.text('Error: ' + response.data.message)
@@ -1010,6 +1010,79 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 				$preview.html(html);
 			}
 		});
+
+		// Menu badge updates are handled globally by pnpc-psd-menu-badges.js.
+		// Avoid duplicate/competing badge injectors.
+		if ( 'undefined' !== typeof window.pnpcPsdMenuBadges ) {
+			return;
+		}
+
+
+/**
+ * Live admin menu badge updates (open tickets + unread customer replies).
+ * Keeps menu/submenu counts fresh without a full page reload.
+ */
+function pnpcPsdUpdateAdminMenuBadges( data ) {
+	if ( ! data ) {
+		return;
+	}
+
+	var openCount     = parseInt( data.open_count, 10 ) || 0;
+	var unreadReplies = parseInt( data.unread_replies, 10 ) || 0;
+	var attention     = parseInt( data.attention_total, 10 ) || 0;
+
+	// Top-level: single combined attention badge.
+	var $topLink = $( '#toplevel_page_pnpc-service-desk > a' );
+	if ( $topLink.length ) {
+		$topLink.find( 'span.update-plugins' ).remove();
+		if ( attention > 0 ) {
+			$topLink.append( '<span class="update-plugins count-' + attention + '"><span class="plugin-count">' + attention + '</span></span>' );
+		}
+	}
+
+	// Submenu: All Tickets keeps two badges (red=open/in-progress, green=unread replies).
+	var $submenuLink = $( '#toplevel_page_pnpc-service-desk .wp-submenu a[href="admin.php?page=pnpc-service-desk"]' );
+	if ( $submenuLink.length ) {
+		$submenuLink.find( 'span.update-plugins' ).remove();
+
+		if ( openCount > 0 ) {
+			$submenuLink.append( '<span class="update-plugins count-' + openCount + '"><span class="plugin-count">' + openCount + '</span></span>' );
+		}
+		if ( unreadReplies > 0 ) {
+			$submenuLink.append( ' <span class="update-plugins pnpc-psd-replies-badge count-' + unreadReplies + '"><span class="plugin-count">' + unreadReplies + '</span></span>' );
+		}
+	}
+}
+
+function pnpcPsdFetchAdminMenuBadges() {
+	if ( 'undefined' === typeof pnpcPsdAdmin || ! pnpcPsdAdmin.ajax_url ) {
+		return;
+	}
+
+	$.post(
+		pnpcPsdAdmin.ajax_url,
+		{
+			action: 'pnpc_psd_get_menu_badges',
+			nonce: pnpcPsdAdmin.nonce
+		}
+	).done( function( resp ) {
+		if ( resp && resp.success && resp.data ) {
+			pnpcPsdUpdateAdminMenuBadges( resp.data );
+		}
+	} );
+}
+
+// Poll relatively "live" while an admin is active in wp-admin.
+// Default: 45 seconds.
+var pollMs = 45000;
+if ( 'undefined' !== typeof pnpcPsdAdmin && pnpcPsdAdmin.badge_poll_ms ) {
+	pollMs = parseInt( pnpcPsdAdmin.badge_poll_ms, 10 ) || pollMs;
+}
+
+// Initial + interval refresh.
+pnpcPsdFetchAdminMenuBadges();
+window.setInterval( pnpcPsdFetchAdminMenuBadges, pollMs );
+
 	});
 
 })( jQuery );

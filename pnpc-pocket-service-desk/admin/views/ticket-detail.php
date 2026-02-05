@@ -6,7 +6,7 @@
  * Expects $ticket, $responses, $agents variables populated by the controller.
  */
 
-if (! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
@@ -71,7 +71,7 @@ if (! function_exists('pnpc_psd_admin_format_datetime')) {
  *
  * @return mixed
  */
-	function pnpc_psd_admin_format_datetime($datetime)
+	function pnpc_psd_admin_format_datetime( $datetime)
 	{
 		return function_exists('pnpc_psd_format_db_datetime_for_display')
 			? pnpc_psd_format_db_datetime_for_display($datetime)
@@ -90,7 +90,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 <div class="wrap pnpc-psd-ticket-detail" id="pnpc-psd-ticket-detail" data-ticket-id="<?php echo esc_attr($ticket->id); ?>">
 	<div class="pnpc-psd-ticket-detail-header">
 		<div class="pnpc-psd-breadcrumb">
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-tickets' ) ); ?>">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk' ) ); ?>">
 				<?php esc_html_e('All Tickets', 'pnpc-pocket-service-desk'); ?>
 			</a>
 			<span class="separator"> &raquo; </span>
@@ -110,11 +110,11 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 					<span class="dashicons dashicons-arrow-right-alt2"></span>
 				</a>
 			<?php endif; ?>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-tickets' ) ); ?>" class="button">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk' ) ); ?>" class="button">
 				<span class="dashicons dashicons-arrow-left-alt2"></span>
 				<?php esc_html_e('Back to All Tickets', 'pnpc-pocket-service-desk'); ?>
 			</a>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-tickets&status=open' ) ); ?>" class="button">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk&status=open' ) ); ?>" class="button">
 				<?php esc_html_e('Open Tickets', 'pnpc-pocket-service-desk'); ?>
 			</a>
 		</div>

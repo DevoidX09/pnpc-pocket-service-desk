@@ -7,7 +7,7 @@
  * @subpackage PNPC_Pocket_Service_Desk/public
  */
 
-if (! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
@@ -16,8 +16,7 @@ if (! defined('ABSPATH')) {
  *
  * @since 1.1.1.4
  */
-class PNPC_PSD_Public
-{
+class PNPC_PSD_Public{
 	private $plugin_name;
 	private $version;
 
@@ -31,7 +30,7 @@ class PNPC_PSD_Public
 	*
 	* @return void
 	*/
-	public function __construct($plugin_name = 'pnpc-pocket-service-desk', $version = '1.0.0')
+	public function __construct( $plugin_name = 'pnpc-pocket-service-desk', $version = '1.0.0')
 	{
 		$this->plugin_name = $plugin_name;
 		$this->version     = $version;
@@ -191,7 +190,7 @@ class PNPC_PSD_Public
 	 * @param string $redirect_url Where to send the user after login.
 	 * @return string
 	 */
-	private function render_login_gate( $redirect_url = '' ) {
+	private function render_login_gate(  $redirect_url = '' ) {
 		// Multiple public shortcodes are often placed on a single dashboard page.
 		// Only render the login prompt once per request to avoid showing multiple login forms.
 		static $pnpc_psd_login_gate_rendered = false;
@@ -247,7 +246,7 @@ class PNPC_PSD_Public
 	*
 	* @return mixed
 	*/
-	public function render_service_desk($atts)
+	public function render_service_desk( $atts)
 	{
 		if (! is_user_logged_in()) {
 			return $this->render_login_gate( function_exists('pnpc_psd_get_dashboard_url') ? pnpc_psd_get_dashboard_url() : home_url('/') );
@@ -266,7 +265,7 @@ ob_start();
 	*
 	* @return mixed
 	*/
-	public function render_create_ticket($atts)
+	public function render_create_ticket( $atts)
 	{
 		if (! is_user_logged_in()) {
 			return $this->render_login_gate( function_exists('pnpc_psd_get_dashboard_url') ? pnpc_psd_get_dashboard_url() : home_url('/') );
@@ -285,7 +284,7 @@ ob_start();
 	*
 	* @return mixed
 	*/
-	public function render_my_tickets($atts)
+	public function render_my_tickets( $atts)
 	{
 		if (! is_user_logged_in()) {
 			return $this->render_login_gate( function_exists('pnpc_psd_get_my_tickets_url') ? pnpc_psd_get_my_tickets_url() : home_url('/') );
@@ -389,7 +388,7 @@ ob_start();
 	*
 	* @return mixed
 	*/
-	public function render_ticket_detail($atts)
+	public function render_ticket_detail( $atts)
 	{
 		if (! is_user_logged_in()) {
 			return $this->render_login_gate( function_exists('pnpc_psd_get_my_tickets_url') ? pnpc_psd_get_my_tickets_url() : home_url('/') );
@@ -446,7 +445,7 @@ $ticket_id = isset( $_GET['ticket_id'] ) ? absint( wp_unslash( $_GET['ticket_id'
 	*
 	* @return mixed
 	*/
-	public function render_profile_settings($atts)
+	public function render_profile_settings( $atts)
 	{
 		if (! is_user_logged_in()) {
 			return $this->render_login_gate( function_exists('pnpc_psd_get_dashboard_url') ? pnpc_psd_get_dashboard_url() : home_url('/') );
@@ -465,7 +464,7 @@ ob_start();
 	*
 	* @return mixed
 	*/
-	public function render_services($atts)
+	public function render_services( $atts)
 	{
 		// Services is a neutral extension seam in the Free plugin.
 		// - Wizard templates may include [pnpc_services] in the customer dashboard layout.
@@ -502,7 +501,7 @@ ob_start();
 	*
 	* @return mixed
 	*/
-	private function normalize_files_array($file_post)
+	private function normalize_files_array( $file_post)
 	{
 		if (function_exists('pnpc_psd_rearrange_files')) {
 			return pnpc_psd_rearrange_files($file_post);

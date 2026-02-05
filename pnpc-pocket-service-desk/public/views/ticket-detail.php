@@ -11,7 +11,7 @@
  * Expects $ticket and $responses to be provided by render_ticket_detail().
  */
 
-if (! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 

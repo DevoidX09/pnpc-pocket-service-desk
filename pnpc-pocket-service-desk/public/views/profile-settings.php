@@ -7,7 +7,7 @@
  * @subpackage PNPC_Pocket_Service_Desk/public/views
  */
 
-if (! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 

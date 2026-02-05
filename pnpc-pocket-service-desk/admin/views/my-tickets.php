@@ -6,7 +6,7 @@
  * @package PNPC_Pocket_Service_Desk
  */
 
-if (! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 

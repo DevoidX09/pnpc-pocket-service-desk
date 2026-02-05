@@ -14,7 +14,7 @@
  * @package PNPC_Pocket_Service_Desk
  */
 
-if (! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
@@ -146,7 +146,7 @@ if (! function_exists('pnpc_psd_get_ticket_detail_url')) {
  *
  * @return mixed
  */
-    function pnpc_psd_get_ticket_detail_url($ticket_id)
+    function pnpc_psd_get_ticket_detail_url( $ticket_id)
     {
         $ticket_id = (int) $ticket_id;
         if ($ticket_id <= 0) {
@@ -293,7 +293,7 @@ if (! function_exists('pnpc_psd_mysql_to_wp_local_ts')) {
  *
  * @return mixed
  */
-    function pnpc_psd_mysql_to_wp_local_ts($mysql_datetime)
+    function pnpc_psd_mysql_to_wp_local_ts( $mysql_datetime)
     {
         if ($mysql_datetime === null || $mysql_datetime === '' || $mysql_datetime === false) {
             return 0;
@@ -390,7 +390,7 @@ if (! function_exists('pnpc_psd_format_db_datetime_for_display')) {
  *
  * @return mixed
  */
-    function pnpc_psd_format_db_datetime_for_display($mysql_datetime, $format = null)
+    function pnpc_psd_format_db_datetime_for_display( $mysql_datetime, $format = null)
     {
         if ($mysql_datetime === null || $mysql_datetime === '') {
             return '';
@@ -427,7 +427,7 @@ if (! function_exists('pnpc_psd_debug_log')) {
  *
  * @return mixed
  */
-    function pnpc_psd_debug_log($label, $data = '')
+    function pnpc_psd_debug_log( $label, $data = '')
     {
         if (! defined('WP_DEBUG') || ! WP_DEBUG) {
             return;
@@ -436,10 +436,7 @@ if (! function_exists('pnpc_psd_debug_log')) {
         if (! $enabled) {
             return;
         }
-        $payload = is_scalar($data) ? $data : print_r($data, true);
-        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
-        error_log( 'pnpc-psd-debug [' . $label . ']: ' . $payload );
-    }
+        $payload = is_scalar($data) ? $data : print_r($data, true);    }
 }
 
 /**
@@ -455,7 +452,7 @@ if (! function_exists('pnpc_psd_rearrange_files')) {
  *
  * @return mixed
  */
-    function pnpc_psd_rearrange_files($file_post)
+    function pnpc_psd_rearrange_files( $file_post)
     {
         $files = array();
         if (! is_array($file_post) || empty($file_post['name'])) {
@@ -490,7 +487,7 @@ if (! function_exists('pnpc_psd_format_filesize')) {
  *
  * @return mixed
  */
-    function pnpc_psd_format_filesize($bytes)
+    function pnpc_psd_format_filesize( $bytes)
     {
         $bytes = intval($bytes);
         if (function_exists('size_format')) {
@@ -532,7 +529,7 @@ if (! function_exists('pnpc_psd_get_attachment_type')) {
  *
  * @return mixed
  */
-    function pnpc_psd_get_attachment_type($extension)
+    function pnpc_psd_get_attachment_type( $extension)
     {
         $extension = strtolower(trim($extension));
         $image_types = array('jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp');
@@ -565,7 +562,7 @@ if (! function_exists('pnpc_psd_get_file_icon')) {
  *
  * @return mixed
  */
-    function pnpc_psd_get_file_icon($extension)
+    function pnpc_psd_get_file_icon( $extension)
     {
         $extension = strtolower(trim($extension));
         $icons = array(
@@ -605,7 +602,7 @@ if (! function_exists('pnpc_psd_can_preview_attachment')) {
  *
  * @return mixed
  */
-    function pnpc_psd_can_preview_attachment($file_size)
+    function pnpc_psd_can_preview_attachment( $file_size)
     {
         return intval($file_size) <= PNPC_PSD_PREVIEW_LIMIT;
     }
@@ -630,7 +627,7 @@ if (! function_exists('pnpc_psd_format_delete_reason')) {
  *
  * @return mixed
  */
-    function pnpc_psd_format_delete_reason($reason, $other_details = '')
+    function pnpc_psd_format_delete_reason( $reason, $other_details = '')
     {
         if (empty($reason)) {
             return esc_html__('No reason provided', 'pnpc-pocket-service-desk');
@@ -784,7 +781,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_agents_option' ) ) {
  *
  * @return mixed
  */
-	function pnpc_psd_sanitize_agents_option( $value ) {
+	function pnpc_psd_sanitize_agents_option(  $value ) {
 		if ( ! is_array( $value ) ) {
 			return array();
 		}
@@ -901,7 +898,7 @@ if ( ! function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
  *
  * @return mixed
  */
-	function pnpc_psd_get_agent_notification_email( $user_id ) {
+	function pnpc_psd_get_agent_notification_email(  $user_id ) {
 		$user_id = absint( $user_id );
 		if ( ! $user_id ) {
 			return '';
@@ -930,8 +927,6 @@ if ( ! function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
 if ( ! function_exists( 'pnpc_psd_get_max_attachment_mb' ) ) {
 	/**
 	 * Maximum attachment size in megabytes.
-	 *
-	 * Extensions may raise this limit via the 'pnpc_psd_max_attachment_mb_cap' filter.
 	 *
 	 * @return int
 	 */
@@ -971,7 +966,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_max_attachment_mb' ) ) {
  *
  * @return mixed
  */
-	function pnpc_psd_sanitize_max_attachment_mb( $value ) {
+	function pnpc_psd_sanitize_max_attachment_mb(  $value ) {
 		$val = absint( $value );
 		$val = max( 1, $val );
 		$cap = (int) apply_filters( 'pnpc_psd_max_attachment_mb_cap', 5 );
@@ -1074,7 +1069,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_allowed_file_types' ) ) {
  *
  * @return mixed
  */
-	function pnpc_psd_sanitize_allowed_file_types( $value ) {
+	function pnpc_psd_sanitize_allowed_file_types(  $value ) {
 		if ( is_array( $value ) ) {
 			$raw = implode( ',', array_map( 'strval', $value ) );
 		} else {
@@ -1120,7 +1115,7 @@ if ( ! function_exists( 'pnpc_psd_attachment_db_to_path' ) ) {
 	 * @param string $stored Stored value (absolute path preferred; legacy URL supported).
 	 * @return string Absolute path or empty string if it cannot be resolved.
 	 */
-	function pnpc_psd_attachment_db_to_path( $stored ) {
+	function pnpc_psd_attachment_db_to_path(  $stored ) {
 		$stored = is_string( $stored ) ? trim( $stored ) : '';
 		if ( '' === $stored ) {
 			return '';
@@ -1153,7 +1148,7 @@ if ( ! function_exists( 'pnpc_psd_get_attachment_download_url' ) ) {
 	 * @param bool $inline        Whether to request inline display (preview).
 	 * @return string
 	 */
-	function pnpc_psd_get_attachment_download_url( $attachment_id, $ticket_id, $inline = false ) {
+	function pnpc_psd_get_attachment_download_url(  $attachment_id, $ticket_id, $inline = false ) {
 		$attachment_id = absint( $attachment_id );
 		$ticket_id     = absint( $ticket_id );
 		if ( ! $attachment_id || ! $ticket_id ) {
@@ -1298,7 +1293,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_public_login_mode' ) ) {
 	 * @param mixed $value Raw value.
 	 * @return string
 	 */
-	function pnpc_psd_sanitize_public_login_mode( $value ) {
+	function pnpc_psd_sanitize_public_login_mode(  $value ) {
 		$value = is_string( $value ) ? strtolower( trim( $value ) ) : 'inline';
 		return in_array( $value, array( 'inline', 'link' ), true ) ? $value : 'inline';
 	}
@@ -1311,7 +1306,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_public_login_url' ) ) {
 	 * @param mixed $value Raw value.
 	 * @return string
 	 */
-	function pnpc_psd_sanitize_public_login_url( $value ) {
+	function pnpc_psd_sanitize_public_login_url(  $value ) {
 		$value = is_string( $value ) ? trim( $value ) : '';
 		return $value ? esc_url_raw( $value ) : '';
 	}

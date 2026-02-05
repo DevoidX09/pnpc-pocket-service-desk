@@ -97,6 +97,12 @@
 	 * Initialize menu badge counter updates
 	 */
 	function initMenuBadgeUpdates() {
+		// Menu badges are handled by pnpc-psd-menu-badges.js (combined attention counters).
+		// Avoid competing scripts adding duplicate badges.
+		if ( 'undefined' !== typeof window.pnpcPsdMenuBadges ) {
+			return;
+		}
+
 		// Initial update
 		updateMenuBadge();
 
@@ -115,6 +121,12 @@
 	 * Update menu badge counter via AJAX
 	 */
 	function updateMenuBadge() {
+		// Menu badge updates are handled globally by pnpc-psd-menu-badges.js.
+		// Avoid duplicate/competing badge injectors.
+		if ( 'undefined' !== typeof window.pnpcPsdMenuBadges ) {
+			return;
+		}
+
 		$.ajax({
 			url: pnpcPsdRealtime.ajaxUrl,
 			type: 'POST',

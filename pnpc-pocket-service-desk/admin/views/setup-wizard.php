@@ -36,7 +36,7 @@ if ( 'done' === $step ) {
  * @param string $current_step Current step key.
  * @return void
  */
-function pnpc_psd_render_setup_progress( $active_path, $current_step ) {
+function pnpc_psd_render_setup_progress(  $active_path, $current_step ) {
 	$active_path  = (string) $active_path;
 	$current_step = (string) $current_step;
 

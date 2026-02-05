@@ -43,7 +43,7 @@ $total_closed = isset( $stats['total']['closed'] ) ? (int) $stats['total']['clos
 $completion_rate = isset( $stats['completion_rate'] ) ? (float) $stats['completion_rate'] : 0.0;
 $completion_pct  = (int) round( max( 0, min( 100, $completion_rate ) ) );
 
-$menu_tickets_url  = admin_url( 'admin.php?page=pnpc-service-desk-tickets' );
+$menu_tickets_url  = admin_url( 'admin.php?page=pnpc-service-desk' );
 $menu_create_url   = admin_url( 'admin.php?page=pnpc-service-desk-create-ticket' );
 $menu_audit_url    = admin_url( 'admin.php?page=pnpc-service-desk-audit-log' );
 $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );

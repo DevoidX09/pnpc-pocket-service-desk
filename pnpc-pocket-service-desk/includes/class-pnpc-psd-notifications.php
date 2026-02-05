@@ -23,7 +23,7 @@ class PNPC_PSD_Notifications {
 	/**
 	 * Get a boolean option with a default.
 	 */
-	private static function opt_bool( $key, $default = 0 ) {
+	private static function opt_bool(  $key, $default = 0 ) {
 		$val = get_option( $key, $default );
 		return (int) $val === 1;
 	}
@@ -53,7 +53,7 @@ class PNPC_PSD_Notifications {
 	 * - Assigned agent (if any) using per-agent override.
 	 * - Global notification email (if set and distinct).
 	 */
-	private static function get_staff_recipients_for_ticket( $ticket ) {
+	private static function get_staff_recipients_for_ticket(  $ticket ) {
 		$to = array();
 		$assigned = isset( $ticket->assigned_to ) ? absint( $ticket->assigned_to ) : 0;
 
@@ -101,7 +101,7 @@ class PNPC_PSD_Notifications {
 	/**
 	 * Send an email safely.
 	 */
-	private static function send( $to, $subject, $message ) {
+	private static function send(  $to, $subject, $message ) {
 		$to = is_array( $to ) ? $to : array( $to );
 		$to = array_filter( array_unique( array_map( 'sanitize_email', $to ) ) );
 		if ( empty( $to ) ) {
@@ -119,7 +119,7 @@ class PNPC_PSD_Notifications {
 	/**
 	 * Ticket created.
 	 */
-	public static function ticket_created( $ticket_id ) {
+	public static function ticket_created(  $ticket_id ) {
 		if ( ! class_exists( 'PNPC_PSD_Ticket' ) ) {
 			return;
 		}
@@ -174,7 +174,7 @@ class PNPC_PSD_Notifications {
 	/**
 	 * Response created.
 	 */
-	public static function response_created( $response_id ) {
+	public static function response_created(  $response_id ) {
 		if ( ! class_exists( 'PNPC_PSD_Ticket_Response' ) || ! class_exists( 'PNPC_PSD_Ticket' ) ) {
 			return;
 		}
@@ -239,7 +239,7 @@ class PNPC_PSD_Notifications {
 	/**
 	 * Ticket closed.
 	 */
-	public static function ticket_closed( $ticket_id ) {
+	public static function ticket_closed(  $ticket_id ) {
 		if ( ! class_exists( 'PNPC_PSD_Ticket' ) ) {
 			return;
 		}

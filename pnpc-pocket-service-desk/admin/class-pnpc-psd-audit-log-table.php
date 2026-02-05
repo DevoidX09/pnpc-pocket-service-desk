@@ -86,7 +86,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @param string $column_name Column key.
 	 * @return string
 	 */
-	public function column_default( $item, $column_name ) {
+	public function column_default(  $item, $column_name ) {
 		switch ( $column_name ) {
 			case 'created_at':
 				return esc_html( (string) $item['created_at_display'] );
@@ -109,7 +109,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @param array $item Row.
 	 * @return string
 	 */
-	protected function render_actor( $item ) {
+	protected function render_actor(  $item ) {
 		$actor_id = isset( $item['actor_id'] ) ? absint( $item['actor_id'] ) : 0;
 		if ( $actor_id < 1 ) {
 			return '—';
@@ -136,7 +136,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @param array $item Row.
 	 * @return string
 	 */
-	protected function render_context( $item ) {
+	protected function render_context(  $item ) {
 		$raw = isset( $item['context'] ) ? (string) $item['context'] : '';
 		if ( '' === $raw ) {
 			return '—';
@@ -170,7 +170,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @param string $s Raw.
 	 * @return bool
 	 */
-	protected function looks_like_json( $s ) {
+	protected function looks_like_json(  $s ) {
 		$s = ltrim( $s );
 		return '' !== $s && ( '{' === $s[0] || '[' === $s[0] );
 	}
@@ -181,7 +181,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @param array $ctx Context.
 	 * @return string
 	 */
-	protected function format_context_array( $ctx ) {
+	protected function format_context_array(  $ctx ) {
 		$keys_prefer = array( 'message', 'note', 'status', 'from', 'to', 'field', 'value', 'reason' );
 		$parts       = array();
 
@@ -319,7 +319,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 *
 	 * @param string $which Top/bottom.
 	 */
-	protected function extra_tablenav( $which ) {
+	protected function extra_tablenav(  $which ) {
 		if ( 'top' !== $which ) {
 			return;
 		}

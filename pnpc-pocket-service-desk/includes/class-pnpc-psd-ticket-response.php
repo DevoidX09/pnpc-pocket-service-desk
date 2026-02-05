@@ -21,8 +21,7 @@
  *
  * @since 1.1.1.4
  */
-class PNPC_PSD_Ticket_Response
-{
+class PNPC_PSD_Ticket_Response{
 
 	/**
 	 * Create a new ticket response.
@@ -31,7 +30,7 @@ class PNPC_PSD_Ticket_Response
 	 * @param array $data Response data.
 	 * @return int|false Response ID on success, false on failure.
 	 */
-	public static function create($data)
+	public static function create( $data)
 	{
 		global $wpdb;
 
@@ -128,7 +127,7 @@ class PNPC_PSD_Ticket_Response
 	 * @param int $response_id Response ID.
 	 * @return object|null Response object or null if not found.
 	 */
-	public static function get($response_id)
+	public static function get( $response_id)
 	{
 		global $wpdb;
 
@@ -154,7 +153,7 @@ class PNPC_PSD_Ticket_Response
 	 * @param array $args Query arguments.
 	 * @return array Array of response objects.
 	 */
-	public static function get_by_ticket($ticket_id, $args = array())
+	public static function get_by_ticket( $ticket_id, $args = array())
 	{
 		global $wpdb;
 
@@ -208,7 +207,7 @@ class PNPC_PSD_Ticket_Response
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function delete_by_ticket($ticket_id)
+	public static function delete_by_ticket( $ticket_id)
 	{
 		global $wpdb;
 
@@ -231,7 +230,7 @@ class PNPC_PSD_Ticket_Response
 	 * @since 1.0.0
 	 * @param int $response_id Response ID.
 	 */
-	private static function send_response_notification($response_id)
+	private static function send_response_notification( $response_id)
 	{
 		// v1.1.0+: central notification service.
 		if ( class_exists( 'PNPC_PSD_Notifications' ) ) {
@@ -321,7 +320,7 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 	 * @param int $ticket_id Ticket ID.
 	 * @return int Response count.
 	 */
-	public static function get_count($ticket_id)
+	public static function get_count( $ticket_id)
 	{
 		global $wpdb;
 
@@ -346,7 +345,7 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function trash_by_ticket($ticket_id)
+	public static function trash_by_ticket( $ticket_id)
 	{
 		global $wpdb;
 
@@ -374,7 +373,7 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function restore_by_ticket($ticket_id)
+	public static function restore_by_ticket( $ticket_id)
 	{
 		global $wpdb;
 

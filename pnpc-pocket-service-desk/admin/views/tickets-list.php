@@ -7,7 +7,7 @@
  * @subpackage PNPC_Pocket_Service_Desk/admin/views
  */
 
-if (! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
@@ -40,7 +40,7 @@ $total_pages = ( $per_page > 0 ) ? (int) ceil( $total_items / $per_page ) : 1;
 $tickets_paginated = $tickets;
 
 // Build pagination links helper function
-if (!function_exists('pnpc_psd_get_pagination_link')) {
+if( !function_exists('pnpc_psd_get_pagination_link')) {
 /**
  * Pnpc psd get pagination link.
  *
@@ -50,7 +50,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
  *
  * @return mixed
  */
-	function pnpc_psd_get_pagination_link($page) {
+	function pnpc_psd_get_pagination_link( $page) {
 		$args = isset( $_GET ) ? (array) wp_unslash( $_GET ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Building pagination links from current query vars.
 		$args['paged'] = $page;
 		return add_query_arg($args, admin_url('admin.php'));
@@ -83,7 +83,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 	<ul class="subsubsub">
 		<?php
 		$base_url  = admin_url( 'admin.php' );
-		$base_args = array( 'page' => 'pnpc-service-desk-tickets' );
+		$base_args = array( 'page' => 'pnpc-service-desk' );
 
 		$all_url      = add_query_arg( $base_args, $base_url );
 		$open_url     = add_query_arg( array_merge( $base_args, array( 'status' => 'open' ) ), $base_url );

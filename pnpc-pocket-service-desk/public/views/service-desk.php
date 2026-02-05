@@ -3,7 +3,7 @@
 /**
  * Public service desk dashboard view (patched to use helpers for timestamps)
  */
-if (! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 

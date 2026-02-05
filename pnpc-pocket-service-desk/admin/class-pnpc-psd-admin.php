@@ -7,7 +7,7 @@
  * @subpackage PNPC_Pocket_Service_Desk/admin
  */
 
-if (! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
@@ -16,8 +16,7 @@ if (! defined('ABSPATH')) {
  *
  * @since 1.1.1.4
  */
-class PNPC_PSD_Admin
-{
+class PNPC_PSD_Admin{
 	/**
 	 * User meta key for per-agent personal signature.
 	 *
@@ -45,7 +44,7 @@ class PNPC_PSD_Admin
 	*
 	* @return void
 	*/
-	public function __construct($plugin_name, $version)
+	public function __construct( $plugin_name, $version)
 	{
 		$this->plugin_name = $plugin_name;
 		$this->version     = $version;
@@ -163,7 +162,7 @@ class PNPC_PSD_Admin
 
 		$redirect = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : '';
 		if ( empty( $redirect ) ) {
-			$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets' );
+			$redirect = admin_url( 'admin.php?page=pnpc-service-desk' );
 		}
 
 		if ( $ticket_id && class_exists( 'PNPC_PSD_Ticket' ) ) {
@@ -214,6 +213,18 @@ class PNPC_PSD_Admin
 	{
 		$force_load = ( isset( $_GET['page'] ) && 0 === strpos( sanitize_text_field( wp_unslash( $_GET['page'] ) ), 'pnpc-service-desk' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
 
+		// Style admin-menu badges (global) for open/replies and keep the top-level badge inline.
+		// Use core 'admin-menu' style handle so colors apply across all wp-admin screens.
+		wp_add_inline_style(
+			'admin-menu',
+			'#adminmenu #toplevel_page_pnpc-service-desk .wp-menu-name{white-space:nowrap;}'
+			. '#adminmenu #toplevel_page_pnpc-service-desk > a.menu-top{white-space:nowrap;}'
+			. '#adminmenu span.update-plugins.pnpc-psd-open-badge{background:#ffb900!important;color:#1d2327!important;}'
+			. '#adminmenu span.update-plugins.pnpc-psd-open-badge span.plugin-count{background:#ffb900!important;color:#1d2327!important;}'
+			. '#adminmenu span.update-plugins.pnpc-psd-replies-badge{background:#46b450!important;color:#fff!important;}'
+			. '#adminmenu span.update-plugins.pnpc-psd-replies-badge span.plugin-count{background:#46b450!important;color:#fff!important;}'
+		);
+
 		// Cache-bust admin assets when files change (prevents stale CSS during updates).
 		$admin_css_ver  = $this->version;
 		$admin_css_path = PNPC_PSD_PLUGIN_DIR . 'assets/css/pnpc-psd-admin.css';
@@ -233,10 +244,11 @@ class PNPC_PSD_Admin
 			// Emphasize the most-used admin link (All Tickets) to improve navigation.
 			wp_add_inline_style(
 				$this->plugin_name,
-				'#toplevel_page_pnpc-service-desk .wp-submenu a[href="admin.php?page=pnpc-service-desk-tickets"]{font-weight:600;}'
+				'#toplevel_page_pnpc-service-desk .wp-submenu a[href="admin.php?page=pnpc-service-desk"]{font-weight:600;}'
 			);
 
-// Enqueue attachments viewer CSS
+			// Green badge for unread customer replies.
+			// Enqueue attachments viewer CSS
 			wp_enqueue_style(
 				$this->plugin_name . '-attachments',
 				PNPC_PSD_PLUGIN_URL . 'assets/css/pnpc-psd-attachments.css',
@@ -245,9 +257,9 @@ class PNPC_PSD_Admin
 				'all'
 			);
 
-			// Enqueue dashboard CSS on dashboard page
+			// Enqueue dashboard CSS on dashboard page.
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
-			if (isset($_GET['page']) && 'pnpc-service-desk' === sanitize_text_field(wp_unslash($_GET['page']))) {
+			if ( isset( $_GET['page'] ) && 'pnpc-service-desk-dashboard' === sanitize_text_field( wp_unslash( $_GET['page'] ) ) ) {
 				wp_enqueue_style(
 					$this->plugin_name . '-dashboard',
 					PNPC_PSD_PLUGIN_URL . 'assets/css/pnpc-psd-dashboard.css',
@@ -309,7 +321,8 @@ class PNPC_PSD_Admin
 				array(
 					'ajax_url' => admin_url('admin-ajax.php', 'relative'),
 					'nonce'    => wp_create_nonce('pnpc_psd_admin_nonce'),
-					'tickets_url' => admin_url( 'admin.php?page=pnpc-service-desk-tickets' ),
+					'badge_poll_ms' => 45000,
+					'tickets_url' => admin_url( 'admin.php?page=pnpc-service-desk' ),
 					// Reply signatures (Free): personal signature stored in user profile; group signature stored in settings.
 					'personal_signature'     => $personal_signature,
 					'group_signature'        => $group_signature,
@@ -363,9 +376,9 @@ class PNPC_PSD_Admin
 				true
 			);
 
-			// Enqueue dashboard script on dashboard page
+			// Enqueue dashboard script on dashboard page.
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
-			if (isset($_GET['page']) && 'pnpc-service-desk' === sanitize_text_field(wp_unslash($_GET['page']))) {
+			if ( isset( $_GET['page'] ) && 'pnpc-service-desk-dashboard' === sanitize_text_field( wp_unslash( $_GET['page'] ) ) ) {
 				wp_enqueue_script(
 					$this->plugin_name . '-dashboard',
 					PNPC_PSD_PLUGIN_URL . 'assets/js/pnpc-psd-dashboard.js',
@@ -419,6 +432,34 @@ class PNPC_PSD_Admin
 				});'
 			);
 		}
+
+		// Keep the admin menu badges "relatively live" across wp-admin (not just plugin pages).
+		// This is a tiny poller script and is only loaded for users who can see the Service Desk.
+		if ( current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			$badge_js_ver  = $this->version;
+			$badge_js_path = PNPC_PSD_PLUGIN_DIR . 'assets/js/pnpc-psd-menu-badges.js';
+			if ( file_exists( $badge_js_path ) ) {
+				$badge_js_ver = (string) filemtime( $badge_js_path );
+			}
+
+			wp_enqueue_script(
+				$this->plugin_name . '-menu-badges',
+				PNPC_PSD_PLUGIN_URL . 'assets/js/pnpc-psd-menu-badges.js',
+				array( 'jquery' ),
+				$badge_js_ver,
+				true
+			);
+
+			wp_localize_script(
+				$this->plugin_name . '-menu-badges',
+				'pnpcPsdMenuBadges',
+				array(
+					'ajax_url' => admin_url( 'admin-ajax.php', 'relative' ),
+					'nonce'    => wp_create_nonce( 'pnpc_psd_admin_nonce' ),
+					'poll_ms'  => 45000,
+				)
+			);
+		}
 	}
 
 	/**
@@ -431,64 +472,76 @@ class PNPC_PSD_Admin
 	public function add_plugin_admin_menu()
 	{
 		$all_count      = PNPC_PSD_Ticket::get_count();
-		$open_count = 0;
-		if (class_exists('PNPC_PSD_Ticket')) {
-			$open_count  = (int) PNPC_PSD_Ticket::get_count('open');
-			$open_count += (int) PNPC_PSD_Ticket::get_count('in-progress');
+		$open_count  = 0;
+		$reply_count = 0;
+		if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
+			$open_count  = (int) PNPC_PSD_Ticket::get_count( 'open' );
+			$open_count += (int) PNPC_PSD_Ticket::get_count( 'in-progress' );
+			// Count unread customer replies (mirrors the "New" column, but sums replies).
+			$reply_count = (int) PNPC_PSD_Ticket::get_unread_customer_reply_total_count();
 		}
-		$menu_title = __('Service Desk', 'pnpc-pocket-service-desk');
-		if ($open_count > 0) {
-			$badge = sprintf(
-				'<span class="update-plugins count-%1$d"><span class="plugin-count">%1$d</span></span>',
-				absint($open_count)
-			);
+		$menu_title = __( 'Service Desk', 'pnpc-pocket-service-desk' );
+
+		// Combine Open + Unread Replies into a single attention badge for the top-level menu.
+		$attention_total = absint( $open_count ) + absint( $reply_count );
+		if ( $attention_total > 0 ) {
 			$menu_title = sprintf(
-				'%1$s %2$s',
-				esc_html__('Service Desk', 'pnpc-pocket-service-desk'),
-				$badge
+				'%1$s <span class="update-plugins count-%2$d"><span class="plugin-count">%2$d</span></span>',
+				esc_html__( 'Service Desk', 'pnpc-pocket-service-desk' ),
+				absint( $attention_total )
 			);
 		}
+
+		$all_tickets_title = esc_html__( 'All Tickets', 'pnpc-pocket-service-desk' );
+		$submenu_badges = '';
+		if ( $open_count > 0 ) {
+			$submenu_badges .= sprintf(
+				'<span class="update-plugins pnpc-psd-open-badge count-%1$d"><span class="plugin-count">%1$d</span></span>',
+				absint( $open_count )
+			);
+		}
+		if ( $reply_count > 0 ) {
+			$submenu_badges .= sprintf(
+				' <span class="update-plugins pnpc-psd-replies-badge count-%1$d"><span class="plugin-count">%1$d</span></span>',
+				absint( $reply_count )
+			);
+		}
+		if ( '' !== $submenu_badges ) {
+			$all_tickets_title = sprintf(
+				'%1$s %2$s',
+				esc_html__( 'All Tickets', 'pnpc-pocket-service-desk' ),
+				$submenu_badges
+			);
+		}
+
+
 
 		add_menu_page(
 			__('Service Desk', 'pnpc-pocket-service-desk'),
 			$menu_title,
 			'pnpc_psd_view_tickets',
 			'pnpc-service-desk',
-			array($this, 'display_dashboard_page'),
+			array($this, 'display_tickets_page'),
 			'dashicons-tickets',
 			30
 		);
 
 		add_submenu_page(
 			'pnpc-service-desk',
-			esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' ),
-			esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' ),
+			esc_html__( 'All Tickets', 'pnpc-pocket-service-desk' ),
+			$all_tickets_title,
 			'pnpc_psd_view_tickets',
 			'pnpc-service-desk',
-			array( $this, 'display_dashboard_page' )
+			array( $this, 'display_tickets_page' )
 		);
-
-
-		$all_tickets_title = esc_html__( 'All Tickets', 'pnpc-pocket-service-desk' );
-		if ( $open_count > 0 ) {
-			$badge = sprintf(
-				'<span class="update-plugins count-%1$d"><span class="plugin-count">%1$d</span></span>',
-				absint( $open_count )
-			);
-			$all_tickets_title = sprintf(
-				'%1$s %2$s',
-				esc_html__( 'All Tickets', 'pnpc-pocket-service-desk' ),
-				$badge
-			);
-		}
 
 		add_submenu_page(
 			'pnpc-service-desk',
-			__( 'All Tickets', 'pnpc-pocket-service-desk' ),
-			$all_tickets_title,
+			esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' ),
+			esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' ),
 			'pnpc_psd_view_tickets',
-			'pnpc-service-desk-tickets',
-			array($this, 'display_tickets_page')
+			'pnpc-service-desk-dashboard',
+			array( $this, 'display_dashboard_page' )
 		);
 
 		add_submenu_page(
@@ -556,8 +609,8 @@ add_submenu_page(
 	 * @param array $links Existing links.
 	 * @return array
 	 */
-	public function add_plugin_action_links( $links ) {
-		$dashboard = admin_url( 'admin.php?page=pnpc-service-desk-tickets' );
+	public function add_plugin_action_links(  $links ) {
+		$dashboard = admin_url( 'admin.php?page=pnpc-service-desk' );
 		$settings  = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 
 		$custom = array(
@@ -696,7 +749,7 @@ add_submenu_page(
 	 * @param int $page_id Dashboard page ID.
 	 * @return bool
 	 */
-	private function is_dashboard_configured( $page_id ) {
+	private function is_dashboard_configured(  $page_id ) {
 		$page_id = absint( $page_id );
 		if ( $page_id <= 0 ) {
 			return false;
@@ -728,7 +781,7 @@ add_submenu_page(
  * @param int $page_id Page ID.
  * @return bool
  */
-private function is_ticket_view_configured( $page_id ) {
+private function is_ticket_view_configured(  $page_id ) {
 	$page_id = (int) $page_id;
 	if ( $page_id <= 0 ) {
 		return false;
@@ -765,7 +818,7 @@ private function is_ticket_view_configured( $page_id ) {
 	 * @param int $page_id Page ID.
 	 * @return bool
 	 */
-	private function page_contains_any_psd_shortcode( $page_id ) {
+	private function page_contains_any_psd_shortcode(  $page_id ) {
 		$page_id = absint( $page_id );
 		if ( $page_id <= 0 ) {
 			return false;
@@ -953,7 +1006,7 @@ private function is_ticket_view_configured( $page_id ) {
 			update_option( 'pnpc_psd_setup_completed_at', time(), false );
 		}
 
-		wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-tickets&pnpc_psd_notice=setup_complete' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk&pnpc_psd_notice=setup_complete' ) );
 		exit;
 	}
 
@@ -1220,7 +1273,7 @@ private function is_ticket_view_configured( $page_id ) {
 		 * @param string $content_marker    Optional marker string to detect a correctly configured page by content.
 		 * @return int Canonical page ID now using $desired_slug (may differ from $target_id).
 		 */
-		private function ensure_canonical_page_slug( $target_id, $desired_slug, $content_marker = '' ) {
+		private function ensure_canonical_page_slug(  $target_id, $desired_slug, $content_marker = '' ) {
 			$target_id    = (int) $target_id;
 			$desired_slug = sanitize_title( (string) $desired_slug );
 			if ( $target_id <= 0 || '' === $desired_slug ) {
@@ -1324,7 +1377,7 @@ private function is_ticket_view_configured( $page_id ) {
 
 
 
-function create_dashboard_page_from_wizard( $args ) {
+function create_dashboard_page_from_wizard(  $args ) {
 		$title  = isset( $args['title'] ) ? sanitize_text_field( (string) $args['title'] ) : esc_html__( 'Support Dashboard', 'pnpc-pocket-service-desk' );
 		// Canonical slug: "dashboard" is too generic and numeric slugs cause permalink editors to show the page ID.
 		// Keep the public Support Dashboard predictable for users and internal URL helpers.
@@ -1333,7 +1386,6 @@ function create_dashboard_page_from_wizard( $args ) {
 
 		// Debug output.
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Creating dashboard page with args: ' . print_r( $args, true ) ); }
 		}
 
 		// Canonical shortcode content (safe fallback).
@@ -1449,7 +1501,7 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Creating dashbo
 	 * @param array<string,mixed> $args Args: title, slug, editor.
 	 * @return int|WP_Error Page ID on success, WP_Error on failure.
 	 */
-	function create_ticket_view_page_from_wizard( $args ) {
+	function create_ticket_view_page_from_wizard(  $args ) {
 		$title  = isset( $args['title'] ) ? sanitize_text_field( (string) $args['title'] ) : esc_html__( 'Ticket View', 'pnpc-pocket-service-desk' );
 		$slug   = isset( $args['slug'] ) ? sanitize_title( (string) $args['slug'] ) : 'ticket-view';
 		$editor = isset( $args['editor'] ) ? sanitize_key( (string) $args['editor'] ) : 'elementor';
@@ -1586,7 +1638,7 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Creating dashbo
 	 * @param array $alerts Existing alerts.
 	 * @return array Alerts.
 	 */
-	public function get_default_dashboard_alerts( $alerts ) {
+	public function get_default_dashboard_alerts(  $alerts ) {
 		if ( ! is_array( $alerts ) ) {
 			$alerts = array();
 		}
@@ -1596,7 +1648,7 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) { error_log( 'PNPC PSD: Creating dashbo
 			$review_count = (int) PNPC_PSD_Ticket::get_pending_delete_count();
 			if ( $review_count > 0 ) {
 				// Build URL to Review tab
-				$review_url = admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=review' );
+				$review_url = admin_url( 'admin.php?page=pnpc-service-desk&view=review' );
 
 				$alerts[] = array(
 					'title' => __( 'Review queue requires attention', 'pnpc-pocket-service-desk' ),
@@ -1684,6 +1736,25 @@ public function display_tickets_page()
 
 		// Provide $paged explicitly for the view.
 		$paged = (int) $paged;
+
+		// Pre-compute per-ticket unread customer reply counts for the "New" column.
+		$badge_counts = array();
+		if ( ! empty( $tickets ) && class_exists( 'PNPC_PSD_Ticket' ) && method_exists( 'PNPC_PSD_Ticket', 'get_unread_customer_reply_counts_by_ticket_ids' ) ) {
+			$ticket_ids = array();
+			foreach ( $tickets as $t ) {
+				if ( isset( $t->id ) ) {
+					$ticket_ids[] = absint( $t->id );
+				}
+			}
+			$badge_counts = PNPC_PSD_Ticket::get_unread_customer_reply_counts_by_ticket_ids( $ticket_ids );
+			// Ensure a stable 0 value for tickets without unread replies to avoid fallback logic.
+			foreach ( $ticket_ids as $tid ) {
+				$tid = absint( $tid );
+				if ( $tid && ! isset( $badge_counts[ $tid ] ) ) {
+					$badge_counts[ $tid ] = 0;
+				}
+			}
+		}
 		include PNPC_PSD_PLUGIN_DIR . 'admin/views/tickets-list.php';
 	}
 
@@ -1937,15 +2008,6 @@ public function display_tickets_page()
 
 		register_setting(
 			'pnpc_psd_settings',
-			'pnpc_psd_show_products',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'absint',
-				'default'           => 1,
-			)
-		);
-		register_setting(
-			'pnpc_psd_settings',
 			'pnpc_psd_user_specific_products',
 			array(
 				'type'              => 'boolean',
@@ -2185,7 +2247,7 @@ public function display_tickets_page()
 	 *
 	 * @return void
 	 */
-	public function render_service_desk_user_profile_fields( $user )
+	public function render_service_desk_user_profile_fields(  $user )
 	{
 		if ( ! ( $user instanceof WP_User ) ) {
 			return;
@@ -2222,7 +2284,7 @@ public function display_tickets_page()
 	 *
 	 * @return void
 	 */
-	public function save_service_desk_user_profile_fields( $user_id )
+	public function save_service_desk_user_profile_fields(  $user_id )
 	{
 		$user_id = (int) $user_id;
 		if ( $user_id <= 0 ) {
@@ -2258,7 +2320,7 @@ public function display_tickets_page()
 	 *
 	 * @return bool
 	 */
-	private function is_agent_capable_user( $user )
+	private function is_agent_capable_user(  $user )
 	{
 		if ( ! ( $user instanceof WP_User ) ) {
 			return false;
@@ -2282,7 +2344,7 @@ public function display_tickets_page()
 	*
 	* @return mixed
 	*/
-	public function render_user_allocated_products_field($user)
+	public function render_user_allocated_products_field( $user)
 	{
 		if (! current_user_can('manage_options')) {
 			return;
@@ -2338,7 +2400,7 @@ public function display_tickets_page()
 	*
 	* @return mixed
 	*/
-	public function save_user_allocated_products($user_id)
+	public function save_user_allocated_products( $user_id)
 	{
 		if (! current_user_can('manage_options')) {
 			return;
@@ -3102,7 +3164,7 @@ public function display_tickets_page()
 	 * @param int $user_id User ID
 	 * @return int Number of new tickets
 	 */
-	private function query_new_ticket_count($user_id)
+	private function query_new_ticket_count( $user_id)
 	{
 		// Count open and in-progress tickets (not closed or trashed)
 		// This matches the existing badge logic in add_plugin_admin_menu()
@@ -3278,7 +3340,7 @@ public function display_tickets_page()
 	 * @param int $user_id User ID
 	 * @return int Number of new responses
 	 */
-	private function calculate_new_badge_count($ticket_id, $user_id)
+	private function calculate_new_badge_count( $ticket_id, $user_id)
 	{
 		$ticket_id = absint( $ticket_id );
 		$user_id   = absint( $user_id );
@@ -3287,13 +3349,21 @@ public function display_tickets_page()
 		}
 
 		// v1.1.0+: Prefer deterministic, DB-backed role timestamps on the ticket row.
+		// We count unread customer replies (responses) since last staff view.
 		$ticket = PNPC_PSD_Ticket::get( $ticket_id );
-		if ( $ticket && ! empty( $ticket->last_customer_activity_at ) ) {
-			$customer_activity_raw = ! empty( $ticket->last_customer_activity_at ) ? (string) $ticket->last_customer_activity_at : (string) $ticket->created_at;
-			$staff_viewed_raw      = ! empty( $ticket->last_staff_viewed_at ) ? (string) $ticket->last_staff_viewed_at : '';
-			$customer_activity_ts  = ( '' !== $customer_activity_raw ) ? strtotime( $customer_activity_raw . ' UTC' ) : 0;
-			$staff_viewed_ts       = ( '' !== $staff_viewed_raw ) ? strtotime( $staff_viewed_raw . ' UTC' ) : 0;
-			return ( $customer_activity_ts > $staff_viewed_ts ) ? 1 : 0;
+		if ( $ticket && ( isset( $ticket->last_staff_viewed_at ) || isset( $ticket->last_customer_activity_at ) ) ) {
+			global $wpdb;
+			$responses_table = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+			$staff_viewed_raw = ! empty( $ticket->last_staff_viewed_at ) ? (string) $ticket->last_staff_viewed_at : '0000-00-00 00:00:00';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared -- Prepared via $wpdb->prepare.
+			$count = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$responses_table} WHERE deleted_at IS NULL AND is_staff_response = 0 AND ticket_id = %d AND created_at > %s",
+					$ticket_id,
+					$staff_viewed_raw
+				)
+			);
+			return absint( $count );
 		}
 
 		// Legacy fallback (should be hit only on very old DBs): user-meta based.
@@ -3329,7 +3399,7 @@ public function display_tickets_page()
 	 * @param array $tickets All tickets
 	 * @return array ['active' => [], 'closed' => []]
 	 */
-	private function separate_active_and_closed_tickets($tickets)
+	private function separate_active_and_closed_tickets( $tickets)
 	{
 		$active = array();
 		$closed = array();
@@ -3357,7 +3427,7 @@ public function display_tickets_page()
 	 * @param bool $is_trash_view Whether viewing trash
 	 * @param bool $is_closed Whether this is a closed ticket (for styling)
 	 */
-	private function render_ticket_row($ticket, $is_trash_view = false, $is_closed = false, $view = '')
+	private function render_ticket_row( $ticket, $is_trash_view = false, $is_closed = false, $view = '')
 	{
 		$user          = get_userdata($ticket->user_id);
 		$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
@@ -3751,7 +3821,7 @@ public function display_tickets_page()
 					$this->send_staff_created_ticket_notification($ticket_id, $customer_id);
 				} catch (Exception $e) {
 					// Log but don't break the flow
-					error_log('PNPC PSD: Notification failed: ' . $e->getMessage());
+
 				}
 			}
 
@@ -3786,7 +3856,7 @@ public function display_tickets_page()
 	*
 	* @return mixed
 	*/
-	private function send_staff_created_ticket_notification($ticket_id, $customer_id)
+	private function send_staff_created_ticket_notification( $ticket_id, $customer_id)
 	{
 		try {
 			$ticket = PNPC_PSD_Ticket::get($ticket_id);
@@ -3794,7 +3864,7 @@ public function display_tickets_page()
 			$staff = wp_get_current_user();
 
 			if (! $ticket || ! $customer) {
-				error_log('PNPC PSD: Failed to send notification - invalid ticket or customer');
+
 				return false;
 			}
 
@@ -3802,7 +3872,7 @@ public function display_tickets_page()
 			
 			// Validate email address
 			if (!is_email($to)) {
-				error_log('PNPC PSD: Invalid customer email address for customer ID: ' . absint($customer_id));
+
 				return false;
 			}
 			
@@ -3862,13 +3932,13 @@ public function display_tickets_page()
 			$result = wp_mail($to, $subject, $message, $headers);
 			
 			if (!$result) {
-				error_log('PNPC PSD: Failed to send notification email for ticket ID: ' . absint($ticket_id) . ', customer ID: ' . absint($customer_id));
+
 			}
 			
 			return $result;
 			
 		} catch (Exception $e) {
-			error_log('PNPC PSD: Exception in send_staff_created_ticket_notification: ' . $e->getMessage());
+
 			return false;
 		}
 	}
@@ -3902,24 +3972,24 @@ public function display_tickets_page()
 		}
 
 		// $return_to already captured above.
-		$redirect  = admin_url( 'admin.php?page=pnpc-service-desk-tickets&status=closed' );
+		$redirect  = admin_url( 'admin.php?page=pnpc-service-desk&status=closed' );
 		if ( $return_to ) {
 			switch ( $return_to ) {
 				case 'trash':
-					$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=trash' );
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&view=trash' );
 					break;
 				case 'review':
-					$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=review' );
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&view=review' );
 					break;
 				case 'archived':
-					$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=archived' );
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&view=archived' );
 					break;
 				case 'all':
-					$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets' );
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk' );
 					break;
 				case 'closed':
 				default:
-					$redirect = admin_url( 'admin.php?page=pnpc-service-desk-tickets&status=closed' );
+					$redirect = admin_url( 'admin.php?page=pnpc-service-desk&status=closed' );
 					break;
 			}
 		}
@@ -3947,7 +4017,7 @@ public function display_tickets_page()
 			PNPC_PSD_Ticket::restore_from_archive( $ticket_id );
 		}
 
-		wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=archived' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk&view=archived' ) );
 		exit;
 	}
 
@@ -4185,6 +4255,49 @@ public function display_tickets_page()
 			( $msg_d ? '<br/><span style="display:inline-block;margin-top:6px;max-width:900px;">' . esc_html( $msg_d ) . '</span>' : '' ) .
 			'</p></div>';
 	}
+
+
+
+/**
+ * AJAX: Return live admin menu badge counts.
+ *
+ * Red badge: Open + In-Progress tickets.
+ * Green badge: Total unread customer replies (sum of per-ticket unread reply counts).
+ *
+ * @since 1.1.1.4
+ *
+ * @return void
+ */
+public function ajax_get_menu_badges() {
+	check_ajax_referer( 'pnpc_psd_admin_nonce', 'nonce' );
+
+	if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+		wp_send_json_error(
+			array(
+				'message' => esc_html__( 'Unauthorized.', 'pnpc-pocket-service-desk' ),
+			),
+			403
+		);
+	}
+
+	$open_count  = 0;
+	$reply_count = 0;
+
+	if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
+		$open_count  = (int) PNPC_PSD_Ticket::get_count( 'open' );
+		$open_count += (int) PNPC_PSD_Ticket::get_count( 'in-progress' );
+
+		$reply_count = (int) PNPC_PSD_Ticket::get_unread_customer_reply_total_count();
+	}
+
+	wp_send_json_success(
+		array(
+			'open_count'      => absint( $open_count ),
+			'unread_replies'  => absint( $reply_count ),
+			'attention_total' => absint( $open_count ) + absint( $reply_count ),
+		)
+	);
+}
 
 
 }

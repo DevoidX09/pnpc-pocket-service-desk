@@ -166,11 +166,11 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				<tr>
 					<th scope="row"><label for="pnpc_psd_max_attachment_mb"><?php esc_html_e( 'Max attachment size (MB)', 'pnpc-pocket-service-desk' ); ?></label></th>
 					<td>
-					<?php $effective_mb = function_exists( 'pnpc_psd_get_max_attachment_mb' ) ? (int) pnpc_psd_get_max_attachment_mb() : (int) get_option( 'pnpc_psd_max_attachment_mb', 5 ); ?>
-					<input type="number" min="1" step="1" name="pnpc_psd_max_attachment_mb" id="pnpc_psd_max_attachment_mb" value="<?php echo esc_attr( $effective_mb ); ?>" class="small-text" />
+						<?php $effective_mb = function_exists( 'pnpc_psd_get_max_attachment_mb' ) ? (int) pnpc_psd_get_max_attachment_mb() : (int) get_option( 'pnpc_psd_max_attachment_mb', 5 ); ?>
+						<input type="number" min="1" max="5" step="1" name="pnpc_psd_max_attachment_mb" id="pnpc_psd_max_attachment_mb" value="<?php echo esc_attr( $effective_mb ); ?>" class="small-text" />
 						<p class="description">
 							<?php
-							esc_html_e( 'This limit applies to newly uploaded attachments and is constrained by your server's PHP upload limits.', 'pnpc-pocket-service-desk' );
+								esc_html_e( "Maximum is 5 MB. This limit applies to newly uploaded attachments and is constrained by your server's PHP upload limits.", 'pnpc-pocket-service-desk' );
 							?>
 						</p>
 					</td>
@@ -405,12 +405,14 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 			<p class="description"><?php esc_html_e( 'Control optional welcome headings shown in public shortcodes. Disable these if you are providing your own headings via a page builder.', 'pnpc-pocket-service-desk' ); ?></p>
 			<table class="form-table">
 				<tr>
+					<th scope="row"><?php esc_html_e( 'Profile Settings', 'pnpc-pocket-service-desk' ); ?></th>
 					<td>
 						<label>
 							<input type="hidden" name="pnpc_psd_show_welcome_profile" value="0" />
 							<input type="checkbox" name="pnpc_psd_show_welcome_profile" value="1" <?php checked( 1, get_option( 'pnpc_psd_show_welcome_profile', 1 ) ); ?> />
-							<?php esc_html_e( 'Show welcome message in [pnpc_profile_settings].', 'pnpc-pocket-service-desk' ); ?>
+							<?php esc_html_e( 'Show welcome message.', 'pnpc-pocket-service-desk' ); ?>
 						</label>
+						<p class="description"><?php esc_html_e( 'Applies to [pnpc_profile_settings].', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 				<tr>
@@ -419,8 +421,9 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 						<label>
 							<input type="hidden" name="pnpc_psd_show_welcome_service_desk" value="0" />
 							<input type="checkbox" name="pnpc_psd_show_welcome_service_desk" value="1" <?php checked( 1, get_option( 'pnpc_psd_show_welcome_service_desk', 1 ) ); ?> />
-							<?php esc_html_e( 'Show welcome message in [pnpc_service_desk].', 'pnpc-pocket-service-desk' ); ?>
+							<?php esc_html_e( 'Show welcome message.', 'pnpc-pocket-service-desk' ); ?>
 						</label>
+						<p class="description"><?php esc_html_e( 'Applies to [pnpc_service_desk].', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 			</table>
@@ -489,18 +492,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				</tr>
 			</table>
 
-			<p class="description"><?php esc_html_e( 'Controls which products are shown in the Services area (when WooCommerce is active).', 'pnpc-pocket-service-desk' ); ?></p>
-			<table class="form-table">
-				<tr>
-					<td>
-						<label>
-							<input type="hidden" name="pnpc_psd_show_products" value="0" />
-							<input type="checkbox" name="pnpc_psd_show_products" value="1" <?php checked( 1, get_option( 'pnpc_psd_show_products', 1 ) ); ?> />
-							<?php esc_html_e( 'Show a public product catalog in the Services block (free feature).', 'pnpc-pocket-service-desk' ); ?>
-						</label>
-						<p class="description"><?php esc_html_e( 'If enabled, the Services shortcode will show general published products to viewers (unless user-specific products are enabled).', 'pnpc-pocket-service-desk' ); ?></p>
-					</td>
-				</tr>
+				<!-- Services product catalog controls are intentionally not exposed in settings. -->
 
 		</div>
 
@@ -512,14 +504,18 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 			<p class="description"><?php esc_html_e( 'Customize colors used across shortcodes and cards. Values are stored as hex colors (e.g., #2b9f6a).', 'pnpc-pocket-service-desk' ); ?></p>
 			<table class="form-table">
 				<tr>
-					<td>
-						<input type="color" id="pnpc_psd_primary_button_color" name="pnpc_psd_primary_button_color" value="<?php echo esc_attr( get_option( 'pnpc_psd_primary_button_color', '#2b9f6a' ) ); ?>" />
-					</td>
+						<th scope="row"><label for="pnpc_psd_primary_button_color"><?php esc_html_e( 'Primary button color', 'pnpc-pocket-service-desk' ); ?></label></th>
+						<td>
+							<input type="color" id="pnpc_psd_primary_button_color" name="pnpc_psd_primary_button_color" value="<?php echo esc_attr( get_option( 'pnpc_psd_primary_button_color', '#2b9f6a' ) ); ?>" />
+							<p class="description"><?php esc_html_e( 'Default color for primary actions (e.g., primary buttons).', 'pnpc-pocket-service-desk' ); ?></p>
+						</td>
 				</tr>
 				<tr>
-					<td>
-						<input type="color" id="pnpc_psd_primary_button_hover_color" name="pnpc_psd_primary_button_hover_color" value="<?php echo esc_attr( get_option( 'pnpc_psd_primary_button_hover_color', '#238a56' ) ); ?>" />
-					</td>
+						<th scope="row"><label for="pnpc_psd_primary_button_hover_color"><?php esc_html_e( 'Primary button hover color', 'pnpc-pocket-service-desk' ); ?></label></th>
+						<td>
+							<input type="color" id="pnpc_psd_primary_button_hover_color" name="pnpc_psd_primary_button_hover_color" value="<?php echo esc_attr( get_option( 'pnpc_psd_primary_button_hover_color', '#238a56' ) ); ?>" />
+							<p class="description"><?php esc_html_e( 'Hover state for primary actions.', 'pnpc-pocket-service-desk' ); ?></p>
+						</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="pnpc_psd_logout_button_color"><?php esc_html_e( 'Logout Button color', 'pnpc-pocket-service-desk' ); ?></label></th>
