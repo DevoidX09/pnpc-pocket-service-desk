@@ -9,6 +9,9 @@
  *   falls back to page with slug 'dashboard-single' or to home_url('/dashboard-single/').
  *
  * Expects $ticket and $responses to be provided by render_ticket_detail().
+ *
+ * @package PNPC_Pocket_Service_Desk
+ * phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template variables passed from controller
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -21,8 +24,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Newer builds track unread/activity on the ticket row (role-level). Historically we also
  * stored a per-user last-view meta key; we keep that for backward compatibility.
  */
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET parameter for public view
 if ( isset( $_GET['ticket_id'] ) && is_user_logged_in() ) {
 	$current_user_id = get_current_user_id();
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET parameter
 	$ticket_id       = absint( wp_unslash( $_GET['ticket_id'] ) );
 
 	if ( $ticket_id > 0 ) {
@@ -101,8 +106,10 @@ if (empty($dashboard_url)) {
 		<h2><?php echo esc_html($ticket->subject); ?></h2>
 		<div class="pnpc-psd-ticket-meta">
 			<span class="pnpc-psd-ticket-number">
-/* translators: Placeholder(s) in localized string. */
-				<?php printf(esc_html__('Ticket #%s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?>
+				<?php
+				// translators: %s is the ticket number.
+				printf(esc_html__('Ticket #%s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number));
+				?>
 			</span>
 			<?php
 			$raw_status = isset( $ticket->status ) ? (string) $ticket->status : '';
