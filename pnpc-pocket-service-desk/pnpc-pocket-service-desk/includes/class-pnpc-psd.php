@@ -1,0 +1,243 @@
+<?php
+/**
+ * Core plugin class.
+ *
+ * @package PNPC_Pocket_Service_Desk
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Core plugin class.
+ *
+ * @since 1.1.1.4
+ */
+class PNPC_PSD {
+
+	/**
+	 * Loader instance.
+	 *
+	 * @var PNPC_PSD_Loader
+	 */
+	protected $loader;
+
+	/**
+	 * Plugin slug.
+	 *
+	 * @var string
+	 */
+	protected $plugin_name;
+
+	/**
+	 * Plugin version.
+	 *
+	 * @var string
+	 */
+	protected $version;
+
+	/**
+	 * Constructor.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @param string      $plugin_name Plugin slug.
+	 * @param string|null $version     Plugin version.
+	 */
+	public function __construct(  $plugin_name = 'pnpc-pocket-service-desk', $version = null ) {
+		$this->version     = $version ? $version : PNPC_PSD_VERSION;
+		$this->plugin_name = $plugin_name;
+
+		$this->load_dependencies();
+		$this->set_locale();
+		$this->define_admin_hooks();
+		$this->define_public_hooks();
+	}
+
+	/**
+	 * Load required dependencies.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return void
+	 */
+	private function load_dependencies() {
+		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-loader.php';
+		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-i18n.php';
+		require_once PNPC_PSD_PLUGIN_DIR . 'admin/class-pnpc-psd-admin.php';
+		require_once PNPC_PSD_PLUGIN_DIR . 'public/class-pnpc-psd-public.php';
+		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-ticket.php';
+		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-ticket-response.php';
+		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-audit-log.php';
+		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-internal-notes.php';
+
+		$this->loader = new PNPC_PSD_Loader();
+	}
+
+	/**
+	 * Set up localization.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return void
+	 */
+	private function set_locale() {
+		$plugin_i18n = new PNPC_PSD_i18n();
+
+		$this->loader->add_action( 'plugins_loaded', $plugin_i18n, 'load_plugin_textdomain' );
+	}
+
+	/**
+	 * Register admin hooks.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return void
+	 */
+	private function define_admin_hooks() {
+		$plugin_admin    = new PNPC_PSD_Admin( $this->get_plugin_name(), $this->get_version() );
+		$internal_notes  = new PNPC_PSD_Internal_Notes( $this->get_version() );
+
+		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $internal_notes, 'enqueue_admin_assets' );
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_plugin_admin_menu' );
+		$this->loader->add_action( 'admin_init', $plugin_admin, 'register_settings' );
+
+		// Agent-facing signatures: personal signature stored in user profile; group signature stored in settings.
+		$this->loader->add_action( 'show_user_profile', $plugin_admin, 'render_service_desk_user_profile_fields' );
+		$this->loader->add_action( 'edit_user_profile', $plugin_admin, 'render_service_desk_user_profile_fields' );
+		$this->loader->add_action( 'personal_options_update', $plugin_admin, 'save_service_desk_user_profile_fields' );
+		$this->loader->add_action( 'edit_user_profile_update', $plugin_admin, 'save_service_desk_user_profile_fields' );
+
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_admin_respond_to_ticket', $plugin_admin, 'ajax_respond_to_ticket' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_assign_ticket', $plugin_admin, 'ajax_assign_ticket' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_update_ticket_status', $plugin_admin, 'ajax_update_ticket_status' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_update_ticket_priority', $plugin_admin, 'ajax_update_ticket_priority' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_get_menu_badges', $plugin_admin, 'ajax_get_menu_badges' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_delete_ticket', $plugin_admin, 'ajax_delete_ticket' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_bulk_trash_tickets', $plugin_admin, 'ajax_bulk_trash_tickets' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_trash_with_reason', $plugin_admin, 'ajax_trash_with_reason' );
+
+		// Danger Zone delete requests go through the Review queue.
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_request_delete_with_reason', $plugin_admin, 'ajax_request_delete_with_reason' );
+
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_bulk_restore_tickets', $plugin_admin, 'ajax_bulk_restore_tickets' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_bulk_archive_tickets', $plugin_admin, 'ajax_bulk_archive_tickets' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_bulk_restore_archived_tickets', $plugin_admin, 'ajax_bulk_restore_archived_tickets' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_bulk_delete_permanently_tickets', $plugin_admin, 'ajax_bulk_delete_permanently_tickets' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_bulk_approve_review_tickets', $plugin_admin, 'ajax_bulk_approve_review_tickets' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_bulk_cancel_review_tickets', $plugin_admin, 'ajax_bulk_cancel_review_tickets' );
+
+		// Real-time update AJAX handlers.
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_get_new_ticket_count', $plugin_admin, 'ajax_get_new_ticket_count' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_refresh_ticket_list', $plugin_admin, 'ajax_refresh_ticket_list' );
+
+		// Client Notes: list/add/delete via AJAX.
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_client_notes_list', $internal_notes, 'ajax_list' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_client_notes_add', $internal_notes, 'ajax_add' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_client_notes_delete', $internal_notes, 'ajax_delete' );
+
+		// Admin-post handlers (non-AJAX): archive/restore + CSV export.
+		$this->loader->add_action( 'admin_post_pnpc_psd_archive_ticket', $plugin_admin, 'handle_archive_ticket' );
+		$this->loader->add_action( 'admin_post_pnpc_psd_restore_archived_ticket', $plugin_admin, 'handle_restore_archived_ticket' );
+		$this->loader->add_action( 'admin_post_pnpc_psd_export_tickets', $plugin_admin, 'handle_export_tickets' );
+	}
+
+	/**
+	 * Register public hooks.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return void
+	 */
+	private function define_public_hooks() {
+		$plugin_public = new PNPC_PSD_Public( $this->get_plugin_name(), $this->get_version() );
+
+		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+		$this->loader->add_action( 'init', $plugin_public, 'register_shortcodes' );
+
+		// Ensure custom roles have required capabilities (roles may pre-exist from older installs).
+		$this->loader->add_action( 'init', $this, 'ensure_roles_caps', 1 );
+
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_create_ticket', $plugin_public, 'ajax_create_ticket' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_respond_to_ticket', $plugin_public, 'ajax_respond_to_ticket' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_upload_profile_image', $plugin_public, 'ajax_upload_profile_image' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_refresh_my_tickets', $plugin_public, 'ajax_refresh_my_tickets' );
+		$this->loader->add_action( 'wp_ajax_pnpc_psd_get_ticket_detail', $plugin_public, 'ajax_get_ticket_detail' );
+	}
+
+	/**
+	 * Ensure custom roles and required capabilities are present.
+	 *
+	 * This protects against legacy installs where the role exists but lacks 'read',
+	 * which would prevent wp-admin access and appear as a front-end redirect.
+	 *
+	 * @return void
+	 */
+	public function ensure_roles_caps() {
+		if ( ! class_exists( 'PNPC_PSD_Activator' ) ) {
+			return;
+		}
+
+		if ( method_exists( 'PNPC_PSD_Activator', 'sync_custom_roles_caps' ) ) {
+			PNPC_PSD_Activator::sync_custom_roles_caps();
+		}
+
+		// Defensive DB schema guard: ensure delete tracking fields exist so Trash columns can populate.
+		if ( method_exists( 'PNPC_PSD_Activator', 'ensure_delete_reason_columns' ) ) {
+			PNPC_PSD_Activator::ensure_delete_reason_columns();
+		}
+
+		// Run any pending DB migrations (no-ops once pnpc_psd_db_version is up to date).
+		if ( method_exists( 'PNPC_PSD_Activator', 'maybe_upgrade_database' ) ) {
+			PNPC_PSD_Activator::maybe_upgrade_database();
+		}
+	}
+
+	/**
+	 * Run the plugin.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return void
+	 */
+	public function run() {
+		$this->loader->run();
+	}
+
+	/**
+	 * Get plugin name.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return string
+	 */
+	public function get_plugin_name() {
+		return $this->plugin_name;
+	}
+
+	/**
+	 * Get loader.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return PNPC_PSD_Loader
+	 */
+	public function get_loader() {
+		return $this->loader;
+	}
+
+	/**
+	 * Get version.
+	 *
+	 * @since 1.1.1.4
+	 *
+	 * @return string
+	 */
+	public function get_version() {
+		return $this->version;
+	}
+}

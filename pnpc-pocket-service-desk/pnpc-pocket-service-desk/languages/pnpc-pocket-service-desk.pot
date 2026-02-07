@@ -1,0 +1,2650 @@
+# Copyright (C) 2026 PNPC
+# This file is distributed under the same license as the PNPC Pocket Service Desk plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: PNPC Pocket Service Desk 1.1.2\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-04 07:45+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin/views/settings.php:340
+msgid " (#%d)"
+msgstr ""
+
+#: admin/views/setup-wizard.php:322
+msgid "%1$s — <a href=\"%2$s\" target=\"_blank\" rel=\"noopener noreferrer\">Get Elementor</a>"
+msgstr ""
+
+#: admin/views/setup-wizard.php:178
+msgid "%d existing ticket(s) detected"
+msgstr ""
+
+#: public/views/my-tickets-list.php:77
+msgid "%d new response"
+msgid_plural "%d new responses"
+msgstr[0] ""
+msgstr[1] ""
+
+#: public/views/my-tickets-list.php:110
+msgid "%d response"
+msgid_plural "%d responses"
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-pnpc-psd-admin.php:1603
+msgid "%d ticket is awaiting review in the Review tab."
+msgid_plural "%d tickets are awaiting review in the Review tab."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-pnpc-psd-admin.php:2822
+msgid "%d ticket moved to archive."
+msgid_plural "%d tickets moved to archive."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-pnpc-psd-admin.php:2760
+#: admin/class-pnpc-psd-admin.php:2892
+#: admin/class-pnpc-psd-admin.php:2984
+msgid "%d ticket moved to trash."
+msgid_plural "%d tickets moved to trash."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-pnpc-psd-admin.php:3047
+msgid "%d ticket permanently deleted."
+msgid_plural "%d tickets permanently deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-pnpc-psd-admin.php:2937
+msgid "%d ticket queued for review."
+msgid_plural "%d tickets queued for review."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-pnpc-psd-admin.php:2851
+msgid "%d ticket restored from archive."
+msgid_plural "%d tickets restored from archive."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-pnpc-psd-admin.php:2793
+#: admin/class-pnpc-psd-admin.php:3014
+msgid "%d ticket restored."
+msgid_plural "%d tickets restored."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-pnpc-psd-admin.php:3855
+msgid "%s Support Team"
+msgstr ""
+
+#: admin/views/tickets-list.php:766
+msgid "&laquo;"
+msgstr ""
+
+#: public/views/my-tickets-list.php:126
+msgid "&laquo; Prev"
+msgstr ""
+
+#: admin/views/tickets-list.php:767
+msgid "&raquo;"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:321
+msgid "1 new ticket arrived"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:4181
+msgid "A critical error was captured during ticket creation."
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:225
+msgid "A customer has replied to a ticket.\\n\\nTicket: %1\\$s\\nCustomer: %2\\$s\\nSubject: %3\\$s\\n\\nLog in to respond."
+msgstr ""
+
+#: includes/class-pnpc-psd-ticket-response.php:299
+msgid "A customer has responded to a support ticket.\n"
+"\n"
+"Ticket Number: %1$s\n"
+"From: %2$s\n"
+"\n"
+"Response:\n"
+"%3$s\n"
+"\n"
+"Please log in to the admin panel to view and respond."
+msgstr ""
+
+#: includes/class-pnpc-psd-ticket.php:603
+msgid "A new support ticket has been created.\n"
+"\n"
+"Ticket Number: %1$s\n"
+"From: %2$s\n"
+"Subject: %3$s\n"
+"\n"
+"Please log in to the admin panel to view and respond to this ticket."
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:161
+msgid "A new support ticket has been created.\\n\\nTicket: %1\\$s\\nFrom: %2\\$s\\nSubject: %3\\$s\\n\\nLog in to review and respond."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3835
+msgid "A support ticket has been created for you by our support team."
+msgstr ""
+
+#: public/views/profile-settings.php:82
+msgid "Account Settings"
+msgstr ""
+
+#: admin/class-pnpc-psd-audit-log-table.php:62
+msgid "Action"
+msgstr ""
+
+#: admin/class-pnpc-psd-audit-log-table.php:333
+msgid "Action (e.g., ticket_created)"
+msgstr ""
+
+#: admin/views/my-tickets.php:36
+#: admin/views/tickets-list.php:282
+msgid "Actions"
+msgstr ""
+
+#: admin/class-pnpc-psd-audit-log-table.php:61
+msgid "Actor"
+msgstr ""
+
+#: admin/class-pnpc-psd-audit-log-table.php:341
+msgid "Actor ID"
+msgstr ""
+
+#: includes/class-pnpc-psd-internal-notes.php:94
+msgid "Add Note"
+msgstr ""
+
+#: admin/views/ticket-detail.php:460
+#: admin/views/ticket-detail.php:487
+msgid "Add Response"
+msgstr ""
+
+#: public/views/ticket-detail.php:251
+msgid "Add a Reply"
+msgstr ""
+
+#: admin/views/ticket-detail.php:537
+msgid "Additional details:"
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:167
+#: includes/class-pnpc-psd-notifications.php:231
+msgid "Admin ticket link:"
+msgstr ""
+
+#: admin/views/ticket-detail.php:197
+msgid "Agent, Status, and Priority save automatically when you change them. If anything fails, use the Save buttons."
+msgstr ""
+
+#: admin/views/dashboard.php:168
+msgid "Alert Inbox"
+msgstr ""
+
+#: admin/views/tickets-list.php:103
+msgid "All (%d)"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:473
+#: admin/class-pnpc-psd-admin.php:481
+#: admin/class-pnpc-psd-admin.php:488
+#: admin/views/dashboard.php:70
+#: admin/views/my-tickets.php:23
+#: admin/views/ticket-detail.php:94
+msgid "All Tickets"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2302
+#: admin/class-pnpc-psd-admin.php:2305
+msgid "Allocated Products"
+msgstr ""
+
+#: admin/views/settings.php:184
+msgid "Allowed attachment formats"
+msgstr ""
+
+#: public/views/create-ticket.php:68
+#: public/views/ticket-detail.php:291
+msgid "Allowed formats: %1$s. Max size per file: %2$dMB (server limits may apply)."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2559
+#: public/class-pnpc-psd-public.php:1081
+#: public/class-pnpc-psd-public.php:830
+msgid "Allowed: %s."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:595
+msgid "An internal error occurred while finalizing your ticket. The ticket may still have been created—please refresh your tickets list. If the issue persists, contact support and provide reference:"
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:864
+msgid "An unexpected error occurred while creating the ticket. Please reload and try again."
+msgstr ""
+
+#: admin/views/tickets-list.php:186
+msgid "Apply"
+msgstr ""
+
+#: admin/views/tickets-list.php:177
+msgid "Approve → Trash"
+msgstr ""
+
+#: admin/views/tickets-list.php:445
+#: admin/views/tickets-list.php:448
+msgid "Archive"
+msgstr ""
+
+#: admin/views/tickets-list.php:586
+#: admin/views/tickets-list.php:702
+msgid "Archived"
+msgstr ""
+
+#: admin/views/tickets-list.php:159
+msgid "Archived (%d)"
+msgstr ""
+
+#: admin/views/tickets-list.php:252
+msgid "Archived At"
+msgstr ""
+
+#: admin/views/ticket-detail.php:212
+msgid "Assign"
+msgstr ""
+
+#: admin/views/ticket-detail.php:203
+msgid "Assign Agent"
+msgstr ""
+
+#: admin/views/tickets-list.php:223
+#: admin/views/tickets-list.php:248
+msgid "Assigned To"
+msgstr ""
+
+#: admin/views/ticket-detail.php:165
+msgid "Assigned to:"
+msgstr ""
+
+#: admin/views/ticket-detail.php:552
+#: public/views/ticket-detail.php:319
+msgid "Attachment Viewer"
+msgstr ""
+
+#: includes/helpers.php:1215
+msgid "Attachment not found."
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:93
+#: admin/views/settings.php:164
+#: admin/views/ticket-detail.php:291
+#: public/views/ticket-detail.php:137
+msgid "Attachments"
+msgstr ""
+
+#: admin/views/ticket-detail.php:482
+#: public/views/create-ticket.php:36
+#: public/views/ticket-detail.php:259
+msgid "Attachments (optional)"
+msgstr ""
+
+#: admin/views/ticket-detail.php:387
+#: public/views/ticket-detail.php:208
+msgid "Attachments:"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:536
+#: admin/class-pnpc-psd-admin.php:537
+#: admin/views/audit-log.php:24
+#: admin/views/dashboard.php:72
+msgid "Audit Log"
+msgstr ""
+
+#: admin/views/settings.php:471
+msgid "Auto-Refresh Interval"
+msgstr ""
+
+#: admin/views/ticket-detail.php:196
+msgid "Auto-save help"
+msgstr ""
+
+#: admin/views/settings.php:465
+msgid "Automatically refresh ticket lists."
+msgstr ""
+
+#: admin/views/setup-wizard.php:257
+#: admin/views/setup-wizard.php:292
+#: admin/views/setup-wizard.php:342
+msgid "Back"
+msgstr ""
+
+#: admin/views/ticket-detail.php:115
+msgid "Back to All Tickets"
+msgstr ""
+
+#: public/views/ticket-detail.php:314
+msgid "Back to Dashboard"
+msgstr ""
+
+#: admin/views/settings.php:605
+msgid "Background for ticket cards in [pnpc_my_tickets]."
+msgstr ""
+
+#: admin/views/settings.php:280
+msgid "Backwards compatibility: if you do not configure agents here, all staff roles (Admin/Manager/Agent) remain assignable."
+msgstr ""
+
+#: admin/views/setup-wizard.php:203
+msgid "Begin Install (Create a Dashboard)"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:63
+msgid "Brief description of the issue."
+msgstr ""
+
+#: public/views/create-ticket.php:17
+msgid "Brief description of your issue"
+msgstr ""
+
+#: admin/views/setup-wizard.php:55
+msgid "Builder"
+msgstr ""
+
+#: admin/views/tickets-list.php:170
+msgid "Bulk Actions"
+msgstr ""
+
+#: admin/views/settings.php:619
+msgid "Button color for the View Details action in [pnpc_my_tickets]."
+msgstr ""
+
+#: admin/views/settings.php:590
+msgid "Button color inside service/product cards."
+msgstr ""
+
+#: admin/views/settings.php:387
+msgid "By default, settings and profile uploads are preserved across uninstall/reinstall. Enable this only if you want to permanently remove plugin data when uninstalling."
+msgstr ""
+
+#: admin/views/settings.php:219
+msgid "CSV (.csv)"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:129
+#: admin/views/ticket-detail.php:545
+msgid "Cancel"
+msgstr ""
+
+#: admin/views/settings.php:291
+msgid "Choose 2 agents from the list below to activate. Unchecked agents will be unable to work on tickets."
+msgstr ""
+
+#: public/views/profile-settings.php:111
+#: public/views/profile-settings.php:67
+msgid "Choose Image"
+msgstr ""
+
+#: admin/views/setup-wizard.php:48
+msgid "Choose Page"
+msgstr ""
+
+#: admin/views/setup-wizard.php:226
+msgid "Choose an existing page for your Support Dashboard"
+msgstr ""
+
+#: admin/views/settings.php:272
+msgid "Choose which internal users can be assigned tickets and how staff emails are routed."
+msgstr ""
+
+#: admin/views/setup-wizard.php:368
+msgid "Clicking Finished will create a Ticket View page for your customers and generate a sample customer and sample ticket to help you get started."
+msgstr ""
+
+#: includes/class-pnpc-psd-internal-notes.php:92
+#: includes/class-pnpc-psd-internal-notes.php:93
+msgid "Client Notes"
+msgstr ""
+
+#: admin/views/ticket-detail.php:556
+#: public/views/ticket-detail.php:323
+msgid "Close"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3509
+#: admin/views/dashboard.php:131
+#: admin/views/dashboard.php:135
+#: admin/views/dashboard.php:139
+#: admin/views/ticket-detail.php:58
+#: admin/views/tickets-list.php:339
+#: admin/views/tickets-list.php:584
+#: admin/views/tickets-list.php:700
+#: public/views/my-tickets-list.php:89
+#: public/views/my-tickets.php:41
+#: public/views/service-desk.php:91
+#: public/views/ticket-detail.php:113
+msgid "Closed"
+msgstr ""
+
+#: admin/views/tickets-list.php:135
+msgid "Closed (%d)"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3208
+#: admin/views/tickets-list.php:633
+msgid "Closed Tickets (%d)"
+msgstr ""
+
+#: admin/views/dashboard.php:110
+msgid "Closed of total"
+msgstr ""
+
+#: admin/views/dashboard.php:107
+msgid "Closed ratio"
+msgstr ""
+
+#: admin/views/settings.php:575
+msgid "Color used for service/product card titles."
+msgstr ""
+
+#: admin/views/settings.php:516
+msgid "Colors & Buttons"
+msgstr ""
+
+#: admin/views/setup-wizard.php:50
+#: admin/views/setup-wizard.php:56
+msgid "Complete"
+msgstr ""
+
+#: admin/views/dashboard.php:99
+msgid "Completion"
+msgstr ""
+
+#: admin/views/dashboard.php:152
+#: admin/views/dashboard.php:96
+msgid "Completion rate"
+msgstr ""
+
+#: admin/views/settings.php:434
+msgid "Configure automatic ticket list updates and menu badge notifications."
+msgstr ""
+
+#: admin/views/settings.php:241
+msgid "Configure default assignment behavior for newly created tickets."
+msgstr ""
+
+#: admin/views/repair-setup.php:32
+#: admin/views/repair-setup.php:41
+msgid "Configured"
+msgstr ""
+
+#: admin/views/ticket-detail.php:514
+msgid "Confirm Delete"
+msgstr ""
+
+#: admin/views/setup-wizard.php:289
+msgid "Continue to Complete"
+msgstr ""
+
+#: admin/views/setup-wizard.php:254
+msgid "Continue to Shortcodes"
+msgstr ""
+
+#: admin/views/settings.php:410
+msgid "Control optional welcome headings shown in public shortcodes. Disable these if you are providing your own headings via a page builder."
+msgstr ""
+
+#: admin/views/settings.php:69
+msgid "Control who receives emails and when. Per-agent overrides are configured in the Eligible Agents table below."
+msgstr ""
+
+#: admin/views/settings.php:151
+msgid "Controls how the dashboard/create-ticket shortcodes prompt users when not logged in."
+msgstr ""
+
+#: admin/views/settings.php:497
+msgid "Controls which products are shown in the Services area (when WooCommerce is active)."
+msgstr ""
+
+#: admin/views/ticket-detail.php:366
+#: public/views/ticket-detail.php:180
+msgid "Conversation"
+msgstr ""
+
+#: admin/views/settings.php:17
+msgid "Core Setup"
+msgstr ""
+
+#: admin/views/dashboard.php:92
+msgid "Counts are based on ticket creation and closure activity."
+msgstr ""
+
+#: admin/views/setup-wizard.php:339
+msgid "Create Dashboard"
+msgstr ""
+
+#: public/views/create-ticket.php:12
+msgid "Create New Support Ticket"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:497
+#: admin/class-pnpc-psd-admin.php:498
+#: admin/views/create-ticket-admin.php:126
+#: admin/views/dashboard.php:71
+#: public/views/create-ticket.php:78
+msgid "Create Ticket"
+msgstr ""
+
+#: admin/views/settings.php:543
+msgid "Create Ticket Button color"
+msgstr ""
+
+#: admin/views/settings.php:550
+msgid "Create Ticket Button hover color"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:29
+msgid "Create Ticket for Customer"
+msgstr ""
+
+#: public/views/my-tickets-list.php:162
+msgid "Create Your First Ticket"
+msgstr ""
+
+#: admin/views/setup-wizard.php:304
+msgid "Create a Support Dashboard"
+msgstr ""
+
+#: admin/views/tickets-list.php:227
+msgid "Created"
+msgstr ""
+
+#: public/views/my-tickets-list.php:106
+msgid "Created %s"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3440
+#: admin/views/tickets-list.php:409
+#: admin/views/tickets-list.php:570
+#: admin/views/tickets-list.php:686
+msgid "Created by staff"
+msgstr ""
+
+#: admin/views/ticket-detail.php:175
+msgid "Created by:"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3851
+msgid "Created by: %s"
+msgstr ""
+
+#: public/views/ticket-detail.php:130
+msgid "Created on %s"
+msgstr ""
+
+#: admin/views/ticket-detail.php:171
+msgid "Created:"
+msgstr ""
+
+#: admin/views/repair-setup.php:27
+msgid "Current Setup Status"
+msgstr ""
+
+#: admin/views/setup-wizard.php:168
+msgid "Current site status"
+msgstr ""
+
+#: admin/views/dashboard.php:148
+msgid "Currently closed"
+msgstr ""
+
+#: admin/views/dashboard.php:144
+msgid "Currently open"
+msgstr ""
+
+#: admin/views/settings.php:155
+msgid "Custom login URL (optional)"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:37
+#: admin/views/tickets-list.php:211
+#: admin/views/tickets-list.php:236
+msgid "Customer"
+msgstr ""
+
+#: admin/views/settings.php:104
+msgid "Customer notifications"
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:223
+msgid "Customer replied: %s"
+msgstr ""
+
+#: admin/views/ticket-detail.php:529
+#: includes/helpers.php:643
+msgid "Customer request"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:119
+msgid "Customer will receive an email with ticket details."
+msgstr ""
+
+#: admin/views/settings.php:19
+msgid "Customize"
+msgstr ""
+
+#: admin/views/settings.php:517
+msgid "Customize colors used across shortcodes and cards. Values are stored as hex colors (e.g., #2b9f6a)."
+msgstr ""
+
+#: admin/views/ticket-detail.php:500
+msgid "Danger Zone"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:465
+#: admin/class-pnpc-psd-admin.php:466
+#: admin/class-pnpc-psd-admin.php:565
+msgid "Dashboard"
+msgstr ""
+
+#: admin/views/setup-wizard.php:236
+msgid "Dashboard Page"
+msgstr ""
+
+#: admin/views/setup-wizard.php:359
+msgid "Dashboard URL:"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1106
+#: admin/class-pnpc-psd-admin.php:1109
+msgid "Dashboard page already configured; no changes made."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1067
+msgid "Dashboard page could not be created (WP error)."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1081
+msgid "Dashboard page created (page ID %d)."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1054
+msgid "Dashboard page linked to page ID %d."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1120
+msgid "Dashboard page re-linked to the canonical support-dashboard page."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1122
+msgid "Dashboard page slug enforced as support-dashboard."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1103
+msgid "Dashboard page slug not changed because support-dashboard is already used by another page."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1101
+msgid "Dashboard page slug updated to support-dashboard."
+msgstr ""
+
+#: admin/views/repair-setup.php:30
+msgid "Dashboard page:"
+msgstr ""
+
+#: admin/views/setup-wizard.php:171
+#: includes/class-pnpc-psd-notifications.php:147
+#: includes/class-pnpc-psd-notifications.php:212
+msgid "Dashboard:"
+msgstr ""
+
+#: admin/views/settings.php:386
+msgid "Data Retention"
+msgstr ""
+
+#: admin/class-pnpc-psd-audit-log-table.php:60
+msgid "Date"
+msgstr ""
+
+#: admin/views/settings.php:244
+msgid "Default Agent"
+msgstr ""
+
+#: admin/views/settings.php:561
+msgid "Default background color for service/product cards."
+msgstr ""
+
+#: admin/views/tickets-list.php:173
+msgid "Delete Permanently"
+msgstr ""
+
+#: admin/views/tickets-list.php:257
+#: admin/views/tickets-list.php:270
+msgid "Delete Reason"
+msgstr ""
+
+#: admin/views/ticket-detail.php:546
+msgid "Delete Ticket"
+msgstr ""
+
+#: admin/views/settings.php:390
+msgid "Delete data on uninstall"
+msgstr ""
+
+#: admin/views/tickets-list.php:265
+msgid "Deleted At"
+msgstr ""
+
+#: admin/views/tickets-list.php:261
+msgid "Deleted By"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:83
+#: public/views/create-ticket.php:31
+msgid "Description"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3844
+msgid "Description:"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:87
+msgid "Detailed description of the issue."
+msgstr ""
+
+#: admin/class-pnpc-psd-audit-log-table.php:64
+msgid "Details"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2553
+#: public/class-pnpc-psd-public.php:1075
+#: public/class-pnpc-psd-public.php:824
+msgid "Detected type: %s."
+msgstr ""
+
+#: admin/views/settings.php:303
+msgid "Disable all"
+msgstr ""
+
+#: admin/views/settings.php:288
+msgid "Disable per-agent notification email overrides (use the agent\\'s WordPress account email)"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:4076
+#: admin/class-pnpc-psd-admin.php:4132
+msgid "Dismiss"
+msgstr ""
+
+#: admin/views/settings.php:444
+msgid "Displays a counter of open and in-progress tickets in the admin sidebar."
+msgstr ""
+
+#: admin/views/ticket-detail.php:348
+#: admin/views/ticket-detail.php:444
+#: admin/views/ticket-detail.php:560
+#: public/views/ticket-detail.php:164
+#: public/views/ticket-detail.php:235
+#: public/views/ticket-detail.php:324
+msgid "Download"
+msgstr ""
+
+#: admin/views/ticket-detail.php:578
+msgid "Download PDF"
+msgstr ""
+
+#: admin/views/ticket-detail.php:527
+#: includes/helpers.php:641
+msgid "Duplicate ticket"
+msgstr ""
+
+#: public/views/profile-settings.php:89
+msgid "Edit Profile"
+msgstr ""
+
+#: admin/views/setup-wizard.php:313
+msgid "Editor"
+msgstr ""
+
+#: admin/views/setup-wizard.php:323
+msgid "Elementor (recommended if installed)"
+msgstr ""
+
+#: admin/views/settings.php:270
+msgid "Eligible Agents"
+msgstr ""
+
+#: admin/views/settings.php:313
+msgid "Enable"
+msgstr ""
+
+#: admin/views/settings.php:460
+msgid "Enable Auto-Refresh"
+msgstr ""
+
+#: admin/views/settings.php:437
+msgid "Enable Menu Badge"
+msgstr ""
+
+#: admin/views/settings.php:302
+msgid "Enable all"
+msgstr ""
+
+#: admin/views/settings.php:275
+msgid "Enable: allows the user to be assigned tickets."
+msgstr ""
+
+#: admin/views/settings.php:335
+msgid "Enabled"
+msgstr ""
+
+#: admin/views/ticket-detail.php:327
+#: admin/views/ticket-detail.php:423
+msgid "Exceeds %s preview limit"
+msgstr ""
+
+#: admin/views/settings.php:222
+msgid "Excel (.xls)"
+msgstr ""
+
+#: admin/views/settings.php:223
+msgid "Excel (.xlsx)"
+msgstr ""
+
+#: admin/views/settings.php:18
+msgid "Experience"
+msgstr ""
+
+#: admin/views/tickets-list.php:78
+msgid "Export CSV"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2556
+#: public/class-pnpc-psd-public.php:1078
+#: public/class-pnpc-psd-public.php:827
+msgid "Extension: %s."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2583
+msgid "Failed to add response."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:1105
+msgid "Failed to add response. "
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2616
+msgid "Failed to assign ticket."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:759
+msgid "Failed to create ticket.  Please try again or contact support."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3772
+msgid "Failed to create ticket. Please try again."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2730
+msgid "Failed to delete ticket."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3050
+msgid "Failed to delete tickets permanently."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2763
+#: admin/class-pnpc-psd-admin.php:2900
+msgid "Failed to move tickets to trash."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2944
+msgid "Failed to queue tickets for review."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2796
+#: admin/class-pnpc-psd-admin.php:3018
+msgid "Failed to restore tickets."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2699
+msgid "Failed to update priority."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2663
+msgid "Failed to update status."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3698
+msgid "File \"%1$s\" (%2$s) exceeds the maximum allowed size (%3$s) and was skipped."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3681
+msgid "File \"%1$s\" could not be uploaded (server rejected the upload). Please confirm your server upload limits and try again."
+msgstr ""
+
+#: includes/helpers.php:1239
+msgid "File is missing or not readable."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:1139
+msgid "File size must not exceed 2MB."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:1065
+#: public/class-pnpc-psd-public.php:814
+msgid "File size was %1$s (max %2$s)."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2547
+msgid "File size was %s."
+msgstr ""
+
+#: admin/class-pnpc-psd-audit-log-table.php:343
+msgid "Filter"
+msgstr ""
+
+#: admin/class-pnpc-psd-audit-log-table.php:332
+msgid "Filter by action"
+msgstr ""
+
+#: admin/class-pnpc-psd-audit-log-table.php:340
+msgid "Filter by actor"
+msgstr ""
+
+#: admin/class-pnpc-psd-audit-log-table.php:336
+msgid "Filter by ticket ID"
+msgstr ""
+
+#: admin/views/setup-wizard.php:375
+msgid "Finished"
+msgstr ""
+
+#: admin/views/setup-wizard.php:172
+msgid "Found"
+msgstr ""
+
+#: admin/views/settings.php:86
+msgid "From Email"
+msgstr ""
+
+#: admin/views/settings.php:79
+msgid "From Name"
+msgstr ""
+
+#: admin/views/settings.php:215
+msgid "GIF images"
+msgstr ""
+
+#: admin/views/settings.php:72
+msgid "Global Staff Notification Email"
+msgstr ""
+
+#: public/views/my-tickets-list.php:155
+msgid "Go to Page 1"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:325
+#: admin/views/ticket-detail.php:478
+msgid "Group"
+msgstr ""
+
+#: admin/views/settings.php:93
+msgid "Group Signature"
+msgstr ""
+
+#: admin/views/my-tickets.php:110
+msgid "Has responses"
+msgstr ""
+
+#: includes/class-pnpc-psd-ticket-response.php:269
+msgid "Hello %1$s,\n"
+"\n"
+"You have received a new response to your support ticket.\n"
+"\n"
+"Ticket Number: %2$s\n"
+"\n"
+"Response:\n"
+"%3$s\n"
+"\n"
+"Please log in to view and respond to this ticket.\n"
+"\n"
+"Thank you!"
+msgstr ""
+
+#: includes/class-pnpc-psd-ticket.php:576
+msgid "Hello %1$s,\n"
+"\n"
+"Your support ticket has been created successfully.\n"
+"\n"
+"Ticket Number: %2$s\n"
+"Subject: %3$s\n"
+"\n"
+"We will respond to your ticket as soon as possible.\n"
+"\n"
+"Thank you for contacting us!"
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:206
+msgid "Hello %1\\$s,\\n\\nYou have a new response on your ticket %2\\$s.\\n\\nSubject: %3\\$s\\n\\nLog in to view and reply."
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:141
+msgid "Hello %1\\$s,\\n\\nYour support ticket has been created.\\n\\nTicket: %2\\$s\\nSubject: %3\\$s\\n\\nWe will respond as soon as possible."
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:259
+msgid "Hello %1\\$s,\\n\\nYour ticket %2\\$s has been marked closed.\\n\\nSubject: %3\\$s\\n\\nIf you need further help, you can reply to reopen or create a new ticket."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3833
+msgid "Hello %s,"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:75
+#: admin/views/ticket-detail.php:235
+#: public/views/create-ticket.php:25
+msgid "High"
+msgstr ""
+
+#: admin/views/settings.php:369
+msgid "Home Page"
+msgstr ""
+
+#: admin/views/settings.php:568
+msgid "Hover background color for service/product cards."
+msgstr ""
+
+#: admin/views/settings.php:612
+msgid "Hover background for ticket cards in [pnpc_my_tickets]."
+msgstr ""
+
+#: admin/views/settings.php:597
+msgid "Hover color for buttons inside service/product cards."
+msgstr ""
+
+#: admin/views/settings.php:582
+msgid "Hover color for service/product card titles."
+msgstr ""
+
+#: admin/views/settings.php:626
+msgid "Hover color for the View Details button in [pnpc_my_tickets]."
+msgstr ""
+
+#: admin/views/settings.php:553
+msgid "Hover state for the Create Ticket button."
+msgstr ""
+
+#: admin/views/settings.php:539
+msgid "Hover state for the Logout button."
+msgstr ""
+
+#: admin/views/settings.php:456
+msgid "How often to check for new tickets and update the menu badge."
+msgstr ""
+
+#: admin/views/settings.php:479
+msgid "How often to refresh ticket lists."
+msgstr ""
+
+#: admin/views/repair-setup.php:35
+#: admin/views/repair-setup.php:44
+msgid "ID"
+msgstr ""
+
+#: admin/views/settings.php:506
+msgid "If enabled, the Services shortcode will show general published products to viewers (unless user-specific products are enabled)."
+msgstr ""
+
+#: admin/views/settings.php:265
+msgid "If set, new tickets will be automatically assigned to this staff user unless an assignee is explicitly chosen elsewhere. Agents with Notifications ON (below) will also be copied on staff ticket emails."
+msgstr ""
+
+#: admin/views/settings.php:159
+msgid "If set, the “Login button link” mode will use this URL and append redirect_to back to the service desk page."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3507
+#: admin/views/tickets-list.php:337
+#: admin/views/tickets-list.php:582
+#: admin/views/tickets-list.php:698
+#: public/views/my-tickets-list.php:87
+#: public/views/ticket-detail.php:111
+msgid "In Progress"
+msgstr ""
+
+#: admin/views/tickets-list.php:119
+msgid "In Progress (%d)"
+msgstr ""
+
+#: admin/views/settings.php:148
+msgid "Inline login form"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3064
+#: admin/class-pnpc-psd-admin.php:3127
+msgid "Insufficient permissions"
+msgstr ""
+
+#: includes/helpers.php:1196
+msgid "Invalid attachment request."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3634
+msgid "Invalid customer selected."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2387
+#: admin/class-pnpc-psd-admin.php:2605
+#: admin/class-pnpc-psd-admin.php:2688
+#: public/class-pnpc-psd-public.php:913
+msgid "Invalid data."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2639
+#: admin/class-pnpc-psd-admin.php:2722
+msgid "Invalid data. "
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:1135
+msgid "Invalid file type.  Only JPEG, PNG, and GIF are allowed."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1718
+#: public/class-pnpc-psd-public.php:1292
+#: public/class-pnpc-psd-public.php:399
+msgid "Invalid ticket ID."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3887
+#: admin/class-pnpc-psd-admin.php:3940
+msgid "Invalid ticket."
+msgstr ""
+
+#: admin/views/settings.php:213
+msgid "JPEG images"
+msgstr ""
+
+#: admin/views/settings.php:212
+msgid "JPG images"
+msgstr ""
+
+#: admin/views/settings.php:467
+msgid "Keeps ticket lists up to date without a full page reload."
+msgstr ""
+
+#: admin/views/my-tickets.php:34
+msgid "Last Response"
+msgstr ""
+
+#: public/views/my-tickets.php:58
+msgid "Latest activity"
+msgstr ""
+
+#: public/views/ticket-detail.php:338
+msgid "Loading..."
+msgstr ""
+
+#: includes/class-pnpc-psd-internal-notes.php:97
+msgid "Loading…"
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:224
+msgid "Log in"
+msgstr ""
+
+#: admin/views/settings.php:149
+msgid "Login button link"
+msgstr ""
+
+#: admin/views/settings.php:144
+msgid "Login prompt style"
+msgstr ""
+
+#: public/views/profile-settings.php:92
+msgid "Logout"
+msgstr ""
+
+#: admin/views/settings.php:530
+msgid "Logout Button color"
+msgstr ""
+
+#: admin/views/settings.php:536
+msgid "Logout Button hover color"
+msgstr ""
+
+#: admin/views/settings.php:362
+#: admin/views/settings.php:365
+msgid "Logout Redirect"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:73
+#: admin/views/ticket-detail.php:233
+#: public/views/create-ticket.php:23
+msgid "Low"
+msgstr ""
+
+#: admin/views/settings.php:167
+msgid "Max attachment size (MB)"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2545
+#: public/class-pnpc-psd-public.php:1058
+#: public/class-pnpc-psd-public.php:806
+msgid "Max per file: %s."
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:103
+msgid "Maximum %s per file. Multiple files allowed."
+msgstr ""
+
+#: admin/views/settings.php:448
+msgid "Menu Badge Update Interval"
+msgstr ""
+
+#: admin/views/repair-setup.php:32
+#: admin/views/repair-setup.php:41
+msgid "Missing / Not configured"
+msgstr ""
+
+#: admin/views/tickets-list.php:182
+msgid "Move to Archive"
+msgstr ""
+
+#: admin/views/tickets-list.php:180
+msgid "Move to Trash"
+msgstr ""
+
+#: public/views/my-tickets.php:33
+msgid "My Support Tickets"
+msgstr ""
+
+#: admin/views/settings.php:616
+msgid "My Tickets View Details button"
+msgstr ""
+
+#: admin/views/settings.php:623
+msgid "My Tickets View Details hover"
+msgstr ""
+
+#: admin/views/settings.php:602
+msgid "My Tickets card background"
+msgstr ""
+
+#: admin/views/settings.php:609
+msgid "My Tickets card hover background"
+msgstr ""
+
+#: admin/views/my-tickets.php:35
+#: admin/views/tickets-list.php:231
+msgid "New"
+msgstr ""
+
+#: includes/class-pnpc-psd-ticket-response.php:293
+msgid "New Customer Response: %s"
+msgstr ""
+
+#: includes/class-pnpc-psd-ticket-response.php:263
+msgid "New Response to Your Ticket: %s"
+msgstr ""
+
+#: includes/class-pnpc-psd-ticket.php:570
+msgid "New Support Ticket Created: %s"
+msgstr ""
+
+#: includes/class-pnpc-psd-ticket.php:597
+msgid "New Support Ticket: %s"
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:159
+msgid "New ticket: %s"
+msgstr ""
+
+#: public/views/my-tickets.php:60
+msgid "Newest first"
+msgstr ""
+
+#: admin/views/ticket-detail.php:109
+#: admin/views/ticket-detail.php:585
+#: public/views/ticket-detail.php:341
+msgid "Next"
+msgstr ""
+
+#: public/views/my-tickets-list.php:127
+msgid "Next &raquo;"
+msgstr ""
+
+#: admin/views/ticket-detail.php:108
+msgid "Next Ticket"
+msgstr ""
+
+#: admin/views/setup-wizard.php:278
+msgid "No Dashboard page is currently linked. Go back and select a page."
+msgstr ""
+
+#: admin/views/dashboard.php:184
+msgid "No alerts right now."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3240
+msgid "No archived tickets."
+msgstr ""
+
+#: includes/class-pnpc-psd-internal-notes.php:98
+msgid "No client notes yet."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2826
+msgid "No closed tickets were archived."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:1124
+msgid "No file uploaded."
+msgstr ""
+
+#: includes/helpers.php:636
+msgid "No reason provided"
+msgstr ""
+
+#: admin/views/ticket-detail.php:455
+msgid "No responses yet."
+msgstr ""
+
+#: public/views/ticket-detail.php:245
+msgid "No responses yet. We will get back to you as soon as possible."
+msgstr ""
+
+#: admin/views/setup-wizard.php:180
+msgid "No tickets detected (clean queue)"
+msgstr ""
+
+#: public/views/my-tickets-list.php:152
+msgid "No tickets found on this page."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3242
+#: admin/views/my-tickets.php:132
+#: admin/views/tickets-list.php:747
+msgid "No tickets found."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3236
+#: admin/views/tickets-list.php:743
+msgid "No tickets in trash."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3238
+#: admin/views/tickets-list.php:745
+msgid "No tickets pending review."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2753
+#: admin/class-pnpc-psd-admin.php:2786
+#: admin/class-pnpc-psd-admin.php:2817
+#: admin/class-pnpc-psd-admin.php:2846
+#: admin/class-pnpc-psd-admin.php:2877
+#: admin/class-pnpc-psd-admin.php:2922
+#: admin/class-pnpc-psd-admin.php:2962
+#: admin/class-pnpc-psd-admin.php:3008
+#: admin/class-pnpc-psd-admin.php:3040
+msgid "No tickets selected."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2989
+msgid "No tickets were approved. Please refresh the Review list and try again."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2977
+msgid "No tickets were approved. The selected ticket(s) do not appear to have a pending delete request (Review queue). Refresh the page and try again."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2855
+msgid "No tickets were restored from archive."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:323
+#: admin/views/ticket-detail.php:470
+msgid "None"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:74
+#: admin/views/ticket-detail.php:234
+#: public/views/create-ticket.php:24
+msgid "Normal"
+msgstr ""
+
+#: admin/views/setup-wizard.php:172
+msgid "Not configured"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2575
+#: public/class-pnpc-psd-public.php:1098
+#: public/class-pnpc-psd-public.php:848
+msgid "Note: %1$d attachment(s) were skipped due to type/size/upload rules.%2$s"
+msgstr ""
+
+#: admin/views/settings.php:316
+msgid "Notification Email Override"
+msgstr ""
+
+#: admin/views/settings.php:276
+msgid "Notification Email Override: optional destination address for staff ticket emails (when overrides are enabled)."
+msgstr ""
+
+#: admin/views/settings.php:101
+msgid "Notification Triggers"
+msgstr ""
+
+#: admin/views/settings.php:317
+#: admin/views/settings.php:68
+msgid "Notifications"
+msgstr ""
+
+#: admin/views/settings.php:277
+msgid "Notifications (ON): copy this agent on staff ticket emails for new tickets and customer replies."
+msgstr ""
+
+#: admin/views/settings.php:307
+msgid "Notifications: when ON, the agent is copied on staff ticket emails (new tickets + customer replies)."
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:112
+msgid "Notify Customer"
+msgstr ""
+
+#: admin/views/settings.php:492
+msgid "Number of tickets to display per page in the ticket list."
+msgstr ""
+
+#: admin/views/settings.php:353
+msgid "ON"
+msgstr ""
+
+#: public/views/my-tickets.php:61
+msgid "Oldest first"
+msgstr ""
+
+#: admin/views/settings.php:134
+msgid "On customer reply"
+msgstr ""
+
+#: admin/views/settings.php:114
+msgid "On staff reply"
+msgstr ""
+
+#: admin/views/settings.php:119
+msgid "On ticket closed"
+msgstr ""
+
+#: admin/views/settings.php:109
+#: admin/views/settings.php:129
+msgid "On ticket created"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3506
+#: admin/views/ticket-detail.php:56
+#: admin/views/tickets-list.php:336
+#: admin/views/tickets-list.php:581
+#: admin/views/tickets-list.php:697
+#: public/views/my-tickets-list.php:86
+#: public/views/my-tickets.php:37
+#: public/views/ticket-detail.php:110
+msgid "Open"
+msgstr ""
+
+#: admin/views/tickets-list.php:111
+msgid "Open (%d)"
+msgstr ""
+
+#: public/views/service-desk.php:87
+msgid "Open / In-Progress"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:4131
+msgid "Open Permalink Settings"
+msgstr ""
+
+#: admin/views/ticket-detail.php:118
+msgid "Open Tickets"
+msgstr ""
+
+#: admin/views/dashboard.php:118
+#: admin/views/dashboard.php:122
+#: admin/views/dashboard.php:126
+msgid "Opened"
+msgstr ""
+
+#: admin/views/settings.php:95
+msgid "Optional. Appended to ticket replies when Group is selected."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2209
+msgid "Optional. Appended to your ticket replies when selected."
+msgstr ""
+
+#: admin/views/settings.php:82
+msgid "Optional. If empty, WordPress default mailer settings are used."
+msgstr ""
+
+#: admin/views/settings.php:75
+msgid "Optional. If set, staff notifications will also be sent here (in addition to the assigned agent)."
+msgstr ""
+
+#: admin/views/settings.php:346
+msgid "Optional. Leave blank to use the user\\'s account email."
+msgstr ""
+
+#: admin/views/settings.php:89
+msgid "Optional. Use a domain email address that is authorized by your SMTP provider."
+msgstr ""
+
+#: includes/helpers.php:645
+msgid "Other"
+msgstr ""
+
+#: admin/views/ticket-detail.php:531
+msgid "Other (please specify)"
+msgstr ""
+
+#: admin/views/dashboard.php:65
+msgid "Overview, stats, and quick actions."
+msgstr ""
+
+#: admin/views/ticket-detail.php:574
+#: public/views/ticket-detail.php:334
+msgid "PDF Viewer"
+msgstr ""
+
+#: admin/views/settings.php:217
+msgid "PDF documents"
+msgstr ""
+
+#: admin/views/settings.php:214
+msgid "PNG images"
+msgstr ""
+
+#: admin/views/settings.php:27
+msgid "PNPC Pocket Service Desk Settings"
+msgstr ""
+
+#: pnpc-pocket-service-desk.php:245
+msgid "PNPC Pocket Service Desk: some core files are missing. Plugin is partially disabled until files are restored."
+msgstr ""
+
+#: public/views/my-tickets-list.php:141
+msgid "Page %1$d of %2$d"
+msgstr ""
+
+#: admin/views/settings.php:395
+msgid "Permanently delete plugin settings, ticket data, and profile uploads when uninstalling the plugin."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:154
+#: admin/class-pnpc-psd-admin.php:2598
+#: admin/class-pnpc-psd-admin.php:2632
+#: admin/class-pnpc-psd-admin.php:2680
+#: admin/class-pnpc-psd-admin.php:2716
+#: admin/class-pnpc-psd-admin.php:2747
+#: admin/class-pnpc-psd-admin.php:2780
+#: admin/class-pnpc-psd-admin.php:2812
+#: admin/class-pnpc-psd-admin.php:2841
+#: admin/class-pnpc-psd-admin.php:2869
+#: admin/class-pnpc-psd-admin.php:2914
+#: admin/class-pnpc-psd-admin.php:2957
+#: admin/class-pnpc-psd-admin.php:3003
+#: admin/class-pnpc-psd-admin.php:3034
+#: admin/class-pnpc-psd-admin.php:3601
+#: includes/helpers.php:1234
+#: public/class-pnpc-psd-public.php:1180
+#: public/class-pnpc-psd-public.php:1301
+#: public/class-pnpc-psd-public.php:1309
+#: public/class-pnpc-psd-public.php:617
+#: public/class-pnpc-psd-public.php:906
+#: public/class-pnpc-psd-public.php:926
+msgid "Permission denied."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2380
+msgid "Permission denied. "
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:324
+#: admin/views/ticket-detail.php:474
+msgid "Personal"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2207
+msgid "Personal Signature"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:4129
+msgid "Plain permalinks are enabled."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:629
+msgid "Please choose a valid page to use as your dashboard."
+msgstr ""
+
+#: public/views/create-ticket.php:32
+msgid "Please describe your issue in detail..."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3622
+#: public/class-pnpc-psd-public.php:626
+msgid "Please fill in all required fields."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:223
+#: public/class-pnpc-psd-public.php:235
+msgid "Please log in to continue."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2885
+#: admin/class-pnpc-psd-admin.php:2930
+msgid "Please provide more details (at least 10 characters)."
+msgstr ""
+
+#: admin/views/ticket-detail.php:539
+msgid "Please provide more details (minimum 10 characters)"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2881
+#: admin/class-pnpc-psd-admin.php:2926
+msgid "Please select a reason."
+msgstr ""
+
+#: admin/views/ticket-detail.php:104
+msgid "Prev"
+msgstr ""
+
+#: admin/views/ticket-detail.php:584
+#: public/views/ticket-detail.php:340
+msgid "Previous"
+msgstr ""
+
+#: admin/views/ticket-detail.php:102
+msgid "Previous Ticket"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:69
+#: admin/views/my-tickets.php:32
+#: admin/views/ticket-detail.php:251
+#: admin/views/tickets-list.php:219
+#: admin/views/tickets-list.php:244
+#: public/views/create-ticket.php:21
+msgid "Priority"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2697
+msgid "Priority updated successfully."
+msgstr ""
+
+#: admin/views/ticket-detail.php:159
+msgid "Priority:"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3842
+msgid "Priority: %s"
+msgstr ""
+
+#: public/views/profile-settings.php:105
+#: public/views/profile-settings.php:58
+msgid "Profile Image"
+msgstr ""
+
+#: public/views/profile-settings.php:102
+#: public/views/profile-settings.php:55
+msgid "Profile Image / Logo"
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:1159
+msgid "Profile image uploaded successfully."
+msgstr ""
+
+#: admin/views/settings.php:141
+msgid "Public Login"
+msgstr ""
+
+#: admin/views/settings.php:433
+msgid "Real-Time Updates"
+msgstr ""
+
+#: admin/views/ticket-detail.php:522
+msgid "Reason:"
+msgstr ""
+
+#: admin/views/settings.php:397
+msgid "Recommended OFF. Turn ON only for full cleanup when removing the plugin from a site."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:4182
+msgid "Reference:"
+msgstr ""
+
+#: public/views/my-tickets.php:64
+msgid "Refresh"
+msgstr ""
+
+#: includes/class-pnpc-psd-internal-notes.php:95
+msgid "Remove"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:518
+#: admin/class-pnpc-psd-admin.php:519
+#: admin/views/repair-setup.php:15
+msgid "Repair Setup"
+msgstr ""
+
+#: admin/views/repair-setup.php:60
+msgid "Repair Summary"
+msgstr ""
+
+#: admin/views/repair-setup.php:19
+msgid "Repair completed. Summary below."
+msgstr ""
+
+#: admin/views/ticket-detail.php:504
+msgid "Request Delete"
+msgstr ""
+
+#: admin/views/tickets-list.php:278
+msgid "Requested At"
+msgstr ""
+
+#: admin/views/tickets-list.php:274
+msgid "Requested By"
+msgstr ""
+
+#: admin/views/ticket-detail.php:271
+msgid "Requestor:"
+msgstr ""
+
+#: admin/views/ticket-detail.php:528
+#: includes/helpers.php:642
+msgid "Resolved elsewhere"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2580
+#: public/class-pnpc-psd-public.php:1103
+msgid "Response added successfully."
+msgstr ""
+
+#: admin/views/my-tickets.php:33
+msgid "Responses"
+msgstr ""
+
+#: admin/views/tickets-list.php:172
+#: admin/views/tickets-list.php:353
+msgid "Restore"
+msgstr ""
+
+#: admin/views/tickets-list.php:178
+msgid "Restore (Cancel Request)"
+msgstr ""
+
+#: admin/views/tickets-list.php:175
+msgid "Restore from Archive"
+msgstr ""
+
+#: admin/views/tickets-list.php:585
+#: admin/views/tickets-list.php:701
+msgid "Review"
+msgstr ""
+
+#: admin/views/tickets-list.php:143
+msgid "Review (%d)"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1601
+msgid "Review queue requires attention"
+msgstr ""
+
+#: admin/views/dashboard.php:175
+msgid "Review queue: %d"
+msgstr ""
+
+#: admin/views/settings.php:315
+msgid "Role(s)"
+msgstr ""
+
+#: admin/views/repair-setup.php:54
+msgid "Run Repair"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:4075
+msgid "Run Setup Wizard"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:4074
+msgid "Run the Setup Wizard to create or link your customer dashboard page."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:936
+msgid "Sample ticket: Welcome to PNPC Pocket Service Desk"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:416
+msgid "Search for a customer..."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:150
+#: admin/class-pnpc-psd-admin.php:3596
+msgid "Security check failed."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:1283
+msgid "Security check failed. "
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:609
+#: public/class-pnpc-psd-public.php:898
+msgid "Security check failed.  Please refresh and try again."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:1172
+msgid "Security check failed. Please refresh and try again."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3428
+#: admin/views/tickets-list.php:324
+#: admin/views/tickets-list.php:397
+#: admin/views/tickets-list.php:471
+#: admin/views/tickets-list.php:558
+#: admin/views/tickets-list.php:674
+msgid "Select %s"
+msgstr ""
+
+#: admin/views/tickets-list.php:197
+msgid "Select All"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:41
+msgid "Select a customer..."
+msgstr ""
+
+#: admin/views/setup-wizard.php:240
+msgid "Select a page…"
+msgstr ""
+
+#: admin/views/ticket-detail.php:525
+msgid "Select a reason"
+msgstr ""
+
+#: admin/views/tickets-list.php:168
+msgid "Select bulk action"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2321
+msgid "Select one or more products to allocate to this user.  Hold Ctrl (Windows) or Cmd (Mac) to select multiple. "
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:53
+msgid "Select the customer this ticket is for."
+msgstr ""
+
+#: admin/views/setup-wizard.php:227
+msgid "Select the page you want to use as your Dashboard. You can add shortcodes to that page at any time."
+msgstr ""
+
+#: public/views/ticket-detail.php:300
+msgid "Send Reply"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:117
+msgid "Send email notification to customer"
+msgstr ""
+
+#: admin/views/settings.php:558
+msgid "Service Card background"
+msgstr ""
+
+#: admin/views/settings.php:587
+msgid "Service Card button color"
+msgstr ""
+
+#: admin/views/settings.php:594
+msgid "Service Card button hover color"
+msgstr ""
+
+#: admin/views/settings.php:565
+msgid "Service Card hover background"
+msgstr ""
+
+#: admin/views/settings.php:572
+msgid "Service Card title color"
+msgstr ""
+
+#: admin/views/settings.php:579
+msgid "Service Card title hover color"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2204
+#: admin/class-pnpc-psd-admin.php:440
+#: admin/class-pnpc-psd-admin.php:448
+#: admin/class-pnpc-psd-admin.php:454
+#: admin/views/dashboard.php:64
+#: admin/views/settings.php:422
+msgid "Service Desk"
+msgstr ""
+
+#: includes/class-pnpc-psd-activator.php:649
+#: includes/class-pnpc-psd-activator.php:739
+msgid "Service Desk Agent"
+msgstr ""
+
+#: includes/class-pnpc-psd-activator.php:663
+#: includes/class-pnpc-psd-activator.php:755
+msgid "Service Desk Manager"
+msgstr ""
+
+#: admin/views/setup-wizard.php:149
+msgid "Service Desk Setup Wizard"
+msgstr ""
+
+#: admin/views/tickets-list.php:62
+msgid "Service Desk Tickets"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:4074
+msgid "Service Desk setup is almost done."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:4180
+msgid "Service Desk:"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:545
+#: admin/class-pnpc-psd-admin.php:546
+#: admin/class-pnpc-psd-admin.php:566
+#: admin/views/dashboard.php:73
+msgid "Settings"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:507
+#: admin/class-pnpc-psd-admin.php:508
+msgid "Setup Wizard"
+msgstr ""
+
+#: admin/views/setup-wizard.php:354
+msgid "Setup complete"
+msgstr ""
+
+#: admin/views/setup-wizard.php:49
+msgid "Shortcodes"
+msgstr ""
+
+#: admin/views/setup-wizard.php:269
+msgid "Shortcodes and Dashboard linking"
+msgstr ""
+
+#: admin/views/setup-wizard.php:364
+msgid "Shortcodes reference"
+msgstr ""
+
+#: admin/views/settings.php:504
+msgid "Show a public product catalog in the Services block (free feature)."
+msgstr ""
+
+#: admin/views/settings.php:442
+msgid "Show ticket count badge in admin menu."
+msgstr ""
+
+#: admin/views/settings.php:417
+msgid "Show welcome message in [pnpc_profile_settings]."
+msgstr ""
+
+#: admin/views/settings.php:427
+msgid "Show welcome message in [pnpc_service_desk]."
+msgstr ""
+
+#: admin/views/tickets-list.php:795
+msgid "Showing %1$d-%2$d of %3$d tickets"
+msgstr ""
+
+#: admin/views/ticket-detail.php:467
+msgid "Signature:"
+msgstr ""
+
+#: admin/views/settings.php:30
+msgid "Some enabled agents were automatically disabled. Choose 2 agents from the list below to activate."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1006
+msgid "Sorry, you are not allowed to access this page."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1027
+msgid "Sorry, you are not allowed to perform this action."
+msgstr ""
+
+#: admin/views/tickets-list.php:251
+msgid "Sort by Archived Date"
+msgstr ""
+
+#: admin/views/tickets-list.php:222
+#: admin/views/tickets-list.php:247
+msgid "Sort by Assigned To"
+msgstr ""
+
+#: admin/views/tickets-list.php:226
+msgid "Sort by Created Date"
+msgstr ""
+
+#: admin/views/tickets-list.php:210
+#: admin/views/tickets-list.php:235
+msgid "Sort by Customer"
+msgstr ""
+
+#: admin/views/tickets-list.php:256
+#: admin/views/tickets-list.php:269
+msgid "Sort by Delete Reason"
+msgstr ""
+
+#: admin/views/tickets-list.php:260
+msgid "Sort by Deleted By"
+msgstr ""
+
+#: admin/views/tickets-list.php:264
+msgid "Sort by Deleted Date"
+msgstr ""
+
+#: admin/views/tickets-list.php:230
+msgid "Sort by New Responses"
+msgstr ""
+
+#: admin/views/tickets-list.php:218
+#: admin/views/tickets-list.php:243
+msgid "Sort by Priority"
+msgstr ""
+
+#: admin/views/tickets-list.php:273
+msgid "Sort by Requested By"
+msgstr ""
+
+#: admin/views/tickets-list.php:277
+msgid "Sort by Requested Date"
+msgstr ""
+
+#: admin/views/tickets-list.php:214
+#: admin/views/tickets-list.php:239
+msgid "Sort by Status"
+msgstr ""
+
+#: admin/views/tickets-list.php:205
+msgid "Sort by Subject"
+msgstr ""
+
+#: admin/views/tickets-list.php:201
+msgid "Sort by Ticket Number"
+msgstr ""
+
+#: public/views/my-tickets.php:47
+msgid "Sort:"
+msgstr ""
+
+#: admin/views/ticket-detail.php:526
+#: includes/helpers.php:640
+msgid "Spam"
+msgstr ""
+
+#: admin/views/settings.php:124
+msgid "Staff notifications"
+msgstr ""
+
+#: admin/views/ticket-detail.php:136
+msgid "Staff-Created Ticket: Created by %1$s on behalf of %2$s"
+msgstr ""
+
+#: admin/views/my-tickets.php:31
+#: admin/views/tickets-list.php:215
+#: admin/views/tickets-list.php:240
+msgid "Status"
+msgstr ""
+
+#: admin/views/ticket-detail.php:150
+msgid "Status:"
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:59
+#: admin/views/my-tickets.php:29
+#: admin/views/tickets-list.php:206
+#: public/views/create-ticket.php:16
+msgid "Subject"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3840
+msgid "Subject: %s"
+msgstr ""
+
+#: admin/views/ticket-detail.php:501
+msgid "Submitting a delete request sends this ticket to the Review queue for approval by a manager or administrator."
+msgstr ""
+
+#: admin/views/dashboard.php:210
+#: admin/views/dashboard.php:77
+msgid "Support"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1060
+#: admin/class-pnpc-psd-admin.php:1329
+#: admin/class-pnpc-psd-admin.php:648
+msgid "Support Dashboard"
+msgstr ""
+
+#: public/views/ticket-detail.php:195
+msgid "Support Staff"
+msgstr ""
+
+#: admin/views/dashboard.php:80
+msgid "Support link not configured."
+msgstr ""
+
+#: public/views/profile-settings.php:116
+#: public/views/profile-settings.php:72
+msgid "Supported formats: JPEG, PNG, GIF. Maximum size: 2MB."
+msgstr ""
+
+#: admin/views/ticket-detail.php:530
+#: includes/helpers.php:644
+msgid "Test ticket"
+msgstr ""
+
+#: admin/views/settings.php:218
+msgid "Text (.txt)"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3853
+msgid "Thank you,"
+msgstr ""
+
+#: admin/views/settings.php:304
+msgid "These buttons only toggle the checkboxes on this screen—click Save Changes to persist."
+msgstr ""
+
+#: admin/views/settings.php:235
+msgid "These defaults cover common WordPress uploads. Your server and security plugins may further restrict uploads."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:937
+msgid "This is a sample ticket created by the Setup Wizard. You can delete it at any time."
+msgstr ""
+
+#: admin/views/dashboard.php:122
+#: admin/views/dashboard.php:135
+msgid "This month"
+msgstr ""
+
+#: admin/views/setup-wizard.php:247
+msgid "This page will be treated as your customer-facing Service Desk dashboard."
+msgstr ""
+
+#: public/views/ticket-detail.php:308
+msgid "This ticket has been closed. If you need further assistance, please create a new ticket."
+msgstr ""
+
+#: admin/views/repair-setup.php:24
+msgid "This tool safely restores or re-links the required Service Desk pages (Dashboard and Ticket View) if they are missing or not configured. It will not delete content or overwrite existing pages."
+msgstr ""
+
+#: admin/views/dashboard.php:118
+#: admin/views/dashboard.php:131
+msgid "This week"
+msgstr ""
+
+#: admin/views/setup-wizard.php:165
+msgid "This wizard will help you connect (or create) your Support Dashboard and confirm the shortcodes you will use."
+msgstr ""
+
+#: admin/views/dashboard.php:126
+#: admin/views/dashboard.php:139
+msgid "This year"
+msgstr ""
+
+#: admin/views/ticket-detail.php:269
+msgid "Ticket"
+msgstr ""
+
+#: admin/views/my-tickets.php:28
+#: admin/views/tickets-list.php:202
+msgid "Ticket #"
+msgstr ""
+
+#: public/views/ticket-detail.php:104
+msgid "Ticket #%s"
+msgstr ""
+
+#: admin/views/settings.php:240
+msgid "Ticket Assignment"
+msgstr ""
+
+#: admin/class-pnpc-psd-audit-log-table.php:337
+#: admin/class-pnpc-psd-audit-log-table.php:63
+msgid "Ticket ID"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3838
+msgid "Ticket Number: %s"
+msgstr ""
+
+#: admin/views/dashboard.php:91
+msgid "Ticket Stats"
+msgstr ""
+
+#: admin/views/ticket-detail.php:218
+msgid "Ticket Status"
+msgstr ""
+
+#: public/views/service-desk.php:78
+msgid "Ticket Totals"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1143
+#: admin/class-pnpc-psd-admin.php:1462
+#: admin/class-pnpc-psd-admin.php:845
+msgid "Ticket View"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1161
+msgid "Ticket View page already configured; no changes made."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1150
+msgid "Ticket View page could not be created (WP error)."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:854
+msgid "Ticket View page could not be created. Please try again."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1155
+msgid "Ticket View page created (page ID %d)."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1137
+msgid "Ticket View page linked to page ID %d."
+msgstr ""
+
+#: admin/views/repair-setup.php:39
+msgid "Ticket View page:"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2614
+msgid "Ticket assigned successfully. "
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:257
+msgid "Ticket closed: %s"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3761
+msgid "Ticket created successfully!"
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:855
+msgid "Ticket created successfully. "
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:139
+msgid "Ticket created: %s"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2728
+msgid "Ticket deleted. "
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1737
+#: admin/class-pnpc-psd-admin.php:2392
+#: includes/helpers.php:1227
+#: public/class-pnpc-psd-public.php:1297
+#: public/class-pnpc-psd-public.php:404
+#: public/class-pnpc-psd-public.php:918
+msgid "Ticket not found."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2661
+msgid "Ticket status updated successfully. "
+msgstr ""
+
+#: admin/views/settings.php:483
+msgid "Tickets Per Page"
+msgstr ""
+
+#: admin/views/setup-wizard.php:175
+msgid "Tickets:"
+msgstr ""
+
+#: admin/views/setup-wizard.php:210
+msgid "Tip: If you already have a page you want to use, choose “Use an Existing Page.” Otherwise, choose “Begin Install.”"
+msgstr ""
+
+#: public/views/profile-settings.php:85
+msgid "To view or edit your account settings press the button below."
+msgstr ""
+
+#: admin/views/tickets-list.php:151
+msgid "Trash (%d)"
+msgstr ""
+
+#: public/views/ticket-detail.php:255
+msgid "Type your message here..."
+msgstr ""
+
+#: includes/class-pnpc-psd-internal-notes.php:99
+msgid "Unable to load client notes."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3522
+#: admin/views/ticket-detail.php:168
+#: admin/views/ticket-detail.php:205
+#: admin/views/tickets-list.php:348
+#: admin/views/tickets-list.php:599
+#: admin/views/tickets-list.php:715
+msgid "Unassigned"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3457
+#: admin/class-pnpc-psd-admin.php:3468
+#: admin/class-pnpc-psd-admin.php:3484
+#: admin/class-pnpc-psd-admin.php:3495
+#: admin/class-pnpc-psd-admin.php:3500
+#: admin/views/my-tickets.php:103
+#: admin/views/ticket-detail.php:128
+#: admin/views/ticket-detail.php:129
+#: admin/views/ticket-detail.php:377
+#: admin/views/ticket-detail.php:86
+#: admin/views/tickets-list.php:418
+#: admin/views/tickets-list.php:429
+#: admin/views/tickets-list.php:487
+#: admin/views/tickets-list.php:498
+#: admin/views/tickets-list.php:575
+#: admin/views/tickets-list.php:691
+#: includes/class-pnpc-psd-internal-notes.php:154
+#: public/views/ticket-detail.php:193
+msgid "Unknown"
+msgstr ""
+
+#: public/views/my-tickets.php:59
+msgid "Unread first"
+msgstr ""
+
+#: admin/views/ticket-detail.php:259
+msgid "Update Priority"
+msgstr ""
+
+#: admin/views/ticket-detail.php:226
+msgid "Update Status"
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:204
+msgid "Update on ticket %s"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2564
+#: public/class-pnpc-psd-public.php:1088
+#: public/class-pnpc-psd-public.php:837
+msgid "Upload rejected by server (code %d)."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:1151
+msgid "Upload succeeded but the file URL could not be determined."
+msgstr ""
+
+#: admin/views/create-ticket-admin.php:76
+#: admin/views/ticket-detail.php:236
+#: public/views/create-ticket.php:26
+msgid "Urgent"
+msgstr ""
+
+#: admin/views/setup-wizard.php:193
+msgid "Use an Existing Page as my Dashboard"
+msgstr ""
+
+#: admin/views/setup-wizard.php:270
+msgid "Use the shortcodes below on your Dashboard page. If you use a builder, place these inside the appropriate sections or blocks."
+msgstr ""
+
+#: admin/views/setup-wizard.php:365
+msgid "Use these shortcodes on your Dashboard page. Link your site menu to the Dashboard URL above."
+msgstr ""
+
+#: admin/views/settings.php:96
+msgid "Used for customer-visible ticket replies when an agent chooses the Group signature option. Managers and administrators can edit this setting."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2210
+msgid "Used for customer-visible ticket replies when you choose the Personal signature option."
+msgstr ""
+
+#: admin/views/settings.php:546
+msgid "Used for the Create Ticket button in the Service Desk."
+msgstr ""
+
+#: admin/views/my-tickets.php:30
+#: admin/views/settings.php:314
+msgid "User"
+msgstr ""
+
+#: public/views/profile-settings.php:125
+msgid "User information is not available. Please log in to manage your profile."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3540
+#: admin/views/dashboard.php:191
+#: admin/views/my-tickets.php:126
+#: admin/views/ticket-detail.php:341
+#: admin/views/ticket-detail.php:437
+#: admin/views/tickets-list.php:351
+#: admin/views/tickets-list.php:435
+#: admin/views/tickets-list.php:504
+#: admin/views/tickets-list.php:617
+#: admin/views/tickets-list.php:731
+#: public/views/ticket-detail.php:162
+#: public/views/ticket-detail.php:233
+msgid "View"
+msgstr ""
+
+#: public/views/my-tickets-list.php:112
+msgid "View Details"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1605
+msgid "View Review Queue"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:526
+#: admin/class-pnpc-psd-admin.php:527
+msgid "View Ticket"
+msgstr ""
+
+#: includes/class-pnpc-psd-notifications.php:150
+#: includes/class-pnpc-psd-notifications.php:215
+msgid "View this ticket:"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3508
+#: admin/views/ticket-detail.php:57
+#: admin/views/tickets-list.php:338
+#: admin/views/tickets-list.php:583
+#: admin/views/tickets-list.php:699
+#: public/views/my-tickets-list.php:88
+#: public/views/ticket-detail.php:112
+msgid "Waiting"
+msgstr ""
+
+#: admin/views/tickets-list.php:127
+msgid "Waiting (%d)"
+msgstr ""
+
+#: admin/views/setup-wizard.php:305
+msgid "We can create a starter Dashboard page for you. You can edit it later using your preferred editor."
+msgstr ""
+
+#: admin/views/settings.php:216
+msgid "WebP images"
+msgstr ""
+
+#: admin/views/ticket-detail.php:185
+msgid "Website"
+msgstr ""
+
+#: admin/views/setup-wizard.php:47
+#: admin/views/setup-wizard.php:54
+msgid "Welcome"
+msgstr ""
+
+#: admin/views/settings.php:409
+msgid "Welcome Messages"
+msgstr ""
+
+#: admin/views/setup-wizard.php:164
+msgid "Welcome — let’s get you up and running in a few minutes"
+msgstr ""
+
+#: public/views/profile-settings.php:45
+#: public/views/service-desk.php:74
+msgid "Welcome, %s!"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:2308
+msgid "WooCommerce is not active — you cannot allocate products until WooCommerce is installed and activated."
+msgstr ""
+
+#: admin/views/settings.php:220
+msgid "Word (.doc)"
+msgstr ""
+
+#: admin/views/settings.php:221
+msgid "Word (.docx)"
+msgstr ""
+
+#: admin/views/setup-wizard.php:331
+msgid "WordPress Block Editor"
+msgstr ""
+
+#: includes/class-pnpc-psd-internal-notes.php:96
+msgid "Write a private note for staff…"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3847
+msgid "You can view and respond to this ticket here:"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:825
+msgid "You do not have permission to access this action."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:1623
+#: admin/class-pnpc-psd-admin.php:1694
+#: admin/class-pnpc-psd-admin.php:1712
+#: admin/class-pnpc-psd-admin.php:1797
+#: admin/class-pnpc-psd-admin.php:3574
+#: admin/class-pnpc-psd-admin.php:591
+#: admin/views/audit-log.php:14
+msgid "You do not have permission to access this page."
+msgstr ""
+
+#: includes/class-pnpc-psd-internal-notes.php:100
+msgid "You do not have permission to add notes."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3958
+msgid "You do not have permission to export tickets."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3882
+#: admin/class-pnpc-psd-admin.php:3935
+msgid "You do not have permission to perform this action."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:426
+msgid "You do not have permission to view this ticket."
+msgstr ""
+
+#: public/views/my-tickets-list.php:159
+msgid "You have not created any tickets yet."
+msgstr ""
+
+#: includes/helpers.php:1188
+msgid "You must be logged in to download attachments."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:1120
+#: public/class-pnpc-psd-public.php:1176
+#: public/class-pnpc-psd-public.php:1287
+msgid "You must be logged in."
+msgstr ""
+
+#: public/class-pnpc-psd-public.php:613
+#: public/class-pnpc-psd-public.php:902
+msgid "You must be logged in. "
+msgstr ""
+
+#: admin/views/setup-wizard.php:274
+msgid "Your Dashboard page:"
+msgstr ""
+
+#: public/views/ticket-detail.php:173
+msgid "Your Request"
+msgstr ""
+
+#: admin/views/setup-wizard.php:355
+msgid "Your Service Desk Dashboard is ready. Next, make sure your site navigation links to your Dashboard page."
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:4130
+msgid "Your Service Desk pages will still work, but their URLs will look like ?page_id=123 (this is normal with Plain permalinks). If you prefer human-readable URLs like /support-dashboard/, update your permalink settings."
+msgstr ""
+
+#: admin/views/ticket-detail.php:576
+msgid "Your browser cannot display this PDF."
+msgstr ""
+
+#: admin/views/settings.php:224
+msgid "ZIP archives"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:3810
+msgid "[%1$s] Support Ticket Created - #%2$s"
+msgstr ""
+
+#: public/views/ticket-detail.php:199
+msgid "ago"
+msgstr ""
+
+#: admin/views/settings.php:454
+#: admin/views/settings.php:477
+msgid "minutes"
+msgstr ""
+
+#: admin/class-pnpc-psd-admin.php:322
+msgid "new tickets arrived"
+msgstr ""
+
+#: admin/views/settings.php:451
+#: admin/views/settings.php:452
+#: admin/views/settings.php:453
+#: admin/views/settings.php:474
+#: admin/views/settings.php:475
+#: admin/views/settings.php:476
+msgid "seconds"
+msgstr ""
+
+#: admin/views/my-tickets.php:113
+#: admin/views/my-tickets.php:121
+msgid "—"
+msgstr ""
+
+#: admin/views/settings.php:258
+msgid "— No default (unassigned) —"
+msgstr ""
