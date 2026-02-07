@@ -771,7 +771,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 			. " AND IFNULL( last_customer_activity_at, created_at )"
 			. " > IFNULL( last_staff_viewed_at, '0000-00-00 00:00:00' )";
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- $sql is passed to $wpdb->prepare(), table name from $wpdb->prefix and placeholders are safe.
 		$count = $wpdb->get_var( $wpdb->prepare( $sql, $params ) );
 		return absint( $count );
 	}
