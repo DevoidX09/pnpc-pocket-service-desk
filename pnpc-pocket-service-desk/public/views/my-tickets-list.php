@@ -74,10 +74,9 @@ $base_url = remove_query_arg( array( 'pnpc_psd_page' ) );
 							<?php echo esc_html($ticket->subject); ?>
 						</a>
 						<?php if ($new_responses > 0) : ?>
-							<?php
+							<span class="pnpc-psd-ticket-updated-dot" title="<?php 
 							// translators: %d is the number of new responses.
-							?>
-							<span class="pnpc-psd-ticket-updated-dot" title="<?php echo esc_attr(sprintf(_n('%d new response', '%d new responses', $new_responses, 'pnpc-pocket-service-desk'), absint($new_responses))); ?>" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#28a745;margin-left:8px;vertical-align:middle;"></span>
+							echo esc_attr(sprintf(_n('%d new response', '%d new responses', $new_responses, 'pnpc-pocket-service-desk'), absint($new_responses))); ?>" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#28a745;margin-left:8px;vertical-align:middle;"></span>
 						<?php endif; ?>
 					</h3>
 					<div class="pnpc-psd-ticket-meta">
