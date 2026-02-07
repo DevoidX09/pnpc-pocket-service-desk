@@ -36,7 +36,7 @@ if ( 'done' === $step ) {
  * @param string $current_step Current step key.
  * @return void
  */
-function pnpc_psd_render_setup_progress(  $active_path, $current_step ) {
+function pnpc_psd_render_setup_progress( $active_path, $current_step ) {
 	$active_path  = (string) $active_path;
 	$current_step = (string) $current_step;
 
@@ -267,7 +267,7 @@ if ( $dashboard_page_id > 0 && 'trash' !== get_post_status( $dashboard_page_id )
 		?>
 		<div class="pnpc-psd-setup-card">
 			<h2><?php echo esc_html__( 'Shortcodes and Dashboard linking', 'pnpc-pocket-service-desk' ); ?></h2>
-			<p><?php echo esc_html__( 'Use the shortcodes below on your Dashboard page. If you use a builder, place these inside the appropriate sections or blocks.', 'pnpc-pocket-service-desk' ); ?></p>
+			<p><?php echo esc_html__( 'Use the shortcodes below if you want to DIY your Dashboard page layout. If you use a builder, place these inside the appropriate sections or blocks.', 'pnpc-pocket-service-desk' ); ?></p>
 
 			<?php if ( ! empty( $dashboard_url ) ) : ?>
 				<p>
@@ -362,7 +362,11 @@ if ( $dashboard_page_id > 0 && 'trash' !== get_post_status( $dashboard_page_id )
 			<?php endif; ?>
 
 			<h3><?php echo esc_html__( 'Shortcodes reference', 'pnpc-pocket-service-desk' ); ?></h3>
+			<?php if ( 'builder' === $path ) : ?>
+			<p class="description"><?php echo esc_html__( 'These shortcodes have been automatically put into your dashboard page. Use these shortcodes for reference or to create a custom page. Link your "Login" menu item or button to the Dashboard URL above.', 'pnpc-pocket-service-desk' ); ?></p>
+		<?php else : ?>
 			<p class="description"><?php echo esc_html__( 'Use these shortcodes on your Dashboard page. Link your site menu to the Dashboard URL above.', 'pnpc-pocket-service-desk' ); ?></p>
+		<?php endif; ?>
 			<textarea class="large-text code" rows="10" readonly="readonly"><?php echo esc_textarea( $canonical ); ?></textarea>
 
 			<p class="description"><?php echo esc_html__( 'Clicking Finished will create a Ticket View page for your customers and generate a sample customer and sample ticket to help you get started.', 'pnpc-pocket-service-desk' ); ?></p>

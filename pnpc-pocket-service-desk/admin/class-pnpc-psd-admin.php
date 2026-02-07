@@ -35,34 +35,30 @@ class PNPC_PSD_Admin{
 	private $version;
 
 	/**
-	* Construct.
-	*
-	* @param mixed $plugin_name
-	* @param mixed $version
-	*
-	* @since 1.1.1.4
-	*
-	* @return void
-	*/
-	public function __construct( $plugin_name, $version)
-	{
+	 * Constructor.
+	 *
+	 * @param string $plugin_name Plugin slug.
+	 * @param string $version     Plugin version.
+	 */
+	public function __construct( $plugin_name, $version ) {
 		$this->plugin_name = $plugin_name;
 		$this->version     = $version;
 
 		// Plugin row links (Plugins screen).
 		add_filter( 'plugin_action_links_' . PNPC_PSD_PLUGIN_BASENAME, array( $this, 'add_plugin_action_links' ) );
 
-		if (is_admin()) {
+		if ( is_admin() ) {
 			// Provide baseline dashboard alerts (filterable).
 			add_filter( 'pnpc_psd_dashboard_alerts', array( $this, 'get_default_dashboard_alerts' ) );
 
-			// One-time setup wizard prompt if the customer dashboard page is not configured.
-			add_action( 'admin_notices', array( $this, 'maybe_show_setup_wizard_notice' ) );
+			// Setup wizard prompt (persistent until setup is completed).
+			// Use all_admin_notices to ensure visibility across wp-admin pages and custom admin screens.
+			add_action( 'all_admin_notices', array( $this, 'maybe_show_setup_wizard_notice' ) );
 
 			// UX polish: explain why dashboard links show as ?page_id=... when permalinks are set to Plain.
 			add_action( 'admin_notices', array( $this, 'maybe_show_permalinks_notice' ) );
 
-			// After first activation on a clean install, redirect admins straight into the Setup Wizard.
+			// After first activation on a clean install, redirect admins into the Setup Wizard.
 			add_action( 'admin_init', array( $this, 'maybe_redirect_to_setup_wizard' ), 1 );
 
 			// Setup Wizard: seed sample data when the wizard is completed.
@@ -72,10 +68,10 @@ class PNPC_PSD_Admin{
 			add_action( 'admin_post_pnpc_psd_setup_repair', array( $this, 'handle_setup_repair' ) );
 
 			// For non-admin service desk staff, keep wp-admin access but limit menus to reduce confusion.
-			add_action('admin_menu', array($this, 'restrict_non_admin_menus'), 999);
-			add_action('admin_init', array($this, 'register_settings'));
-			add_action('admin_init', array($this, 'process_admin_create_ticket'));
-			add_action('admin_init', array($this, 'process_admin_update_ticket_priority'));
+			add_action( 'admin_menu', array( $this, 'restrict_non_admin_menus' ), 999 );
+			add_action( 'admin_init', array( $this, 'register_settings' ) );
+			add_action( 'admin_init', array( $this, 'process_admin_create_ticket' ) );
+			add_action( 'admin_init', array( $this, 'process_admin_update_ticket_priority' ) );
 		}
 	}
 
@@ -95,39 +91,70 @@ class PNPC_PSD_Admin{
 			return;
 		}
 		// Do not redirect on bulk activation.
-		if ( isset( $_GET['activate-multi'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only.
+		if ( isset( $_GET['activate-multi'] ) ) {
 			return;
 		}
 
-		$do_redirect = (int) get_option( 'pnpc_psd_do_setup_redirect', 0 );
+		// Don't loop if we're already in the wizard.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only.
+		if ( isset( $_GET['page'] ) && 'pnpc-service-desk-setup' === sanitize_text_field( wp_unslash( $_GET['page'] ) ) ) {
+			return;
+		}
+
+		$dashboard_page_id    = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
+		$ticket_view_page_id  = (int) get_option( 'pnpc_psd_ticket_view_page_id', 0 );
+		$dashboard_configured = $this->is_dashboard_configured( $dashboard_page_id );
+		$ticket_configured    = $this->is_ticket_view_configured( $ticket_view_page_id );
+
+		// If the required pages are already configured, do not redirect.
+		if ( $dashboard_configured && $ticket_configured ) {
+			delete_option( 'pnpc_psd_activation_redirect' );
+			update_option( 'pnpc_psd_do_setup_redirect', 0, false );
+			return;
+		}
+
+		$do_redirect = (int) get_option( 'pnpc_psd_activation_redirect', 0 );
+		if ( ! $do_redirect ) {
+			// Back-compat: older builds checked this key.
+			$do_redirect = (int) get_option( 'pnpc_psd_do_setup_redirect', 0 );
+		}
+
 		if ( ! $do_redirect ) {
 			return;
 		}
 
-		$dash_id = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
-		if ( $this->is_dashboard_configured( $dash_id ) ) {
-			update_option( 'pnpc_psd_do_setup_redirect', 0 );
-			return;
-		}
-// If there is existing ticket history, do not auto-redirect (reinstatement).
+		// Do not short-circuit solely because a dashboard page ID is present.
+		// Hosts/site-templates may pre-seed a page ID that is incomplete or missing required shortcodes.
+		// The Setup Wizard is responsible for detecting and repairing existing pages.
+
+		// If there is existing ticket history, do not auto-redirect (reinstatement).
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
+		$table_name   = $wpdb->prefix . 'pnpc_psd_tickets';
 		$ticket_count = 0;
 
 		// Determine whether the tickets table exists before counting.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$table_exists = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name );
 		if ( $table_exists ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string.
 			$ticket_count = (int) $wpdb->get_var( "SELECT COUNT(1) FROM {$table_name}" );
 		}
 
 		if ( $ticket_count > 0 ) {
-			update_option( 'pnpc_psd_do_setup_redirect', 0 );
+			delete_option( 'pnpc_psd_activation_redirect' );
+			update_option( 'pnpc_psd_do_setup_redirect', 0, false );
 			return;
 		}
 
-		update_option( 'pnpc_psd_do_setup_redirect', 0 );
+		// If headers have already been sent by another plugin/theme, do not clear the redirect flag.
+		// This allows the redirect to occur on the next admin page load.
+		if ( headers_sent() ) {
+			return;
+		}
+
+		delete_option( 'pnpc_psd_activation_redirect' );
+		update_option( 'pnpc_psd_do_setup_redirect', 0, false );
 		wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup' ) );
 		exit;
 	}
@@ -558,7 +585,7 @@ class PNPC_PSD_Admin{
 			'pnpc-service-desk',
 			esc_html__( 'Setup Wizard', 'pnpc-pocket-service-desk' ),
 			esc_html__( 'Setup Wizard', 'pnpc-pocket-service-desk' ),
-			'pnpc_psd_manage_settings',
+			'manage_options',
 			'pnpc-service-desk-setup',
 			array( $this, 'display_setup_wizard_page' )
 		);
@@ -569,7 +596,7 @@ class PNPC_PSD_Admin{
 				'pnpc-service-desk',
 				esc_html__( 'Repair Setup', 'pnpc-pocket-service-desk' ),
 				esc_html__( 'Repair Setup', 'pnpc-pocket-service-desk' ),
-				'pnpc_psd_manage_settings',
+				'manage_options',
 				'pnpc-service-desk-repair',
 				array( $this, 'display_repair_setup_page' )
 			);
@@ -613,9 +640,12 @@ add_submenu_page(
 		$dashboard = admin_url( 'admin.php?page=pnpc-service-desk' );
 		$settings  = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 
+		$setup = admin_url( 'admin.php?page=pnpc-service-desk-setup' );
+
 		$custom = array(
 			'<a href="' . esc_url( $dashboard ) . '">' . esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' ) . '</a>',
 			'<a href="' . esc_url( $settings ) . '">' . esc_html__( 'Settings', 'pnpc-pocket-service-desk' ) . '</a>',
+			'<a href="' . esc_url( $setup ) . '">' . esc_html__( 'Setup Wizard', 'pnpc-pocket-service-desk' ) . '</a>',
 		);
 
 		return array_merge( $custom, (array) $links );
@@ -1470,7 +1500,9 @@ function create_dashboard_page_from_wizard(  $args ) {
 						update_post_meta( $page_id, '_elementor_version', ELEMENTOR_VERSION );
 						update_post_meta( $page_id, '_elementor_data', wp_slash( wp_json_encode( $template_data['content'] ) ) );
 
-						// Clear Elementor cache.
+																		update_post_meta( $page_id, '_wp_page_template', 'elementor_canvas' );
+update_post_meta( $page_id, '_wp_page_template', 'elementor_canvas' );
+// Clear Elementor cache.
 						if ( class_exists( '\Elementor\Plugin' ) ) {
 							\Elementor\Plugin::$instance->files_manager->clear_cache();
 						}
@@ -1484,6 +1516,11 @@ function create_dashboard_page_from_wizard(  $args ) {
 				// Any error - fall back to shortcode-based content.
 			}
 		}
+
+			// Ensure Elementor pages render without theme chrome where possible.
+			if ( 'elementor' === $editor ) {
+				update_post_meta( $page_id, '_wp_page_template', 'elementor_canvas' );
+			}
 
 		// For block editor, ensure content is properly formatted.
 		if ( 'block' === $editor ) {
@@ -1549,12 +1586,19 @@ function create_dashboard_page_from_wizard(  $args ) {
 						update_post_meta( $page_id, '_elementor_version', ELEMENTOR_VERSION );
 						update_post_meta( $page_id, '_elementor_data', wp_slash( wp_json_encode( $template_data['content'] ) ) );
 
-						if ( class_exists( '\\Elementor\\Plugin' ) ) {
+												update_post_meta( $page_id, '_wp_page_template', 'elementor_canvas' );
+if ( class_exists( '\\Elementor\\Plugin' ) ) {
 							\Elementor\Plugin::$instance->files_manager->clear_cache();
 						}
 					}
 				}
 			}
+		}
+
+		
+		// Ensure Elementor pages render without theme chrome where possible.
+		if ( 'elementor' === $editor ) {
+			update_post_meta( $page_id, '_wp_page_template', 'elementor_canvas' );
 		}
 
 		return (int) $page_id;
@@ -4088,7 +4132,7 @@ public function display_tickets_page()
 	 * @return void
 	 */
 	public function maybe_show_setup_wizard_notice() {
-		if ( ! current_user_can( 'pnpc_psd_manage_settings' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'pnpc_psd_manage_settings' ) ) {
 			return;
 		}
 		// Only show on wp-admin screens (avoid ajax).
@@ -4096,36 +4140,32 @@ public function display_tickets_page()
 			return;
 		}
 
-		// Admin hygiene: avoid showing the setup notice across unrelated wp-admin pages.
-		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		if ( $screen ) {
-			$screen_id = isset( $screen->id ) ? (string) $screen->id : '';
-			$base      = isset( $screen->base ) ? (string) $screen->base : '';
-			$allowed   = ( false !== strpos( $screen_id, 'pnpc-service-desk' ) ) || ( 'dashboard' === $base );
-			if ( ! $allowed ) {
-				return;
-			}
-		}
+		// Note: We intentionally show this notice on all wp-admin screens for administrators
+		// until setup is completed. This avoids a common first-run failure mode where the
+		// admin lands on a screen that is not on an allowlist and never sees the prompt.
 
+		$dashboard_page_id    = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
+		$ticket_view_page_id  = (int) get_option( 'pnpc_psd_ticket_view_page_id', 0 );
+		$dashboard_configured = $this->is_dashboard_configured( $dashboard_page_id );
+		$ticket_configured    = $this->is_ticket_view_configured( $ticket_view_page_id );
 
-		$dash_id     = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
 		$needs_setup = (int) get_option( 'pnpc_psd_needs_setup_wizard', 0 );
 		$dismissed   = (int) get_option( 'pnpc_psd_setup_notice_dismissed', 0 );
 
-		if ( $dismissed ) {
-			return;
-		}
-
-
-		// If a dashboard page is already configured and exists, stop prompting.
-		if ( $dash_id > 0 && 'trash' !== get_post_status( $dash_id ) ) {
+		// If required pages are configured, stop prompting.
+		if ( $dashboard_configured && $ticket_configured ) {
 			if ( $needs_setup ) {
 				update_option( 'pnpc_psd_needs_setup_wizard', 0 );
 			}
 			return;
 		}
 
-		// If no dashboard is configured, prompt the admin. We do not require the activation flag,
+		if ( $dismissed ) {
+			return;
+		}
+
+
+		// Prompt the admin. We do not require the activation flag,
 		// because plugins are often updated in-place without re-running activation hooks.
 		if ( ! $needs_setup ) {
 			update_option( 'pnpc_psd_needs_setup_wizard', 1 );
@@ -4173,7 +4213,7 @@ public function display_tickets_page()
 		if ( $screen ) {
 			$screen_id = isset( $screen->id ) ? (string) $screen->id : '';
 			$base      = isset( $screen->base ) ? (string) $screen->base : '';
-			$allowed   = ( false !== strpos( $screen_id, 'pnpc-service-desk' ) ) || ( 'dashboard' === $base );
+			$allowed   = ( false !== strpos( $screen_id, 'pnpc-service-desk' ) ) || in_array( $base, array( 'dashboard', 'plugins', 'plugins-network' ), true );
 			if ( ! $allowed ) {
 				return;
 			}

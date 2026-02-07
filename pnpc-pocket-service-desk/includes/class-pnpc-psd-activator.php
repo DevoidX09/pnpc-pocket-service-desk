@@ -140,6 +140,29 @@ class PNPC_PSD_Activator {
 				}
 			}
 		}
+
+		// Determine whether the Ticket View page is configured (optional but recommended).
+		$ticket_view_id  = (int) get_option( 'pnpc_psd_ticket_view_page_id', 0 );
+		$has_ticket_view = false;
+		if ( $ticket_view_id > 0 ) {
+			$status = get_post_status( $ticket_view_id );
+			if ( ! empty( $status ) && 'trash' !== $status && 'auto-draft' !== $status ) {
+				$created_by_builder = (bool) get_post_meta( $ticket_view_id, '_pnpc_psd_created_by_builder', true );
+				if ( $created_by_builder ) {
+					$has_ticket_view = true;
+				} else {
+					$post = get_post( $ticket_view_id );
+					$haystack = ( $post instanceof WP_Post ) ? (string) $post->post_content : '';
+					$elementor_data = (string) get_post_meta( $ticket_view_id, '_elementor_data', true );
+					if ( ! empty( $elementor_data ) ) {
+						$haystack .= "\n" . $elementor_data;
+					}
+					if ( false !== strpos( $haystack, '[pnpc_ticket_detail' ) ) {
+						$has_ticket_view = true;
+					}
+				}
+			}
+		}
 		$has_tickets   = false;
 
 		global $wpdb;
@@ -156,20 +179,21 @@ class PNPC_PSD_Activator {
 		}
 
 		// First-run Setup Wizard flags.
-// On a clean install (no ticket history) we want to nudge admins into the Setup Wizard,
-// even if a dashboard page ID was pre-populated by a host/site-template.
-// The wizard will detect/repair existing pages as needed.
-$setup_completed_at = (int) get_option( 'pnpc_psd_setup_completed_at', 0 );
+		//
+		// On a clean install (no ticket history) we want to nudge admins into the Setup Wizard,
+		// even if a dashboard page ID was pre-populated by a host/site-template.
+		// The wizard will detect/repair existing pages as needed.
+		$needs_setup = ( ! $has_dashboard || ! $has_ticket_view );
 
-if ( ! $has_tickets && $setup_completed_at <= 0 ) {
-	update_option( 'pnpc_psd_needs_setup_wizard', 1 );
-	update_option( 'pnpc_psd_setup_notice_dismissed', 0 );
-	// Redirect into the wizard once after activation (clean installs only).
-	// Use an option (not a transient) so this survives object cache variance.
-	update_option( 'pnpc_psd_do_setup_redirect', 1 );
-}
-
-
+		if ( ! $has_tickets && $needs_setup ) {
+			update_option( 'pnpc_psd_needs_setup_wizard', 1 );
+			update_option( 'pnpc_psd_setup_notice_dismissed', 0 );
+			// Redirect into the wizard once after activation (clean installs only).
+			// Use an option (not a transient) so this survives object cache variance.
+			update_option( 'pnpc_psd_activation_redirect', 1, false );
+			// Back-compat: older builds checked this key.
+			update_option( 'pnpc_psd_do_setup_redirect', 1, false );
+		}
 	}
 
 	/**

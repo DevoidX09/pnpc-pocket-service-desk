@@ -1,223 +1,172 @@
 <?php
-
 /**
- * Plugin Name: PNPC Pocket Service Desk
- * Plugin URI: https://github.com/DevoidX09/pnpc-pocket-service-desk
- * Description: A WordPress-native service desk plugin for managing customer support tickets.
- * Version: 1.1.2
- * Author: PNPC
- * Author URI: https://github.com/DevoidX09
- * License: GPL v2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: pnpc-pocket-service-desk
- * Domain Path: /languages
+ * Plugin Name:       PNPC Pocket Service Desk
+ * Plugin URI:        https://github.com/DevoidX09/pnpc-pocket-service-desk
+ * Description:       A WordPress-native service desk plugin for managing customer support tickets.
+ * Version:           1.1.4.3
+ * Author:            PNPC
+ * Author URI:        https://github.com/DevoidX09
+ * License:           GPL v2 or later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain:       pnpc-pocket-service-desk
+ * Domain Path:       /languages
  * Requires at least: 5.8
- * Requires PHP: 7.4
+ * Requires PHP:      7.4
  *
  * @package PNPC_Pocket_Service_Desk
  */
 
-// Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Current plugin version.
- */
 if ( ! defined( 'PNPC_PSD_VERSION' ) ) {
-	define('PNPC_PSD_VERSION', '1.1.2');
+	define( 'PNPC_PSD_VERSION', '1.1.4.1' );
 }
 
-/**
- * Plugin directory path.
- */
 if ( ! defined( 'PNPC_PSD_PLUGIN_DIR' ) ) {
-	define('PNPC_PSD_PLUGIN_DIR', plugin_dir_path( __FILE__ ));
+	define( 'PNPC_PSD_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 }
 
-/**
- * Plugin directory URL.
- */
 if ( ! defined( 'PNPC_PSD_PLUGIN_URL' ) ) {
-	define('PNPC_PSD_PLUGIN_URL', plugin_dir_url( __FILE__ ));
+	define( 'PNPC_PSD_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 }
 
-/**
- * Plugin base name.
- */
 if ( ! defined( 'PNPC_PSD_PLUGIN_BASENAME' ) ) {
-	define('PNPC_PSD_PLUGIN_BASENAME', plugin_basename( __FILE__ ));
+	define( 'PNPC_PSD_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 }
 
 /**
- * Load translations on init (prevents "load_textdomain_just_in_time" notices).
+ * Load translations on init (prevents load_textdomain_just_in_time notices).
+ *
+ * @return void
  */
-add_action(
-	'init',
-	function () {
-		load_plugin_textdomain( 'pnpc-pocket-service-desk', false, dirname(plugin_basename( __FILE__ )) . '/languages');
-	},
-	5
-);
+function pnpc_psd_load_textdomain() {
+	load_plugin_textdomain(
+		'pnpc-pocket-service-desk',
+		false,
+		dirname( plugin_basename( __FILE__ ) ) . '/languages'
+	);
+}
+add_action( 'init', 'pnpc_psd_load_textdomain', 5 );
 
 /**
- * Run DB migrations on update (not only on activation).
+ * Run database migrations on update (not only on activation).
+ *
+ * @return void
  */
-add_action(
-	'plugins_loaded',
-	function () {
-		$activator = PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-activator.php';
-		if (file_exists( $activator)) {
-			require_once $activator;
-			if (class_exists( 'PNPC_PSD_Activator' ) && method_exists( 'PNPC_PSD_Activator', 'maybe_upgrade_database' )) {
-				PNPC_PSD_Activator::maybe_upgrade_database();
-			}
-		}
-	},
-	6
-);
+function pnpc_psd_maybe_run_migrations() {
+	$activator_file = PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-activator.php';
+	if ( ! file_exists( $activator_file ) ) {
+		return;
+	}
+
+	require_once $activator_file;
+
+	if ( class_exists( 'PNPC_PSD_Activator' ) && method_exists( 'PNPC_PSD_Activator', 'maybe_upgrade_database' ) ) {
+		PNPC_PSD_Activator::maybe_upgrade_database();
+	}
+}
+add_action( 'plugins_loaded', 'pnpc_psd_maybe_run_migrations', 6 );
 
 /**
  * Activation routine.
+ *
+ * @return void
  */
 function activate_pnpc_pocket_service_desk() {
-	$activator = PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-activator.php';
-	if (file_exists( $activator)) {
-		require_once $activator;
-		if (class_exists( 'PNPC_PSD_Activator' ) && method_exists( 'PNPC_PSD_Activator', 'activate' )) {
-			PNPC_PSD_Activator::activate();
-			return;
-		}
+	$activator_file = PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-activator.php';
+	if ( ! file_exists( $activator_file ) ) {
+		return;
+	}
+
+	require_once $activator_file;
+
+	if ( class_exists( 'PNPC_PSD_Activator' ) && method_exists( 'PNPC_PSD_Activator', 'activate' ) ) {
+		PNPC_PSD_Activator::activate();
 	}
 }
-register_activation_hook( __FILE__, 'activate_pnpc_pocket_service_desk');
+register_activation_hook( __FILE__, 'activate_pnpc_pocket_service_desk' );
 
 /**
  * Deactivation routine.
+ *
+ * @return void
  */
 function deactivate_pnpc_pocket_service_desk() {
-	$deactivator = PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-deactivator.php';
-	if (file_exists( $deactivator)) {
-		require_once $deactivator;
-		if (class_exists( 'PNPC_PSD_Deactivator' ) && method_exists( 'PNPC_PSD_Deactivator', 'deactivate' )) {
-			PNPC_PSD_Deactivator::deactivate();
-			return;
-		}
+	$deactivator_file = PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-deactivator.php';
+	if ( ! file_exists( $deactivator_file ) ) {
+		return;
+	}
+
+	require_once $deactivator_file;
+
+	if ( class_exists( 'PNPC_PSD_Deactivator' ) && method_exists( 'PNPC_PSD_Deactivator', 'deactivate' ) ) {
+		PNPC_PSD_Deactivator::deactivate();
 	}
 }
-register_deactivation_hook( __FILE__, 'deactivate_pnpc_pocket_service_desk');
-
+register_deactivation_hook( __FILE__, 'deactivate_pnpc_pocket_service_desk' );
 
 /**
- * Fallback: redirect to Setup Wizard after activation on clean installs.
+ * Require core plugin files defensively.
  *
- * (The primary redirect logic lives in the admin class, but this keeps first-run UX
- * stable even if the admin bootstrap order changes.)
+ * @return bool True when core classes can be loaded.
  */
-add_action(
-	'admin_init',
-	function () {
-		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-			return;
-		}
-		if ( ! is_admin() ) {
-			return;
-		}
-		// Don't loop if we're already in the wizard.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only.
-		if ( isset( $_GET['page'] ) && 'pnpc-service-desk-setup' === sanitize_text_field( wp_unslash( $_GET['page'] ) ) ) {
-			return;
-		}
-		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'pnpc_psd_manage_settings' ) ) {
-			return;
-		}
-		// Do not redirect on bulk activation.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only.
-		if ( isset( $_GET['activate-multi'] ) ) {
-			return;
-		}
-		$do_redirect = (int) get_option( 'pnpc_psd_do_setup_redirect', 0 );
-		$setup_completed_at = (int) get_option( 'pnpc_psd_setup_completed_at', 0 );
-		if ( $do_redirect && $setup_completed_at <= 0 ) {
-			update_option( 'pnpc_psd_do_setup_redirect', 0 );
-			wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup' ) );
-			exit;
-		}
-	},
-	1
-);
-
-/**
- * Defensive bootstrap: require core files if present and avoid fatals.
- * Logs missing files so issues are visible without white-screens.
- */
-
-// Core files that should exist (excluding ticket model which we handle separately)
-$pnpc_core_files = array(
-	PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd.php',
-	PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-notifications.php',
-	PNPC_PSD_PLUGIN_DIR . 'includes/helpers.php',
-	PNPC_PSD_PLUGIN_DIR . 'public/class-pnpc-psd-public.php',
-);
-
-// Require core files if available, otherwise log.
-foreach ($pnpc_core_files as $file) {
-	if (file_exists( $file)) {
-		require_once $file;
-	} else {
-	}
-}
-
-/**
- * Load Ticket model in a backwards-compatible way:
- * prefer the actual current path "includes/class-pnpc-psd-ticket.php" but
- * fall back to legacy "includes/models/class-pnpc-psd-ticket.php" if present.
- */
-$pnpc_ticket_paths = array(
-	PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-ticket.php',        // current path
-	PNPC_PSD_PLUGIN_DIR . 'includes/models/class-pnpc-psd-ticket.php', // legacy path
-);
-
-$pnpc_ticket_loaded = false;
-foreach ($pnpc_ticket_paths as $ticket_file) {
-	if (file_exists( $ticket_file)) {
-		require_once $ticket_file;
-		$pnpc_ticket_loaded = true;
-		break;
-	}
-}
-if (! $pnpc_ticket_loaded) {
-}
-
-/**
- * Instantiate and run plugin if the core class is available.
- * If not available, show a friendly admin notice instead of causing a fatal error.
- */
-if (class_exists( 'PNPC_PSD' )) {
-
-	/**
-	 * Begins execution of the plugin.
-	 *
-	 * @since 1.0.0
-	 */
-	function run_pnpc_pocket_service_desk() {
-		$plugin = new PNPC_PSD( 'pnpc-pocket-service-desk', PNPC_PSD_VERSION );
-		if (method_exists( $plugin, 'run' )) {
-			$plugin->run();
-		} else {
-		}
-	}
-
-	run_pnpc_pocket_service_desk();
-} else {
-	// Friendly admin notice and log entry; plugin will be inactive until files restored.
-	add_action(
-		'admin_notices',
-		function () {
-			echo '<div class="notice notice-warning"><p>';
-			echo esc_html__('PNPC Pocket Service Desk: some core files are missing. Plugin is partially disabled until files are restored.', 'pnpc-pocket-service-desk');
-			echo '</p></div>';
-		}
+function pnpc_psd_require_core_files() {
+	$core_files = array(
+		PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd.php',
+		PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-notifications.php',
+		PNPC_PSD_PLUGIN_DIR . 'includes/helpers.php',
+		PNPC_PSD_PLUGIN_DIR . 'public/class-pnpc-psd-public.php',
 	);
+
+	foreach ( $core_files as $file ) {
+		if ( file_exists( $file ) ) {
+			require_once $file;
+		} else {
+			return false;
+		}
+	}
+
+	// Ticket model (supports legacy path if present).
+	$ticket_paths = array(
+		PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-ticket.php',
+		PNPC_PSD_PLUGIN_DIR . 'includes/models/class-pnpc-psd-ticket.php',
+	);
+
+	foreach ( $ticket_paths as $ticket_file ) {
+		if ( file_exists( $ticket_file ) ) {
+			require_once $ticket_file;
+			break;
+		}
+	}
+
+	return true;
 }
+
+/**
+ * Boot the plugin (or show an admin notice if core files are missing).
+ *
+ * @return void
+ */
+function pnpc_psd_boot() {
+	$loaded = pnpc_psd_require_core_files();
+	if ( ! $loaded || ! class_exists( 'PNPC_PSD' ) ) {
+		add_action(
+			'admin_notices',
+			static function () {
+				echo '<div class="notice notice-warning"><p>';
+				echo esc_html__( 'PNPC Pocket Service Desk: some core files are missing. The plugin is partially disabled until files are restored.', 'pnpc-pocket-service-desk' );
+				echo '</p></div>';
+			}
+		);
+		return;
+	}
+
+	$plugin = new PNPC_PSD( 'pnpc-pocket-service-desk', PNPC_PSD_VERSION );
+	if ( method_exists( $plugin, 'run' ) ) {
+		$plugin->run();
+	}
+}
+
+pnpc_psd_boot();

@@ -4,7 +4,7 @@ Tags: helpdesk, service desk, support, tickets, customer support
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.2
+Stable tag: 1.1.4.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -85,13 +85,37 @@ The `[pnpc_services]` block is included as a neutral extension seam. By default,
 
 == Screenshots ==
 
-1. Customer dashboard
-2. Create ticket form
-3. Ticket detail and responses
-4. Admin ticket list (status tabs)
-5. Admin ticket detail view
+1. Customer “My Support Tickets” dashboard (Open/Closed tabs).
+2. Public “Create Ticket” form (guest-friendly submission if enabled).
+3. Customer ticket detail view (thread + status).
+4. Customer reply interface on an existing ticket.
+5. User profile settings + dashboard stats view.
+6. Admin dashboard stats overview.
+7. Admin “All Tickets” list with filters/status tabs and badges.
+8. Admin ticket detail view (full thread + management actions).
+9. Settings: Core configuration.
+10. Settings: Customize (styling/options).
+11. Settings: Experience (UX/workflow toggles).
 
 == Changelog ==
+
+= 1.1.4.3 =
+* Setup Wizard: clarify Builder shortcode guidance (DIY/custom page reference + login menu note).
+* Setup Wizard: remove heavy border styling from Elementor starter templates.
+
+
+
+= 1.1.4.2 =
+* Setup Wizard copy clarifies DIY shortcode usage.
+* Wizard-created Elementor pages default to Canvas template to reduce theme chrome/borders.
+= 1.1.4.1 =
+* Fix Setup Wizard auto-redirect and admin prompt logic so it is based on actual page configuration (dashboard + ticket view) rather than the setup_completed_at timestamp, preventing false "completed" states.
+* Activation now sets first-run Setup Wizard flags whenever required pages are not configured and there is no ticket history (clean installs).
+
+= 1.1.3 =
+* Add PHPCS ruleset (phpcs.xml.dist).
+* Fix first-run Setup Wizard redirect and show Setup Wizard prompt on Plugins screen.
+* Internal: tighten activation redirect flagging for clean installs.
 
 = 1.1.1.4 =
 * Version bump for WordPress.org submission.
