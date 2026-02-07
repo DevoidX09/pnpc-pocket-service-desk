@@ -277,7 +277,7 @@ class PNPC_PSD_Activator {
 				)
 			);
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 				$wpdb->query( $sql );
 			}
 		}
@@ -286,13 +286,13 @@ class PNPC_PSD_Activator {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$idx_reason = $wpdb->get_results("SHOW INDEX FROM {$tickets_table} WHERE Key_name = 'delete_reason'");
 		if ( empty( $idx_reason ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 			$wpdb->query("ALTER TABLE {$tickets_table} ADD KEY delete_reason (delete_reason)");
 		}
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$idx_deleted_by = $wpdb->get_results("SHOW INDEX FROM {$tickets_table} WHERE Key_name = 'deleted_by'");
 		if ( empty( $idx_deleted_by ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 			$wpdb->query("ALTER TABLE {$tickets_table} ADD KEY deleted_by (deleted_by)");
 		}
 	}
@@ -339,7 +339,7 @@ class PNPC_PSD_Activator {
 				)
 			);
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 				$wpdb->query( $sql );
 			}
 		}
@@ -348,7 +348,7 @@ class PNPC_PSD_Activator {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$pending_idx = $wpdb->get_results("SHOW INDEX FROM {$tickets_table} WHERE Key_name = 'pending_delete_at'");
 		if ( empty( $pending_idx ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 			$wpdb->query("ALTER TABLE {$tickets_table} ADD KEY pending_delete_at (pending_delete_at)");
 		}
 
@@ -375,7 +375,7 @@ class PNPC_PSD_Activator {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$tickets_table} LIKE %s", $col ) );
 			if ( ! $exists ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange,WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 				$wpdb->query( $sql );
 			}
 		}
@@ -428,9 +428,9 @@ class PNPC_PSD_Activator {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$archived_exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$tickets_table} LIKE %s", 'archived_at' ) );
 		if ( ! $archived_exists ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange,WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 			$wpdb->query( "ALTER TABLE {$tickets_table} ADD COLUMN archived_at datetime DEFAULT NULL AFTER deleted_at" );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange,WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 			$wpdb->query( "ALTER TABLE {$tickets_table} ADD KEY archived_at (archived_at)" );
 		}
 
@@ -484,7 +484,7 @@ class PNPC_PSD_Activator {
 			);
 
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 				$wpdb->query(
 					"ALTER TABLE {$tickets_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER updated_at, ADD KEY deleted_at (deleted_at)"
 				);
@@ -513,7 +513,7 @@ class PNPC_PSD_Activator {
 			);
 
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 				$wpdb->query(
 					"ALTER TABLE {$responses_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
 				);
@@ -542,7 +542,7 @@ class PNPC_PSD_Activator {
 			);
 
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 				$wpdb->query(
 					"ALTER TABLE {$attachments_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
 				);
@@ -584,7 +584,7 @@ class PNPC_PSD_Activator {
 			);
 
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 				$wpdb->query(
 					"ALTER TABLE {$tickets_table} 
 					ADD COLUMN delete_reason VARCHAR(50) DEFAULT NULL AFTER deleted_at,
@@ -648,7 +648,7 @@ class PNPC_PSD_Activator {
 			if ( empty( $column_exists ) ) {
 				// Note: Table name is safe here as it's constructed from $wpdb->prefix
 				// which is a controlled WordPress constant.
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared -- Safe ALTER TABLE statement with table name from $wpdb->prefix
 				$wpdb->query(
 					"ALTER TABLE {$tickets_table} 
 					ADD COLUMN created_by_staff BIGINT(20) UNSIGNED DEFAULT NULL AFTER assigned_to,
