@@ -5,6 +5,7 @@
  *
  * @package    PNPC_Pocket_Service_Desk
  * @subpackage PNPC_Pocket_Service_Desk/admin/views
+ * phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template variables passed from controller
  */
 
 if (! defined('ABSPATH')) {
@@ -322,9 +323,11 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 						<tr class="pnpc-psd-ticket-row" data-sort-ticket-number="<?php echo esc_attr($ticket_num_for_sort); ?>" data-sort-text="<?php echo esc_attr(strtolower((string) $ticket->subject)); ?>" data-sort-date="<?php echo esc_attr($archived_ts); ?>">
 							<?php if ($can_bulk_actions) : ?>
 								<th scope="row" class="check-column">
-									/* translators: %s is the ticket number. */
 									<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">
-										<?php printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?>
+										<?php
+										// translators: %s is the ticket number.
+										printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number));
+										?>
 									</label>
 
 									<input type="checkbox" name="ticket[]" id="cb-select-<?php echo esc_attr(absint($ticket->id)); ?>" value="<?php echo esc_attr(absint($ticket->id)); ?>">

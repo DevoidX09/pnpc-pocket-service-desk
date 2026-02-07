@@ -4,6 +4,8 @@
  *
  * @package    PNPC_Pocket_Service_Desk
  * @subpackage PNPC_Pocket_Service_Desk/includes
+ * phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema operations during activation
+ * phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names properly prefixed
  */
 
 /**

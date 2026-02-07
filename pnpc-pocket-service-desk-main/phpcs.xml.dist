@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<ruleset name="PNPC Pocket Service Desk">
+  <description>PHPCS ruleset for PNPC Pocket Service Desk (WordPress Coding Standards).</description>
+
+  <!-- Scan all plugin PHP files -->
+  <file>./</file>
+
+  <!-- Exclude vendor and build artifacts -->
+  <exclude-pattern>*/assets/vendor/*</exclude-pattern>
+  <exclude-pattern>*/node_modules/*</exclude-pattern>
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+
+  <!-- Use WordPress Coding Standards -->
+  <rule ref="WordPress" />
+  <rule ref="WordPress-Core" />
+  <rule ref="WordPress-Docs" />
+
+  <!-- Allow longer lines in view templates if needed (keep minimal) -->
+  <rule ref="Generic.Files.LineLength">
+    <properties>
+      <property name="lineLimit" value="180"/>
+      <property name="absoluteLineLimit" value="220"/>
+    </properties>
+  </rule>
+
+  <!-- Set PHP version compatibility (adjust as needed) -->
+  <config name="testVersion" value="7.4-"/>
+</ruleset>
