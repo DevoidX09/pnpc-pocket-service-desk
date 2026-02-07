@@ -71,7 +71,9 @@ if ( $user_id ) {
 <div class="pnpc-psd-dashboard">
 
 	<?php if ((bool) get_option('pnpc_psd_show_welcome_service_desk', 1) && $user_id) : ?>
-/* translators: Placeholder(s) in localized string. */
+		<?php
+		// translators: %s is the user's display name.
+		?>
 		<h2><?php printf(esc_html__('Welcome, %s!', 'pnpc-pocket-service-desk'), esc_html($current_user->display_name)); ?></h2>
 	<?php endif; ?>
 

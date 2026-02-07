@@ -101,8 +101,9 @@ if (empty($dashboard_url)) {
 		<h2><?php echo esc_html($ticket->subject); ?></h2>
 		<div class="pnpc-psd-ticket-meta">
 			<span class="pnpc-psd-ticket-number">
-/* translators: Placeholder(s) in localized string. */
-				<?php printf(esc_html__('Ticket #%s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?>
+				<?php
+				// translators: %s is the ticket number.
+				printf(esc_html__('Ticket #%s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?>
 			</span>
 			<?php
 			$raw_status = isset( $ticket->status ) ? (string) $ticket->status : '';

@@ -74,7 +74,9 @@ $base_url = remove_query_arg( array( 'pnpc_psd_page' ) );
 							<?php echo esc_html($ticket->subject); ?>
 						</a>
 						<?php if ($new_responses > 0) : ?>
-/* translators: Placeholder(s) in localized string. */
+							<?php
+							// translators: %d is the number of new responses.
+							?>
 							<span class="pnpc-psd-ticket-updated-dot" title="<?php echo esc_attr(sprintf(_n('%d new response', '%d new responses', $new_responses, 'pnpc-pocket-service-desk'), absint($new_responses))); ?>" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#28a745;margin-left:8px;vertical-align:middle;"></span>
 						<?php endif; ?>
 					</h3>
@@ -104,13 +106,14 @@ $base_url = remove_query_arg( array( 'pnpc_psd_page' ) );
 						$created_display = function_exists('pnpc_psd_format_db_datetime_for_display')
 							? pnpc_psd_format_db_datetime_for_display($ticket->created_at)
 							: date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($ticket->created_at));
-/* translators: Placeholder(s) in localized string. */
+						// translators: %s is the formatted creation date and time.
 						printf(esc_html__('Created %s', 'pnpc-pocket-service-desk'), esc_html($created_display));
 						?>
 					</span>
 					<span class="pnpc-psd-ticket-responses">
-/* translators: Placeholder(s) in localized string. */
-						<?php printf(esc_html(_n('%d response', '%d responses', $response_count, 'pnpc-pocket-service-desk')), absint($response_count)); ?>
+						<?php
+						// translators: %d is the number of responses.
+						printf(esc_html(_n('%d response', '%d responses', $response_count, 'pnpc-pocket-service-desk')), absint($response_count)); ?>
 					</span>
 					<a href="<?php echo esc_url($ticket_url); ?>" class="pnpc-psd-button pnpc-psd-button-small pnpc-psd-my-tickets-view-btn"><?php esc_html_e('View Details', 'pnpc-pocket-service-desk'); ?></a>
 				</div>

@@ -99,7 +99,7 @@ class PNPC_PSD_Audit_Log {
 			"DELETE FROM {$table} WHERE id NOT IN (SELECT id FROM (SELECT id FROM {$table} ORDER BY id DESC LIMIT %d) t)",
 			$cap
 		);
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared -- Prepared SQL, table name from $wpdb->prefix
 		$wpdb->query( $sql );
 	}
 
