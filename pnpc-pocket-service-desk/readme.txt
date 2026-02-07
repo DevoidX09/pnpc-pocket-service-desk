@@ -2,9 +2,9 @@
 Contributors: pnpc
 Tags: helpdesk, service desk, support, tickets, customer support
 Requires at least: 5.8
-Tested up to: 6.8
+Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.1.4.3
+Stable tag: 1.1.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,6 +98,12 @@ The `[pnpc_services]` block is included as a neutral extension seam. By default,
 11. Settings: Experience (UX/workflow toggles).
 
 == Changelog ==
+
+= 1.1.5 =
+* WordPress.org submission fixes: Remove load_plugin_textdomain() calls (WordPress.org handles translations automatically since WP 4.6+)
+* Update "Tested up to" version to WordPress 6.7
+* Add .distignore file to exclude development files from distribution
+* Standardize version number across all plugin files
 
 = 1.1.4.3 =
 * Setup Wizard: clarify Builder shortcode guidance (DIY/custom page reference + login menu note).
