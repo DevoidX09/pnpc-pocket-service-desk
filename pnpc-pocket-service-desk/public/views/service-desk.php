@@ -2,6 +2,9 @@
 
 /**
  * Public service desk dashboard view (patched to use helpers for timestamps)
+ *
+ * @package PNPC_Pocket_Service_Desk
+ * phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template variables passed from controller
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -71,8 +74,10 @@ if ( $user_id ) {
 <div class="pnpc-psd-dashboard">
 
 	<?php if ((bool) get_option('pnpc_psd_show_welcome_service_desk', 1) && $user_id) : ?>
-/* translators: Placeholder(s) in localized string. */
-		<h2><?php printf(esc_html__('Welcome, %s!', 'pnpc-pocket-service-desk'), esc_html($current_user->display_name)); ?></h2>
+		<?php
+		// translators: %s is the user's display name.
+		printf('<h2>%s</h2>', sprintf(esc_html__('Welcome, %s!', 'pnpc-pocket-service-desk'), esc_html($current_user->display_name)));
+		?>
 	<?php endif; ?>
 
 	<div class="pnpc-psd-ticket-totals" style="max-width:760px;margin:16px 0;padding:20px;border-radius:8px;background:linear-gradient(180deg,#ffffff,#f7f9fb);box-shadow:0 1px 4px rgba(0,0,0,0.04);border:1px solid #e6eef6;">
