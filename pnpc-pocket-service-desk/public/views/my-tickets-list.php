@@ -106,7 +106,7 @@ $base_url = remove_query_arg( array( 'pnpc_psd_page' ) );
 						$created_display = function_exists('pnpc_psd_format_db_datetime_for_display')
 							? pnpc_psd_format_db_datetime_for_display($ticket->created_at)
 							: date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($ticket->created_at));
-						// translators: %s is the formatted creation date and time.
+						// translators: %s is the formatted creation date and time in the site's configured format.
 						printf(esc_html__('Created %s', 'pnpc-pocket-service-desk'), esc_html($created_display));
 						?>
 					</span>

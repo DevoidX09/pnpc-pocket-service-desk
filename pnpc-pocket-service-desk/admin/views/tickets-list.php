@@ -322,7 +322,7 @@ if( !function_exists('pnpc_psd_get_pagination_link')) {
 						<?php if ( $can_bulk_actions ) : ?>
 						<th scope="row" class="check-column">
 							<?php
-							// translators: %s is the ticket number being selected.
+							// translators: %s is the ticket number.
 							?>
 							<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>"><?php printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?></label>
 							<input type="checkbox" name="ticket[]" id="cb-select-<?php echo esc_attr( absint( $ticket->id ) ); ?>" value="<?php echo esc_attr( absint( $ticket->id ) ); ?>">
