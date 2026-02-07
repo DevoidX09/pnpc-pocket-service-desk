@@ -3,7 +3,7 @@
  * Plugin Name:       PNPC Pocket Service Desk
  * Plugin URI:        https://github.com/DevoidX09/pnpc-pocket-service-desk
  * Description:       A WordPress-native service desk plugin for managing customer support tickets.
- * Version:           1.1.4.3
+ * Version:           1.1.5
  * Author:            PNPC
  * Author URI:        https://github.com/DevoidX09
  * License:           GPL v2 or later
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'PNPC_PSD_VERSION' ) ) {
-	define( 'PNPC_PSD_VERSION', '1.1.4.1' );
+	define( 'PNPC_PSD_VERSION', '1.1.5' );
 }
 
 if ( ! defined( 'PNPC_PSD_PLUGIN_DIR' ) ) {
@@ -37,18 +37,9 @@ if ( ! defined( 'PNPC_PSD_PLUGIN_BASENAME' ) ) {
 }
 
 /**
- * Load translations on init (prevents load_textdomain_just_in_time notices).
- *
- * @return void
+ * Translations are automatically loaded by WordPress.org for hosted plugins.
+ * No manual load_plugin_textdomain() call needed since WordPress 4.6+.
  */
-function pnpc_psd_load_textdomain() {
-	load_plugin_textdomain(
-		'pnpc-pocket-service-desk',
-		false,
-		dirname( plugin_basename( __FILE__ ) ) . '/languages'
-	);
-}
-add_action( 'init', 'pnpc_psd_load_textdomain', 5 );
 
 /**
  * Run database migrations on update (not only on activation).
