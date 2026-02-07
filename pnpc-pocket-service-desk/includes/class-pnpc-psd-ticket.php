@@ -5,8 +5,6 @@
  *
  * @package    PNPC_Pocket_Service_Desk
  * @subpackage PNPC_Pocket_Service_Desk/includes
- * phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table queries, object caching not applicable
- * phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names properly prefixed and escaped
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

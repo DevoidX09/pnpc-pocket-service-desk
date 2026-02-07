@@ -11,7 +11,6 @@
  *
  * @package    PNPC_Pocket_Service_Desk
  * @subpackage PNPC_Pocket_Service_Desk/public/views
- * phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template variables passed from controller
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -75,11 +74,8 @@ $base_url = remove_query_arg( array( 'pnpc_psd_page' ) );
 							<?php echo esc_html($ticket->subject); ?>
 						</a>
 						<?php if ($new_responses > 0) : ?>
-							<?php
-							// translators: %d is the number of new responses.
-							$new_response_title = sprintf(_n('%d new response', '%d new responses', $new_responses, 'pnpc-pocket-service-desk'), absint($new_responses));
-							?>
-							<span class="pnpc-psd-ticket-updated-dot" title="<?php echo esc_attr($new_response_title); ?>" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#28a745;margin-left:8px;vertical-align:middle;"></span>
+/* translators: Placeholder(s) in localized string. */
+							<span class="pnpc-psd-ticket-updated-dot" title="<?php echo esc_attr(sprintf(_n('%d new response', '%d new responses', $new_responses, 'pnpc-pocket-service-desk'), absint($new_responses))); ?>" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#28a745;margin-left:8px;vertical-align:middle;"></span>
 						<?php endif; ?>
 					</h3>
 					<div class="pnpc-psd-ticket-meta">
@@ -113,10 +109,8 @@ $base_url = remove_query_arg( array( 'pnpc_psd_page' ) );
 						?>
 					</span>
 					<span class="pnpc-psd-ticket-responses">
-						<?php
-						// translators: %d is the number of responses.
-						printf(esc_html(_n('%d response', '%d responses', $response_count, 'pnpc-pocket-service-desk')), absint($response_count));
-						?>
+/* translators: Placeholder(s) in localized string. */
+						<?php printf(esc_html(_n('%d response', '%d responses', $response_count, 'pnpc-pocket-service-desk')), absint($response_count)); ?>
 					</span>
 					<a href="<?php echo esc_url($ticket_url); ?>" class="pnpc-psd-button pnpc-psd-button-small pnpc-psd-my-tickets-view-btn"><?php esc_html_e('View Details', 'pnpc-pocket-service-desk'); ?></a>
 				</div>
