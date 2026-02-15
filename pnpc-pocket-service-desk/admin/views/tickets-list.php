@@ -51,6 +51,7 @@ if( !function_exists('pnpc_psd_get_pagination_link')) {
  * @return mixed
  */
 	function pnpc_psd_get_pagination_link( $page) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination links do not require nonce verification per WordPress standards.
 		$args = array();
 		if ( isset( $_GET['page'] ) ) {
 			$args['page'] = sanitize_text_field( wp_unslash( $_GET['page'] ) );

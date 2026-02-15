@@ -1083,6 +1083,10 @@ if ( ! function_exists( 'pnpc_psd_sanitize_allowed_file_types' ) ) {
 				$clean[] = $token;
 			}
 		}
+		if ( empty( $clean ) ) {
+			// Return default MIME types if no valid MIME types were provided
+			return 'image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip';
+		}
 		return implode( ',', array_unique( $clean ) );
 	}
 }
