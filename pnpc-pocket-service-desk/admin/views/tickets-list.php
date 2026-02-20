@@ -51,9 +51,19 @@ if( !function_exists('pnpc_psd_get_pagination_link')) {
  * @return mixed
  */
 	function pnpc_psd_get_pagination_link( $page) {
-		$args = isset( $_GET ) ? (array) wp_unslash( $_GET ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Building pagination links from current query vars.
-		$args['paged'] = $page;
-		return add_query_arg($args, admin_url('admin.php'));
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination links do not require nonce verification per WordPress standards.
+		$args = array();
+		if ( isset( $_GET['page'] ) ) {
+			$args['page'] = sanitize_text_field( wp_unslash( $_GET['page'] ) );
+		}
+		if ( isset( $_GET['view'] ) ) {
+			$args['view'] = sanitize_text_field( wp_unslash( $_GET['view'] ) );
+		}
+		if ( isset( $_GET['status'] ) ) {
+			$args['status'] = sanitize_text_field( wp_unslash( $_GET['status'] ) );
+		}
+		$args['paged'] = absint( $page );
+		return esc_url( add_query_arg( $args, admin_url( 'admin.php' ) ) );
 	}
 }
 ?>

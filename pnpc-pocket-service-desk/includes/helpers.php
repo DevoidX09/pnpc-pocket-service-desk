@@ -1075,28 +1075,19 @@ if ( ! function_exists( 'pnpc_psd_sanitize_allowed_file_types' ) ) {
 		} else {
 			$raw = is_string( $value ) ? $value : '';
 		}
-		$items = preg_split( '/[\s,;]+/', (string) $raw );
-		if ( ! is_array( $items ) ) {
-			$items = array();
-		}
-		$items = array_map( 'trim', $items );
-		$items = array_filter(
-			$items,
-			function ( $v ) {
-				return '' !== trim( (string) $v );
+		$tokens = explode( ',', (string) $raw );
+		$clean = array();
+		foreach ( $tokens as $token ) {
+			$token = sanitize_mime_type( trim( $token ) );
+			if ( '' !== $token && false !== strpos( $token, '/' ) ) {
+				$clean[] = $token;
 			}
-		);
-		$items = array_map(
-			function ( $v ) {
-				return strtolower( (string) $v );
-			},
-			$items
-		);
-		$items = array_values( array_unique( $items ) );
-		if ( empty( $items ) ) {
-			$items = array( 'jpg','jpeg','png','gif','webp','pdf','txt','csv','doc','docx','xls','xlsx','zip' );
 		}
-		return implode( ',', $items );
+		if ( empty( $clean ) ) {
+			// Return default MIME types if no valid MIME types were provided
+			return 'image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip';
+		}
+		return implode( ',', array_unique( $clean ) );
 	}
 }
 

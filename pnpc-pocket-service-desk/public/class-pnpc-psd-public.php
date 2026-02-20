@@ -489,7 +489,7 @@ ob_start();
 		// Allow extensions to enqueue assets when the block is present.
 		do_action( 'pnpc_psd_services_enqueue_assets', (array) $atts );
 
-		return (string) $output;
+		return wp_kses_post( $output );
 	}
 
 	/**
@@ -545,13 +545,13 @@ ob_start();
 		}
 		$__pnpc_json_error = function( $message ) use ( &$__pnpc_ob_started ) {
 			if ( $__pnpc_ob_started && ob_get_length() ) {
-				ob_clean();
+				ob_get_clean();
 			}
 			wp_send_json_error( array( 'message' => $message ) );
 		};
 		$__pnpc_json_success = function( $payload ) use ( &$__pnpc_ob_started ) {
 			if ( $__pnpc_ob_started && ob_get_length() ) {
-				ob_clean();
+				ob_get_clean();
 			}
 			wp_send_json_success( $payload );
 		};
@@ -885,13 +885,13 @@ ob_start();
 		}
 		$__pnpc_json_error = function( $message ) use ( &$__pnpc_ob_started ) {
 			if ( $__pnpc_ob_started && ob_get_length() ) {
-				ob_clean();
+				ob_get_clean();
 			}
 			wp_send_json_error( array( 'message' => $message ) );
 		};
 		$__pnpc_json_success = function( $payload ) use ( &$__pnpc_ob_started ) {
 			if ( $__pnpc_ob_started && ob_get_length() ) {
-				ob_clean();
+				ob_get_clean();
 			}
 			wp_send_json_success( $payload );
 		};
