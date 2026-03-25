@@ -52,6 +52,48 @@ class PNPC_PSD_Ticket_Response{
 			return false;
 		}
 
+		// ---------------------------------------------------------------------
+		// Duplicate guard (server-side, race-safe)
+		// ---------------------------------------------------------------------
+		// Prevent duplicate inserts when two near-simultaneous requests submit the
+		// same response content (e.g., double-click, duplicated JS bindings, network
+		// retries). The public AJAX handler also performs a "last row" check, but
+		// that is not race-safe. We use an atomic add_option() lock here.
+		$ticket_id_for_lock = absint( $data['ticket_id'] );
+		$user_id_for_lock   = absint( $data['user_id'] );
+		$response_for_lock  = trim( wp_strip_all_tags( (string) $data['response'] ) );
+		$lock_ttl           = 15; // seconds.
+		$lock_hash          = sha1( $ticket_id_for_lock . '|' . $user_id_for_lock . '|' . $response_for_lock );
+		$lock_name          = 'pnpc_psd_dupe_' . substr( $lock_hash, 0, 20 );
+		$now_ts             = time();
+
+		$lock_acquired = add_option( $lock_name, (string) $now_ts, '', 'no' );
+		if ( ! $lock_acquired ) {
+			$existing_ts = (int) get_option( $lock_name, 0 );
+			// If stale (e.g., prior fatal), clear and retry once.
+			if ( $existing_ts > 0 && ( $now_ts - $existing_ts ) > 120 ) {
+				delete_option( $lock_name );
+				$lock_acquired = add_option( $lock_name, (string) $now_ts, '', 'no' );
+			}
+		}
+
+		if ( ! $lock_acquired ) {
+			$table_name_for_lock = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			$existing_id = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT id FROM {$table_name_for_lock} WHERE ticket_id = %d AND user_id = %d AND response = %s ORDER BY id DESC LIMIT 1",
+					$ticket_id_for_lock,
+					$user_id_for_lock,
+					wp_kses_post( (string) $data['response'] )
+				)
+			);
+			if ( $existing_id > 0 ) {
+				return $existing_id;
+			}
+			return false;
+		}
+
 		// Check if user is staff.
 		$is_staff = current_user_can('pnpc_psd_respond_to_tickets');
 
@@ -114,8 +156,21 @@ class PNPC_PSD_Ticket_Response{
 			}
 			self::send_response_notification($response_id);
 
+			// Best-effort lock cleanup after TTL (avoid option bloat).
+			register_shutdown_function(
+				function () use ( $lock_name, $lock_ttl ) {
+					$ts = (int) get_option( $lock_name, 0 );
+					if ( $ts > 0 && ( time() - $ts ) >= (int) $lock_ttl ) {
+						delete_option( $lock_name );
+					}
+				}
+			);
+
 			return $response_id;
 		}
+
+		// Insert failed; release the lock.
+		delete_option( $lock_name );
 
 		return false;
 	}

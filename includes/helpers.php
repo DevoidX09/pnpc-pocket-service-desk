@@ -763,6 +763,29 @@ if ( ! function_exists( 'pnpc_psd_get_audit_log_cap' ) ) {
 }
 
 /**
+ * Clean all output buffers before returning JSON in AJAX handlers.
+ *
+ * This helps prevent PHP notices/warnings (including from third-party plugins)
+ * from corrupting JSON responses, which can cause UI stalls or "critical error"
+ * overlays even when the operation succeeded.
+ *
+ * @since 1.1.5.1
+ *
+ * @return void
+ */
+if ( ! function_exists( 'pnpc_psd_ajax_clean_output' ) ) {
+	function pnpc_psd_ajax_clean_output() {
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			return;
+		}
+		while ( ob_get_level() > 0 ) {
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort cleanup.
+			@ob_end_clean();
+		}
+	}
+}
+
+/**
  * Sanitize Agents option array.
  *
  * Stored format:

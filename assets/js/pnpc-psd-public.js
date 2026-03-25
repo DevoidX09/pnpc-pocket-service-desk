@@ -150,8 +150,9 @@
 			});
 		}
 
+		// NOTE: Namespace + off() first to prevent duplicate bindings if this script is enqueued twice.
 		// Use delegated bindings so the create form can be re-rendered without losing handlers.
-		$(document).on('change', '#ticket-attachments', function(e) {
+		$(document).off('change.pnpcpsd', '#ticket-attachments').on('change.pnpcpsd', '#ticket-attachments', function(e) {
 			var $form = $(this).closest('form');
 			var createFiles = Array.prototype.slice.call(e.target.files || []);
 			if (createFiles.length > MAX_ATTACHMENTS) {
@@ -162,17 +163,19 @@
 			renderAttachmentList(createFiles, $form.find('.pnpc-psd-attachments-list'), '#ticket-attachments');
 		});
 
-		$(document).on('submit', '#pnpc-psd-create-ticket-form', function(e) {
+		$(document).off('submit.pnpcpsd', '#pnpc-psd-create-ticket-form').on('submit.pnpcpsd', '#pnpc-psd-create-ticket-form', function(e) {
 			e.preventDefault();
 			if (typeof pnpcPsdPublic === 'undefined') {
 				return;
 			}
 
 			var $form = $(this);
+			var $submitBtn = $form.find('button[type="submit"]');
 			if ($form.data('pnpcSubmitting')) {
 				return;
 			}
 			$form.data('pnpcSubmitting', 1);
+			if ($submitBtn && $submitBtn.length) { $submitBtn.prop('disabled', true); }
 
 			// Use per-form createFiles to avoid conflicts when multiple shortcodes render on one page.
 			var createFiles = $form.data('pnpcCreateFiles') || [];
@@ -182,11 +185,11 @@
 			var subject = $form.find('[name="subject"]').val();
 			var description = $form.find('[name="description"]').val();
 			var priority = $form.find('[name="priority"]').val() || 'normal';
-			var $submitBtn = $(this).find('button[type="submit"]');
 
 			if (!subject.trim() || !description.trim()) {
 				showCreateMessage('error', 'Please fill in all required fields.', $form);
 				$form.data('pnpcSubmitting', 0);
+				if ($submitBtn && $submitBtn.length) { $submitBtn.prop('disabled', false); }
 				return;
 			}
 
@@ -200,8 +203,6 @@
 			for (var i = 0; i < createFiles.length; i++) {
 				formData.append('attachments[]', createFiles[i]);
 			}
-
-			$submitBtn.prop('disabled', true);
 
 			$.ajax({
 				url: pnpcPsdPublic.ajax_url,
@@ -217,24 +218,24 @@
 						renderAttachmentList(createFiles, $form.find('.pnpc-psd-attachments-list'), '#ticket-attachments');
 						$form[0].reset();
 						// Allow creating another ticket without leaving the page.
-						$submitBtn.prop('disabled', false);
+						if ($submitBtn && $submitBtn.length) { $submitBtn.prop('disabled', false); }
 
 					} else if (result && result.data && result.data.message) {
 						showCreateMessage('error', result.data.message, $form);
-						$submitBtn.prop('disabled', false);
+						if ($submitBtn && $submitBtn.length) { $submitBtn.prop('disabled', false); }
 					} else {
 						var msg = (result && result.data && result.data.message) ? result.data.message : 'Failed to create ticket.';
 						showCreateMessage('error', msg, $form);
-						$submitBtn.prop('disabled', false);
+						if ($submitBtn && $submitBtn.length) { $submitBtn.prop('disabled', false); }
 					}
 				},
 				error: function(xhr, status, err) {
 					if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-public.js create ticket error', status, err, xhr && xhr.responseText); }
 					showCreateMessage('error', 'Request failed. Please reload and try again.', $form);
-					$submitBtn.prop('disabled', false);
+					if ($submitBtn && $submitBtn.length) { $submitBtn.prop('disabled', false); }
 				},
 				complete: function() {
-					$submitBtn.prop('disabled', false);
+					if ($submitBtn && $submitBtn.length) { $submitBtn.prop('disabled', false); }
 					$form.data('pnpcSubmitting', 0);
 				}
 			});
@@ -250,7 +251,7 @@
 			setTimeout(function() { $messageDiv.fadeOut(); }, 5000);
 		}
 
-		$('#response-attachments').on('change', function(e) {
+		$('#response-attachments').off('change.pnpcpsd').on('change.pnpcpsd', function(e) {
 			responseFiles = Array.prototype.slice.call(e.target.files || []);
 			if (responseFiles.length > MAX_ATTACHMENTS) {
 				responseFiles = responseFiles.slice(0, MAX_ATTACHMENTS);
@@ -259,15 +260,24 @@
 		});
 
 		// Handle ticket response form submission (now supports attachments)
-		$('#pnpc-psd-response-form').on('submit', function(e) {
+		$('#pnpc-psd-response-form').off('submit.pnpcpsd').on('submit.pnpcpsd', function(e) {
 			e.preventDefault();
 
 			var $form = $(this);
+			var $submitBtn = $form.find('button[type="submit"]');
+			if ($form.data('pnpcSubmitting')) {
+				return;
+			}
+			$form.data('pnpcSubmitting', 1);
+			if ($submitBtn && $submitBtn.length) { $submitBtn.prop('disabled', true); }
+
 			var ticketId = $form.data('ticket-id');
 			var response = $('#response-text').val();
 
 			if (!response.trim()) {
 				showResponseMessage('error', 'Please enter your response.');
+				$form.data('pnpcSubmitting', 0);
+				if ($submitBtn && $submitBtn.length) { $submitBtn.prop('disabled', false); }
 				return;
 			}
 
@@ -299,11 +309,15 @@
 						}, 900);
 					} else {
 						showResponseMessage('error', result.data && result.data.message ? result.data.message : 'Failed to add response.');
+						$form.data('pnpcSubmitting', 0);
+						if ($submitBtn && $submitBtn.length) { $submitBtn.prop('disabled', false); }
 					}
 				},
 				error: function(xhr, status, err) {
 					if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-public.js AJAX error', status, err, xhr && xhr.responseText); }
 					showResponseMessage('error', 'An error occurred. Please try again.');
+					$form.data('pnpcSubmitting', 0);
+					if ($submitBtn && $submitBtn.length) { $submitBtn.prop('disabled', false); }
 				}
 			});
 		});

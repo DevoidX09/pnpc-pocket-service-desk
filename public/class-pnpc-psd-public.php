@@ -1040,6 +1040,34 @@ ob_start();
 			}
 		}
 
+		// Duplicate-guard: prevent accidental double-submits (double click / retries / duplicated hooks)
+		// from creating duplicate replies and duplicate notification emails.
+		global $wpdb;
+		$resp_table = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$last_row   = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT id, response, created_at FROM {$resp_table} WHERE ticket_id = %d AND user_id = %d ORDER BY id DESC LIMIT 1",
+				$ticket_id,
+				$viewer_id
+			)
+		);
+		if ( $last_row && isset( $last_row->response ) && isset( $last_row->created_at ) ) {
+			$last_response = (string) $last_row->response;
+			$last_ts       = strtotime( (string) $last_row->created_at );
+			$now_ts        = time();
+
+			// If the same user posts the same content to the same ticket within 8 seconds, treat as a duplicate.
+			if ( $last_ts && ( $now_ts - $last_ts ) <= 8 && trim( wp_strip_all_tags( (string) $response ) ) === trim( wp_strip_all_tags( $last_response ) ) ) {
+				$__pnpc_json_success(
+					array(
+						'message'          => __( 'Reply added.', 'pnpc-pocket-service-desk' ),
+						'duplicate_ignored' => 1,
+						'response_id'      => (int) $last_row->id,
+					)
+				);
+			}
+		}
+
 		$response_id = PNPC_PSD_Ticket_Response::create(array(
 			'ticket_id' => $ticket_id,
 			'user_id' => $viewer_id,

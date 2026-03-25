@@ -2483,7 +2483,15 @@ public function display_tickets_page()
 
 		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
 
+		// Defensive: prevent notices/warnings from corrupting JSON responses.
+		if ( function_exists( 'pnpc_psd_ajax_clean_output' ) ) {
+			pnpc_psd_ajax_clean_output();
+		}
+
 		if (! current_user_can('pnpc_psd_respond_to_tickets')) {
+			if ( function_exists( 'pnpc_psd_ajax_clean_output' ) ) {
+				pnpc_psd_ajax_clean_output();
+			}
 			wp_send_json_error(array('message' => __('Permission denied. ', 'pnpc-pocket-service-desk')));
 		}
 
@@ -2491,11 +2499,17 @@ public function display_tickets_page()
 		$response  = isset($_POST['response']) ? wp_kses_post(wp_unslash($_POST['response'])) : '';
 
 		if (! $ticket_id || empty($response)) {
+			if ( function_exists( 'pnpc_psd_ajax_clean_output' ) ) {
+				pnpc_psd_ajax_clean_output();
+			}
 			wp_send_json_error(array('message' => __('Invalid data.', 'pnpc-pocket-service-desk')));
 		}
 
 		$ticket = PNPC_PSD_Ticket::get($ticket_id);
 		if (! $ticket) {
+			if ( function_exists( 'pnpc_psd_ajax_clean_output' ) ) {
+				pnpc_psd_ajax_clean_output();
+			}
 			wp_send_json_error(array('message' => __('Ticket not found.', 'pnpc-pocket-service-desk')));
 		}
 
@@ -2690,9 +2704,15 @@ public function display_tickets_page()
 					$detail
 				);
 			}
+			if ( function_exists( 'pnpc_psd_ajax_clean_output' ) ) {
+				pnpc_psd_ajax_clean_output();
+			}
 			wp_send_json_success(array('message' => __('Response added successfully.', 'pnpc-pocket-service-desk') . $note));
 		}
 
+		if ( function_exists( 'pnpc_psd_ajax_clean_output' ) ) {
+			pnpc_psd_ajax_clean_output();
+		}
 		wp_send_json_error(array('message' => __('Failed to add response.', 'pnpc-pocket-service-desk')));
 	}
 
