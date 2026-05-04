@@ -42,7 +42,7 @@ $show_welcome_profile = (bool) get_option('pnpc_psd_show_welcome_profile', 1);
 		/* translators: %s: user display name */
 		printf(
 			'<div class="pnpc-psd-welcome"><h2>%s</h2></div>',
-/* translators: Placeholder(s) in localized string. */
+			/* translators: %s: current user's display name. */
 			sprintf(esc_html__('Welcome, %s!', 'pnpc-pocket-service-desk'), esc_html($current_user->display_name))
 		);
 		?>

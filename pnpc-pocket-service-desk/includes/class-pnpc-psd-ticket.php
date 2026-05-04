@@ -338,7 +338,7 @@ class PNPC_PSD_Ticket{
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
 		$tickets = $wpdb->get_results(
 			"SELECT * FROM {$table_name} {$where} ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -397,7 +397,7 @@ class PNPC_PSD_Ticket{
 			}
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
 		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name} {$where}" );
 		return $count;
 	}
@@ -474,7 +474,7 @@ class PNPC_PSD_Ticket{
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
 		$tickets = $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE {$where} ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -771,7 +771,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 			. " AND IFNULL( last_customer_activity_at, created_at )"
 			. " > IFNULL( last_staff_viewed_at, '0000-00-00 00:00:00' )";
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
 		$count = $wpdb->get_var( $wpdb->prepare( $sql, $params ) );
 		return absint( $count );
 	}
@@ -908,7 +908,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
 		$tickets = $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE deleted_at IS NOT NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -973,7 +973,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$limit  = absint( $args['limit'] );
 		$offset = absint( $args['offset'] );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
 		$rows = $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE archived_at IS NOT NULL AND deleted_at IS NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -1177,7 +1177,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$limit  = absint($args['limit']);
 		$offset = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
 		return $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NOT NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);

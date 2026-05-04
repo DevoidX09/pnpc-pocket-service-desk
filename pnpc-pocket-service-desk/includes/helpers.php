@@ -436,7 +436,13 @@ if (! function_exists('pnpc_psd_debug_log')) {
         if (! $enabled) {
             return;
         }
-        $payload = is_scalar($data) ? $data : print_r($data, true);    }
+		/*
+		 * Intentionally avoid logging raw arrays/objects or environment details in
+		 * the WordPress.org build. This helper remains as a safe extension point
+		 * for future diagnostics without exposing sensitive data.
+		 */
+		unset( $label, $data );
+	}
 }
 
 /**
@@ -1197,7 +1203,7 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 		$att_table    = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 		$ticket_table = $wpdb->prefix . 'pnpc_psd_tickets';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom attachment table name is built from $wpdb->prefix and hardcoded suffix; values are prepared.
 		$att = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$att_table} WHERE id = %d AND ticket_id = %d AND deleted_at IS NULL",
@@ -1210,7 +1216,7 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 			wp_die( esc_html__( 'Attachment not found.', 'pnpc-pocket-service-desk' ), 404 );
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom ticket table name is built from $wpdb->prefix and hardcoded suffix; values are prepared.
 		$ticket = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT id, user_id FROM {$ticket_table} WHERE id = %d",
@@ -1275,7 +1281,9 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 		while ( ob_get_level() ) {
 			ob_end_clean();
 		}
-		readfile( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streaming verified attachment file; WP_Filesystem is not appropriate for direct output.
+
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streaming a nonce/capability-verified attachment download to the browser after path validation.
+			readfile( $path );
 		exit;
 	}
 }

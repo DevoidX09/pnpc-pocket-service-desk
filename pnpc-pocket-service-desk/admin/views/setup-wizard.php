@@ -175,7 +175,7 @@ if ( $dashboard_page_id > 0 && 'trash' !== get_post_status( $dashboard_page_id )
 						<strong><?php echo esc_html__( 'Tickets:', 'pnpc-pocket-service-desk' ); ?></strong>
 						<?php
 						if ( $ticket_count > 0 ) {
-/* translators: Placeholder(s) in localized string. */
+							/* translators: %d: existing ticket count. */
 							echo esc_html( sprintf( __( '%d existing ticket(s) detected', 'pnpc-pocket-service-desk' ), $ticket_count ) );
 						} else {
 							echo esc_html__( 'No tickets detected (clean queue)', 'pnpc-pocket-service-desk' );

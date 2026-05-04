@@ -332,8 +332,10 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 							</td>
 							<td>
 								<strong><?php echo esc_html( $staff->display_name ); ?></strong>
-/* translators: Placeholder(s) in localized string. */
-								<br><span class="description"><?php echo esc_html( $staff->user_email ); ?><?php echo esc_html( sprintf( /* translators: %d is the WordPress user ID. */ __( ' (#%d)', 'pnpc-pocket-service-desk' ), (int) $uid ) ); ?></span>
+								<br><span class="description"><?php echo esc_html( $staff->user_email ); ?><?php
+	/* translators: %d: WordPress user ID. */
+	echo esc_html( sprintf( __( ' (#%d)', 'pnpc-pocket-service-desk' ), (int) $uid ) );
+	?></span>
 							</td>
 							<td><?php echo esc_html( $roles ); ?></td>
 							<td>

@@ -53,11 +53,13 @@ class PNPC_PSD_Internal_Notes {
 			return;
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin page check.
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 		if ( 'pnpc-service-desk-ticket' !== $page ) {
 			return;
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only ticket context for asset enqueue.
 		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( wp_unslash( $_GET['ticket_id'] ) ) : 0;
 		if ( $ticket_id <= 0 ) {
 			return;
@@ -262,6 +264,7 @@ class PNPC_PSD_Internal_Notes {
 		if ( $ticket_id <= 0 ) {
 			wp_send_json_error( array( 'message' => 'bad_ticket_id' ), 400 );
 		}
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized on next line with sanitize_textarea_field().
 		$content_raw = isset( $_POST['content'] ) ? wp_unslash( $_POST['content'] ) : '';
 		$content     = sanitize_textarea_field( $content_raw );
 		$content     = trim( $content );

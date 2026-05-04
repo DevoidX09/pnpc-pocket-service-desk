@@ -14,8 +14,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Mark ticket as viewed by current agent
  * This clears the "New" badge in the ticket list
  */
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view marker; state-changing actions are nonce protected.
 if (isset($_GET['ticket_id']) && is_user_logged_in() && current_user_can('pnpc_psd_view_tickets')) {
 	$current_user_id = get_current_user_id();
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view marker.
 	$ticket_id = absint( wp_unslash( $_GET['ticket_id'] ) );
 	
 	if ($ticket_id > 0) {
@@ -131,9 +133,8 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 		<div class="pnpc-psd-staff-created-badge">
 			<span class="dashicons dashicons-admin-users"></span>
 			<?php
-			/* translators: 1: staff member name, 2: customer name */
+			/* translators: 1: staff member name, 2: customer name. */
 			printf(
-/* translators: Placeholder(s) in localized string. */
 				esc_html__('Staff-Created Ticket: Created by %1$s on behalf of %2$s', 'pnpc-pocket-service-desk'),
 				'<strong>' . esc_html( $staff_name ) . '</strong>',
 				'<strong>' . esc_html( $customer_name ) . '</strong>'
@@ -325,8 +326,9 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 								⚠ <?php
 								/* translators: %s: file size limit */
 								printf(
-/* translators: Placeholder(s) in localized string. */
-									esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
+									/* translators: %s: formatted file size limit. */
+									/* translators: %s: formatted file size limit. */
+											esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
 									esc_html(pnpc_psd_format_filesize(PNPC_PSD_PREVIEW_LIMIT))
 								);
 								?>
@@ -422,7 +424,6 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 											⚠ <?php
 											/* translators: %s: file size limit */
 											printf(
-/* translators: Placeholder(s) in localized string. */
 												esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
 												esc_html(pnpc_psd_format_filesize(PNPC_PSD_PREVIEW_LIMIT))
 											);

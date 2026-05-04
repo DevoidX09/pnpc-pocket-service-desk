@@ -4,7 +4,7 @@ Tags: helpdesk, service desk, support, tickets, customer support
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.5
+Stable tag: 1.1.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,10 +57,10 @@ When a customer visits the dashboard:
 
 If you use a separate “Logout” link/button, point it back to the dashboard (or your desired landing page) so customers can log in/out without visiting `/wp-admin/`.
 
-== Testing Setup==
-1. Create a test user  in either a customer or other external role.
-2. Open a Incognito Browser session.
-3. Navigate directly to the dashboard URL or use your websites external login link if it exists and links to the dashboard. 
+== Testing Setup ==
+1. Create a test user in either a customer or other external role.
+2. Open an incognito browser session.
+3. Navigate directly to the dashboard URL or use your website external login link if it exists and links to the dashboard. 
 4. Login to test making and tracking tickets. 
 
 
@@ -99,9 +99,25 @@ The `[pnpc_services]` block is included as a neutral extension seam. By default,
 
 == Changelog ==
 
+= 1.1.9 =
+* Final reviewer-prevention pass: tightened translator comments, read-only nonce annotations, prefixed activation hooks, request sanitization, and file/query review notes.
+
+= 1.1.8 =
+* Review-prep pass 3: added translator comments for placeholder strings, updated date handling to gmdate(), refreshed Tested up to, and added targeted Plugin Check annotations for safe schema/export/download operations.
+
+= 1.1.7 =
+* Review-prep pass: removed inactive WooCommerce product allocation remnants from Free.
+* Preserved the Services shortcode as a neutral extension seam.
+* Kept runtime behavior unchanged for core ticketing and dashboard flows.
+
+= 1.1.6 =
+* Review-preparation pass: standardize version metadata and distribution packaging.
+* Harden the internal debug logger to avoid unnecessary raw debug output.
+* Minor readme wording and formatting cleanup.
+
 = 1.1.5 =
 * WordPress.org submission fixes: Remove load_plugin_textdomain() calls (WordPress.org handles translations automatically since WP 4.6+)
-* Update "Tested up to" version to WordPress 6.7
+* Update "Tested up to" version to WordPress 6.9
 * Add .distignore file to exclude development files from distribution
 * Standardize version number across all plugin files
 

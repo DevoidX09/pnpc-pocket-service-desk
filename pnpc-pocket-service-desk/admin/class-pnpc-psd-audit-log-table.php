@@ -226,9 +226,12 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 		$per_page = (int) apply_filters( 'pnpc_psd_audit_log_per_page', 25 );
 		$per_page = max( 5, min( 200, $per_page ) );
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list table pagination.
 		$paged = isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1;
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list table sorting.
 		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list table sorting.
 		$order   = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'desc';
 
 		$allowed_orderby = array( 'created_at', 'action', 'ticket_id', 'actor_id' );
@@ -303,8 +306,11 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @return array{action:string,ticket_id:int,actor_id:int}
 	 */
 	protected function get_filters() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only audit filter.
 		$action   = isset( $_GET['audit_action'] ) ? sanitize_text_field( wp_unslash( $_GET['audit_action'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only audit filter.
 		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( wp_unslash( $_GET['ticket_id'] ) ) : 0;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only audit filter.
 		$actor_id  = isset( $_GET['actor_id'] ) ? absint( wp_unslash( $_GET['actor_id'] ) ) : 0;
 
 		return array(

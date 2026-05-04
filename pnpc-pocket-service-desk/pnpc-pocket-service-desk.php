@@ -3,7 +3,7 @@
  * Plugin Name:       PNPC Pocket Service Desk
  * Plugin URI:        https://github.com/DevoidX09/pnpc-pocket-service-desk
  * Description:       A WordPress-native service desk plugin for managing customer support tickets.
- * Version:           1.1.5
+ * Version:           1.1.9
  * Author:            PNPC
  * Author URI:        https://github.com/DevoidX09
  * License:           GPL v2 or later
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'PNPC_PSD_VERSION' ) ) {
-	define( 'PNPC_PSD_VERSION', '1.1.5' );
+	define( 'PNPC_PSD_VERSION', '1.1.9' );
 }
 
 if ( ! defined( 'PNPC_PSD_PLUGIN_DIR' ) ) {
@@ -65,7 +65,7 @@ add_action( 'plugins_loaded', 'pnpc_psd_maybe_run_migrations', 6 );
  *
  * @return void
  */
-function activate_pnpc_pocket_service_desk() {
+function pnpc_psd_activate_pocket_service_desk() {
 	$activator_file = PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-activator.php';
 	if ( ! file_exists( $activator_file ) ) {
 		return;
@@ -77,14 +77,14 @@ function activate_pnpc_pocket_service_desk() {
 		PNPC_PSD_Activator::activate();
 	}
 }
-register_activation_hook( __FILE__, 'activate_pnpc_pocket_service_desk' );
+register_activation_hook( __FILE__, 'pnpc_psd_activate_pocket_service_desk' );
 
 /**
  * Deactivation routine.
  *
  * @return void
  */
-function deactivate_pnpc_pocket_service_desk() {
+function pnpc_psd_deactivate_pocket_service_desk() {
 	$deactivator_file = PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-deactivator.php';
 	if ( ! file_exists( $deactivator_file ) ) {
 		return;
@@ -96,7 +96,7 @@ function deactivate_pnpc_pocket_service_desk() {
 		PNPC_PSD_Deactivator::deactivate();
 	}
 }
-register_deactivation_hook( __FILE__, 'deactivate_pnpc_pocket_service_desk' );
+register_deactivation_hook( __FILE__, 'pnpc_psd_deactivate_pocket_service_desk' );
 
 /**
  * Require core plugin files defensively.

@@ -820,16 +820,22 @@ ob_start();
 				if ( empty( $detail_note ) && isset( $sk['reason'] ) && 'type' === (string) $sk['reason'] ) {
 					$det = '';
 					if ( ! empty( $sk['mime'] ) ) {
-/* translators: Placeholder(s) in localized string. */
-						$det .= ' ' . sprintf( esc_html__( 'Detected type: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['mime'] ) );
+						/* translators: %s: detected MIME type. */
+							/* translators: %s: detected MIME type. */
+								/* translators: %s: detected MIME type. */
+								$det .= ' ' . sprintf( esc_html__( 'Detected type: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['mime'] ) );
 					}
 					if ( ! empty( $sk['ext'] ) ) {
-/* translators: Placeholder(s) in localized string. */
-						$det .= ' ' . sprintf( esc_html__( 'Extension: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['ext'] ) );
+						/* translators: %s: uploaded file extension. */
+							/* translators: %s: uploaded file extension. */
+								/* translators: %s: uploaded file extension. */
+								$det .= ' ' . sprintf( esc_html__( 'Extension: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['ext'] ) );
 					}
 					if ( ! empty( $sk['allow'] ) ) {
-/* translators: Placeholder(s) in localized string. */
-						$det .= ' ' . sprintf( esc_html__( 'Allowed: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['allow'] ) );
+						/* translators: %s: allowed file types. */
+							/* translators: %s: allowed file types. */
+								/* translators: %s: allowed file types. */
+								$det .= ' ' . sprintf( esc_html__( 'Allowed: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['allow'] ) );
 					}
 					$detail_note = trim( $det );
 				}
@@ -1074,15 +1080,15 @@ ob_start();
 					if ( empty( $detail_note ) && isset( $sk['reason'] ) && 'type' === (string) $sk['reason'] ) {
 						$det = '';
 						if ( ! empty( $sk['mime'] ) ) {
-/* translators: Placeholder(s) in localized string. */
+							/* translators: %s: detected MIME type. */
 							$det .= ' ' . sprintf( esc_html__( 'Detected type: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['mime'] ) );
 						}
 						if ( ! empty( $sk['ext'] ) ) {
-/* translators: Placeholder(s) in localized string. */
+							/* translators: %s: uploaded file extension. */
 							$det .= ' ' . sprintf( esc_html__( 'Extension: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['ext'] ) );
 						}
 						if ( ! empty( $sk['allow'] ) ) {
-/* translators: Placeholder(s) in localized string. */
+							/* translators: %s: allowed file types. */
 							$det .= ' ' . sprintf( esc_html__( 'Allowed: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['allow'] ) );
 						}
 						$detail_note = trim( $det );

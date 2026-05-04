@@ -684,7 +684,9 @@ add_submenu_page(
 		}
 
 		// Handle POST actions.
-		if ( 'POST' === strtoupper( (string) ( $_SERVER['REQUEST_METHOD'] ?? '' ) ) && isset( $_POST['pnpc_psd_setup_nonce'] ) ) {
+		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : '';
+
+		if ( 'POST' === strtoupper( $request_method ) && isset( $_POST['pnpc_psd_setup_nonce'] ) ) {
 			check_admin_referer( 'pnpc_psd_setup_wizard', 'pnpc_psd_setup_nonce' );
 
 			$mode = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : '';
@@ -1357,6 +1359,7 @@ private function is_ticket_view_configured(  $page_id ) {
 
 			// Hard enforce in DB as a backstop.
 			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Backstop slug correction after wp_update_post(); table is the core posts table and values are parameterized by $wpdb->update().
 			$wpdb->update(
 				$wpdb->posts,
 				array( 'post_name' => $desired_slug ),
@@ -1477,7 +1480,7 @@ function create_dashboard_page_from_wizard(  $args ) {
 				if ( file_exists( $template_path ) ) {
 					global $wp_filesystem;
 					if ( ! function_exists( 'WP_Filesystem' ) ) {
-						require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
 					}
 					WP_Filesystem();
 
@@ -1569,7 +1572,7 @@ update_post_meta( $page_id, '_wp_page_template', 'elementor_canvas' );
 			if ( file_exists( $template_path ) ) {
 				global $wp_filesystem;
 				if ( ! function_exists( 'WP_Filesystem' ) ) {
-					require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
 				}
 				WP_Filesystem();
 
@@ -1621,12 +1624,12 @@ if ( class_exists( '\\Elementor\\Plugin' ) ) {
 
 		// Period starts (local WP timezone).
 		$week_start  = strtotime( 'monday this week', $now_ts );
-		$month_start = strtotime( wp_date( 'Y-m-01 00:00:00', $now_ts ) );
-		$year_start  = strtotime( wp_date( 'Y-01-01 00:00:00', $now_ts ) );
+		$month_start = strtotime( gmdate( 'Y-m-01 00:00:00', $now_ts ) );
+		$year_start  = strtotime( gmdate( 'Y-01-01 00:00:00', $now_ts ) );
 
-		$week_start_dt  = wp_date( 'Y-m-d H:i:s', $week_start );
-		$month_start_dt = wp_date( 'Y-m-d H:i:s', $month_start );
-		$year_start_dt  = wp_date( 'Y-m-d H:i:s', $year_start );
+		$week_start_dt  = gmdate( 'Y-m-d H:i:s', $week_start );
+		$month_start_dt = gmdate( 'Y-m-d H:i:s', $month_start );
+		$year_start_dt  = gmdate( 'Y-m-d H:i:s', $year_start );
 
 		$now_dt = current_time( 'mysql' );
 
@@ -1720,7 +1723,9 @@ public function display_tickets_page()
 			wp_die(esc_html__('You do not have permission to access this page.', 'pnpc-pocket-service-desk'));
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only ticket list filter.
 		$status = isset($_GET['status']) ? sanitize_text_field(wp_unslash($_GET['status'])) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only ticket list filter.
 		$view   = isset($_GET['view']) ? sanitize_text_field(wp_unslash($_GET['view'])) : '';
 		$paged  = isset($_GET['paged']) ? max(1, absint(wp_unslash($_GET['paged']))) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination parameter.
 
@@ -1828,6 +1833,7 @@ public function display_tickets_page()
 			wp_die(esc_html__('You do not have permission to access this page.', 'pnpc-pocket-service-desk'));
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin detail page parameter; state changes use nonces.
 		$ticket_id = isset($_GET['ticket_id']) ? absint( wp_unslash( $_GET['ticket_id'] ) ) : 0;
 
 		if (! $ticket_id) {
@@ -2050,15 +2056,6 @@ public function display_tickets_page()
 			)
 		);
 
-		register_setting(
-			'pnpc_psd_settings',
-			'pnpc_psd_user_specific_products',
-			array(
-				'type'              => 'boolean',
-				'sanitize_callback' => 'absint',
-				'default'           => 0,
-			)
-		);
 
 		// Real-time updates settings
 		register_setting(
@@ -2380,97 +2377,6 @@ public function display_tickets_page()
 	}
 
 	/**
-	* Render user allocated products field.
-	*
-	* @param mixed $user
-	*
-	* @since 1.1.1.4
-	*
-	* @return mixed
-	*/
-	public function render_user_allocated_products_field( $user)
-	{
-		if (! current_user_can('manage_options')) {
-			return;
-		}
-
-		$allocated = get_user_meta($user->ID, 'pnpc_psd_allocated_products', true);
-		$selected_ids = array();
-		if (! empty($allocated)) {
-			$selected_ids = array_filter(array_map('absint', array_map('trim', explode(',', (string) $allocated))));
-		}
-
-		$products = array();
-		if (class_exists('WooCommerce')) {
-			$products = wc_get_products(array('status' => 'publish', 'limit' => 200));
-		}
-
-?>
-		<h2><?php esc_html_e('Allocated Products', 'pnpc-pocket-service-desk'); ?></h2>
-		<table class="form-table">
-			<tr>
-				<th><label for="pnpc_psd_allocated_products"><?php esc_html_e('Allocated Products', 'pnpc-pocket-service-desk'); ?></label></th>
-				<td>
-					<?php if (! class_exists('WooCommerce')) :  ?>
-						<p class="description"><?php esc_html_e('WooCommerce is not active — you cannot allocate products until WooCommerce is installed and activated.', 'pnpc-pocket-service-desk'); ?></p>
-					<?php else :  ?>
-						<select name="pnpc_psd_allocated_products[]" id="pnpc_psd_allocated_products" multiple size="8" style="width: 100%;max-width:540px;">
-							<?php foreach ($products as $product) :
-								$p_id   = (int) $product->get_id();
-								$p_name = $product->get_name();
-							?>
-								<option value="<?php echo esc_attr($p_id); ?>" <?php echo in_array($p_id, $selected_ids, true) ? 'selected' : ''; ?>>
-									<?php echo esc_html($p_name .  ' (ID: ' . $p_id . ')'); ?>
-								</option>
-							<?php endforeach; ?>
-						</select>
-						<p class="description">
-							<?php esc_html_e('Select one or more products to allocate to this user.  Hold Ctrl (Windows) or Cmd (Mac) to select multiple. ', 'pnpc-pocket-service-desk'); ?>
-						</p>
-						<?php wp_nonce_field('pnpc_psd_save_allocated_products', 'pnpc_psd_allocated_products_nonce'); ?>
-					<?php endif; ?>
-				</td>
-			</tr>
-		</table>
-<?php
-	}
-
-	/**
-	* Save user allocated products.
-	*
-	* @param mixed $user_id
-	*
-	* @since 1.1.1.4
-	*
-	* @return mixed
-	*/
-	public function save_user_allocated_products( $user_id)
-	{
-		if (! current_user_can('manage_options')) {
-			return;
-		}
-
-		if (! isset($_POST['pnpc_psd_allocated_products_nonce']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['pnpc_psd_allocated_products_nonce'])), 'pnpc_psd_save_allocated_products')) {
-			return;
-		}
-
-		if (! isset($_POST['pnpc_psd_allocated_products'])) {
-			delete_user_meta($user_id, 'pnpc_psd_allocated_products');
-			return;
-		}
-
-		$posted = (array) wp_unslash( $_POST['pnpc_psd_allocated_products'] );
-		$ids = array_filter(array_map('absint', $posted));
-		$ids = array_values(array_unique($ids));
-
-		if (empty($ids)) {
-			delete_user_meta($user_id, 'pnpc_psd_allocated_products');
-		} else {
-			update_user_meta($user_id, 'pnpc_psd_allocated_products', implode(',', $ids));
-		}
-	}
-
-	/**
 	* Ajax respond to ticket.
 	*
 	* @since 1.1.1.4
@@ -2501,26 +2407,34 @@ public function display_tickets_page()
 
 		$attachments = array();
 		$att_skipped = array();
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- File uploads are validated via PHP error codes, extension/MIME allowlist, wp_check_filetype_and_ext(), and wp_handle_upload().
 		if (! empty($_FILES) && isset($_FILES['attachments'])) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
 			if (function_exists('pnpc_psd_rearrange_files')) {
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Normalizing raw uploaded file array before per-file validation.
 				$files = pnpc_psd_rearrange_files($_FILES['attachments']);
 			} elseif (function_exists('reArrayFiles')) {
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Normalizing raw uploaded file array before per-file validation.
 				$files = reArrayFiles($_FILES['attachments']);
 			} else {
 				$files = array();
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- Normalizing raw uploaded file array before per-file validation.
 				if (is_array($_FILES['attachments']['name'])) {
+					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- Counting uploaded file names before per-file validation.
 					$count = count($_FILES['attachments']['name']);
+					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reading upload array keys before per-file validation.
 					$keys  = array_keys($_FILES['attachments']);
 					for ($i = 0; $i < $count; $i++) {
 						$item = array();
 						foreach ($keys as $k) {
+							// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- Copying raw file entry before validation by wp_handle_upload().
 							$item[$k] = isset($_FILES['attachments'][$k][$i]) ? $_FILES['attachments'][$k][$i] : null;
 						}
 						$files[] = $item;
 					}
-				} else {
-					$files[] = $_FILES['attachments'];
+			} else {
+					// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Passing raw upload entry to validation/upload pipeline.
+						$files[] = $_FILES['attachments'];
 				}
 			}
 
@@ -2649,32 +2563,32 @@ public function display_tickets_page()
 					if ( isset( $sk['reason'] ) && 'size' === (string) $sk['reason'] && isset( $sk['max'] ) ) {
 						$max_human  = function_exists( 'pnpc_psd_format_filesize' ) ? pnpc_psd_format_filesize( (int) $sk['max'] ) : ( (int) $sk['max'] . ' bytes' );
 						$size_human = ( isset( $sk['size'] ) && function_exists( 'pnpc_psd_format_filesize' ) ) ? pnpc_psd_format_filesize( (int) $sk['size'] ) : '';
-/* translators: Placeholder(s) in localized string. */
-						$detail = ' ' . sprintf( esc_html__( 'Max per file: %s.', 'pnpc-pocket-service-desk' ), $max_human );
+						/* translators: %s: formatted maximum file size. */
+							$detail = ' ' . sprintf( esc_html__( 'Max per file: %s.', 'pnpc-pocket-service-desk' ), $max_human );
 						if ( $size_human ) {
-/* translators: Placeholder(s) in localized string. */
-							$detail .= ' ' . sprintf( esc_html__( 'File size was %s.', 'pnpc-pocket-service-desk' ), $size_human );
+							/* translators: %s: formatted uploaded file size. */
+								$detail .= ' ' . sprintf( esc_html__( 'File size was %s.', 'pnpc-pocket-service-desk' ), $size_human );
 						}
 						break;
 					}
 					if ( empty( $detail ) && isset( $sk['reason'] ) && 'type' === (string) $sk['reason'] ) {
 						if ( ! empty( $sk['mime'] ) ) {
-/* translators: Placeholder(s) in localized string. */
-							$detail .= ' ' . sprintf( esc_html__( 'Detected type: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['mime'] ) );
+							/* translators: %s: detected MIME type. */
+								$detail .= ' ' . sprintf( esc_html__( 'Detected type: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['mime'] ) );
 						}
 						if ( ! empty( $sk['ext'] ) ) {
-/* translators: Placeholder(s) in localized string. */
-							$detail .= ' ' . sprintf( esc_html__( 'Extension: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['ext'] ) );
+							/* translators: %s: uploaded file extension. */
+								$detail .= ' ' . sprintf( esc_html__( 'Extension: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['ext'] ) );
 						}
 						if ( ! empty( $sk['allow'] ) ) {
-/* translators: Placeholder(s) in localized string. */
-							$detail .= ' ' . sprintf( esc_html__( 'Allowed: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['allow'] ) );
+							/* translators: %s: allowed file types. */
+								$detail .= ' ' . sprintf( esc_html__( 'Allowed: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['allow'] ) );
 						}
 						$detail = trim( $detail );
 					}
 					if ( empty( $detail ) && isset( $sk['reason'] ) && 'php' === (string) $sk['reason'] && isset( $sk['code'] ) ) {
-/* translators: Placeholder(s) in localized string. */
-						$detail = ' ' . sprintf( esc_html__( 'Upload rejected by server (code %d).', 'pnpc-pocket-service-desk' ), (int) $sk['code'] );
+						/* translators: %d: PHP upload error code. */
+							$detail = ' ' . sprintf( esc_html__( 'Upload rejected by server (code %d).', 'pnpc-pocket-service-desk' ), (int) $sk['code'] );
 					}
 					if ( empty( $detail ) && isset( $sk['reason'] ) && 'upload' === (string) $sk['reason'] && ! empty( $sk['msg'] ) ) {
 						$detail = ' ' . esc_html( (string) $sk['msg'] );
@@ -2932,8 +2846,8 @@ public function display_tickets_page()
 
 		$count = PNPC_PSD_Ticket::bulk_archive_closed($ticket_ids);
 		if ( $count > 0 ) {
-/* translators: Placeholder(s) in localized string. */
-			$message = sprintf(_n('%d ticket moved to archive.', '%d tickets moved to archive.', $count, 'pnpc-pocket-service-desk'), $count);
+			/* translators: %d: number of tickets moved to archive. */
+				$message = sprintf(_n('%d ticket moved to archive.', '%d tickets moved to archive.', $count, 'pnpc-pocket-service-desk'), $count);
 			wp_send_json_success(array('message' => $message, 'count' => $count, 'counts' => $this->get_ticket_tab_counts()));
 		}
 
@@ -2962,8 +2876,8 @@ public function display_tickets_page()
 
 		$count = PNPC_PSD_Ticket::bulk_restore_from_archive($ticket_ids);
 		if ( $count > 0 ) {
-/* translators: Placeholder(s) in localized string. */
-			$message = sprintf(_n('%d ticket restored from archive.', '%d tickets restored from archive.', $count, 'pnpc-pocket-service-desk'), $count);
+			/* translators: %d: number of tickets restored from archive. */
+				$message = sprintf(_n('%d ticket restored from archive.', '%d tickets restored from archive.', $count, 'pnpc-pocket-service-desk'), $count);
 			wp_send_json_success(array('message' => $message, 'count' => $count, 'counts' => $this->get_ticket_tab_counts()));
 		}
 
@@ -3275,13 +3189,26 @@ public function display_tickets_page()
 			$tickets = PNPC_PSD_Ticket::get_all($args);
 		}
 		
-		// Calculate badge counts for each ticket (fresh calculation)
+		// Calculate badge counts for each ticket using the same DB-backed helper
+		// used by the initial page load. This preserves exact unread reply
+		// counts during AJAX auto-refresh instead of collapsing to a boolean.
 		$badge_counts = array();
 		
-		foreach ($tickets as $ticket) {
-			if ( ! $is_trash_view && ! $is_review_view && ! $is_archived_view ) {
-				$badge_count = $this->calculate_new_badge_count($ticket->id, $current_user_id);
-				$badge_counts[$ticket->id] = $badge_count;
+		if ( ! $is_trash_view && ! $is_review_view && ! $is_archived_view && ! empty( $tickets ) && class_exists( 'PNPC_PSD_Ticket' ) && method_exists( 'PNPC_PSD_Ticket', 'get_unread_customer_reply_counts_by_ticket_ids' ) ) {
+			$ticket_ids = array();
+			foreach ( $tickets as $ticket ) {
+				if ( isset( $ticket->id ) ) {
+					$ticket_ids[] = absint( $ticket->id );
+				}
+			}
+
+			$badge_counts = PNPC_PSD_Ticket::get_unread_customer_reply_counts_by_ticket_ids( $ticket_ids );
+
+			foreach ( $ticket_ids as $ticket_id ) {
+				$ticket_id = absint( $ticket_id );
+				if ( $ticket_id && ! isset( $badge_counts[ $ticket_id ] ) ) {
+					$badge_counts[ $ticket_id ] = 0;
+				}
 			}
 		}
 		
@@ -3320,7 +3247,7 @@ public function display_tickets_page()
 								<span class="pnpc-psd-divider-text">
 									<?php 
 									printf(
-/* translators: Placeholder(s) in localized string. */
+										/* translators: %d: closed ticket count. */
 										esc_html__('Closed Tickets (%d)', 'pnpc-pocket-service-desk'),
 										count($closed_tickets)
 									); 
@@ -3401,22 +3328,10 @@ public function display_tickets_page()
 			return 0;
 		}
 
-		// v1.1.0+: Prefer deterministic, DB-backed role timestamps on the ticket row.
-		// We count unread customer replies (responses) since last staff view.
-		$ticket = PNPC_PSD_Ticket::get( $ticket_id );
-		if ( $ticket && ( isset( $ticket->last_staff_viewed_at ) || isset( $ticket->last_customer_activity_at ) ) ) {
-			global $wpdb;
-			$responses_table = $wpdb->prefix . 'pnpc_psd_ticket_responses';
-			$staff_viewed_raw = ! empty( $ticket->last_staff_viewed_at ) ? (string) $ticket->last_staff_viewed_at : '0000-00-00 00:00:00';
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared -- Prepared via $wpdb->prepare.
-			$count = $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$responses_table} WHERE deleted_at IS NULL AND is_staff_response = 0 AND ticket_id = %d AND created_at > %s",
-					$ticket_id,
-					$staff_viewed_raw
-				)
-			);
-			return absint( $count );
+		// Prefer the centralized deterministic helper used by initial page load.
+		if ( method_exists( 'PNPC_PSD_Ticket', 'get_unread_customer_reply_counts_by_ticket_ids' ) ) {
+			$counts = PNPC_PSD_Ticket::get_unread_customer_reply_counts_by_ticket_ids( array( $ticket_id ) );
+			return isset( $counts[ $ticket_id ] ) ? absint( $counts[ $ticket_id ] ) : 0;
 		}
 
 		// Legacy fallback (should be hit only on very old DBs): user-meta based.
@@ -3504,43 +3419,13 @@ public function display_tickets_page()
 			$created_timestamp = 0;
 		}
 		
-		// Calculate new responses - only relevant on the main list (not Trash/Review).
+		// Calculate new customer reply count using the same deterministic helper used
+		// by the initial page load and AJAX badge payload. Avoid legacy transient
+		// logic here because it can collapse multi-reply counts to 1 after refresh.
 		$new_responses = 0;
-		$current_admin_id = get_current_user_id();
-		if (! $is_trash_view && ! $is_review_view && $current_admin_id && $ticket->assigned_to && (int) $ticket->assigned_to === (int) $current_admin_id) {
-			// Use a transient to cache the response count
-			$transient_key = 'pnpc_psd_new_resp_' . $ticket->id . '_' . $current_admin_id;
-			$cached_count = get_transient($transient_key);
-			
-			if (false === $cached_count) {
-				$last_view_key  = 'pnpc_psd_ticket_last_view_' . (int) $ticket->id;
-				$last_view_raw  = get_user_meta($current_admin_id, $last_view_key, true);
-				$last_view_time = $last_view_raw ? (int) $last_view_raw : 0;
-
-				// Cache function_exists check
-				static $use_helper_func = null;
-				if (null === $use_helper_func) {
-					$use_helper_func = function_exists('pnpc_psd_mysql_to_wp_local_ts');
-				}
-
-				$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket->id);
-				if (! empty($responses)) {
-					foreach ($responses as $response) {
-						if ((int) $response->user_id === (int) $current_admin_id) {
-							continue;
-						}
-						$resp_time = $use_helper_func ? intval(pnpc_psd_mysql_to_wp_local_ts($response->created_at)) : intval(strtotime($response->created_at));
-						if ($resp_time > $last_view_time) {
-							$new_responses++;
-						}
-					}
-				}
-				
-				// Cache for 30 seconds
-				set_transient($transient_key, $new_responses, 30);
-			} else {
-				$new_responses = (int) $cached_count;
-			}
+		if ( ! $is_trash_view && ! $is_review_view && class_exists( 'PNPC_PSD_Ticket' ) && method_exists( 'PNPC_PSD_Ticket', 'get_unread_customer_reply_counts_by_ticket_ids' ) ) {
+			$badge_counts_for_row = PNPC_PSD_Ticket::get_unread_customer_reply_counts_by_ticket_ids( array( absint( $ticket->id ) ) );
+			$new_responses       = isset( $badge_counts_for_row[ $ticket->id ] ) ? absint( $badge_counts_for_row[ $ticket->id ] ) : 0;
 		}
 		?>
 		<tr<?php echo $is_closed ? ' class="pnpc-psd-ticket-closed"' : ''; ?>>
@@ -3777,9 +3662,9 @@ public function display_tickets_page()
 				global $wpdb;
 				$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 				
-				require_once ABSPATH . 'wp-admin/includes/file.php';
-				require_once ABSPATH . 'wp-admin/includes/image.php';
-				require_once ABSPATH . 'wp-admin/includes/media.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
 				
 				$files = $_FILES['attachments'];
 				$file_count = count($files['name']);
@@ -4130,7 +4015,8 @@ public function display_tickets_page()
 			) );
 		}
 
-		fclose( $out ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- closing output stream handle.
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing php://output CSV stream.
+			fclose( $out );
 		exit;
 	}
 

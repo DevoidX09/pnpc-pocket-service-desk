@@ -136,11 +136,11 @@ class PNPC_PSD_Notifications {
 		if ( self::opt_bool( 'pnpc_psd_notify_customer_on_create', 1 ) ) {
 			$dashboard_url   = function_exists( 'pnpc_psd_get_dashboard_url' ) ? pnpc_psd_get_dashboard_url() : '';
 			$ticket_view_url = function_exists( 'pnpc_psd_get_ticket_detail_url' ) ? pnpc_psd_get_ticket_detail_url( $ticket_id ) : '';
-/* translators: Placeholder(s) in localized string. */
-			$subj = sprintf( __( 'Ticket created: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
+			/* translators: %s: ticket number. */
+				$subj = sprintf( __( 'Ticket created: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 			$msg  = sprintf(
-/* translators: Localized string with placeholders. */
-				__( "Hello %1\$s,\n\nYour support ticket has been created.\n\nTicket: %2\$s\nSubject: %3\$s\n\nWe will respond as soon as possible.", 'pnpc-pocket-service-desk' ),
+				/* translators: 1: customer name, 2: ticket number, 3: ticket subject. */
+					__( "Hello %1\$s,\n\nYour support ticket has been created.\n\nTicket: %2\$s\nSubject: %3\$s\n\nWe will respond as soon as possible.", 'pnpc-pocket-service-desk' ),
 				(string) $user->display_name,
 				(string) $ticket->ticket_number,
 				(string) $ticket->subject
@@ -158,11 +158,11 @@ class PNPC_PSD_Notifications {
 			$admin_ticket_url = admin_url( 'admin.php?page=pnpc-service-desk-ticket&ticket_id=' . absint( $ticket_id ) );
 			$to = self::get_staff_recipients_for_ticket( $ticket );
 			if ( ! empty( $to ) ) {
-/* translators: Placeholder(s) in localized string. */
-				$subj = sprintf( __( 'New ticket: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
+				/* translators: %s: ticket number. */
+					$subj = sprintf( __( 'New ticket: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 				$msg  = sprintf(
-/* translators: Localized string with placeholders. */
-					__( "A new support ticket has been created.\n\nTicket: %1\$s\nFrom: %2\$s\nSubject: %3\$s\n\nLog in to review and respond.", 'pnpc-pocket-service-desk' ),
+					/* translators: 1: ticket number, 2: customer name, 3: ticket subject. */
+						__( "A new support ticket has been created.\n\nTicket: %1\$s\nFrom: %2\$s\nSubject: %3\$s\n\nLog in to review and respond.", 'pnpc-pocket-service-desk' ),
 					(string) $ticket->ticket_number,
 					(string) $user->display_name,
 					(string) $ticket->subject
@@ -205,11 +205,11 @@ class PNPC_PSD_Notifications {
 
 		if ( $is_staff ) {
 			if ( self::opt_bool( 'pnpc_psd_notify_customer_on_staff_reply', 1 ) ) {
-/* translators: Placeholder(s) in localized string. */
-				$subj = sprintf( __( 'Update on ticket %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
+				/* translators: %s: ticket number. */
+					$subj = sprintf( __( 'Update on ticket %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 				$msg  = sprintf(
-/* translators: Localized string with placeholders. */
-					__( "Hello %1\$s,\n\nYou have a new response on your ticket %2\$s.\n\nSubject: %3\$s\n\nLog in to view and reply.", 'pnpc-pocket-service-desk' ),
+					/* translators: 1: customer name, 2: ticket number, 3: ticket subject. */
+						__( "Hello %1\$s,\n\nYou have a new response on your ticket %2\$s.\n\nSubject: %3\$s\n\nLog in to view and reply.", 'pnpc-pocket-service-desk' ),
 					(string) $customer->display_name,
 					(string) $ticket->ticket_number,
 					(string) $ticket->subject
@@ -226,11 +226,11 @@ class PNPC_PSD_Notifications {
 			if ( self::opt_bool( 'pnpc_psd_notify_staff_on_customer_reply', 1 ) ) {
 				$to = self::get_staff_recipients_for_ticket( $ticket );
 				if ( ! empty( $to ) ) {
-/* translators: Placeholder(s) in localized string. */
-					$subj = sprintf( __( 'Customer replied: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
+					/* translators: %s: ticket number. */
+							$subj = sprintf( __( 'Customer replied: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 					$msg  = sprintf(
-/* translators: Localized string with placeholders. */
-						__( "A customer has replied to a ticket.\n\nTicket: %1\$s\nCustomer: %2\$s\nSubject: %3\$s\n\nLog in to respond.", 'pnpc-pocket-service-desk' ),
+						/* translators: 1: ticket number, 2: customer name, 3: ticket subject. */
+								__( "A customer has replied to a ticket.\n\nTicket: %1\$s\nCustomer: %2\$s\nSubject: %3\$s\n\nLog in to respond.", 'pnpc-pocket-service-desk' ),
 						(string) $ticket->ticket_number,
 						(string) $customer->display_name,
 						(string) $ticket->subject
@@ -262,11 +262,11 @@ class PNPC_PSD_Notifications {
 		if ( ! self::opt_bool( 'pnpc_psd_notify_customer_on_close', 1 ) ) {
 			return;
 		}
-/* translators: Placeholder(s) in localized string. */
-		$subj = sprintf( __( 'Ticket closed: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
+		/* translators: %s: ticket number. */
+			$subj = sprintf( __( 'Ticket closed: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 		$msg  = sprintf(
-/* translators: Localized string with placeholders. */
-			__( "Hello %1\$s,\n\nYour ticket %2\$s has been marked closed.\n\nSubject: %3\$s\n\nIf you need further help, you can reply to reopen or create a new ticket.", 'pnpc-pocket-service-desk' ),
+			/* translators: 1: customer name, 2: ticket number, 3: ticket subject. */
+				__( "Hello %1\$s,\n\nYour ticket %2\$s has been marked closed.\n\nSubject: %3\$s\n\nIf you need further help, you can reply to reopen or create a new ticket.", 'pnpc-pocket-service-desk' ),
 			(string) $user->display_name,
 			(string) $ticket->ticket_number,
 			(string) $ticket->subject
