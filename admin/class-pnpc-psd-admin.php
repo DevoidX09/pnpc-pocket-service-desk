@@ -426,25 +426,25 @@ class PNPC_PSD_Admin
 	*/
 	public function add_plugin_admin_menu()
 	{
-		$all_count          = 0;
 		$open_count         = 0;
 		$in_progress_count  = 0;
 		$active_count       = 0;
 		$new_response_count = 0;
+		$menu_notice_count  = 0;
 
 		if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
-			$all_count          = (int) PNPC_PSD_Ticket::get_count();
 			$open_count         = (int) PNPC_PSD_Ticket::get_count( 'open' );
 			$in_progress_count  = (int) PNPC_PSD_Ticket::get_count( 'in-progress' );
 			$active_count       = $open_count + $in_progress_count;
 			$new_response_count = $this->get_admin_new_response_indicator_count( get_current_user_id() );
+			$menu_notice_count  = $active_count + $new_response_count;
 		}
 
 		$menu_title = esc_html__( 'Service Desk', 'pnpc-pocket-service-desk' );
-		if ( $all_count > 0 ) {
+		if ( $menu_notice_count > 0 ) {
 			$menu_title .= ' ' . sprintf(
 				'<span class="update-plugins count-%1$d"><span class="plugin-count">%1$d</span></span>',
-				absint( $all_count )
+				absint( $menu_notice_count )
 			);
 		}
 
@@ -3199,11 +3199,15 @@ public function display_tickets_page()
 	 */
 	private function query_new_ticket_count($user_id)
 	{
-		if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
-			return (int) PNPC_PSD_Ticket::get_count();
+		if ( ! class_exists( 'PNPC_PSD_Ticket' ) ) {
+			return 0;
 		}
 
-		return 0;
+		$open_count         = (int) PNPC_PSD_Ticket::get_count( 'open' );
+		$in_progress_count  = (int) PNPC_PSD_Ticket::get_count( 'in-progress' );
+		$new_response_count = $this->get_admin_new_response_indicator_count( $user_id );
+
+		return absint( $open_count + $in_progress_count + $new_response_count );
 	}
 
 	/**
