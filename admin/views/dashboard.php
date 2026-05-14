@@ -43,7 +43,7 @@ $total_closed = isset( $stats['total']['closed'] ) ? (int) $stats['total']['clos
 $completion_rate = isset( $stats['completion_rate'] ) ? (float) $stats['completion_rate'] : 0.0;
 $completion_pct  = (int) round( max( 0, min( 100, $completion_rate ) ) );
 
-$menu_tickets_url  = admin_url( 'admin.php?page=pnpc-service-desk' );
+$menu_tickets_url  = admin_url( 'admin.php?page=pnpc-service-desk-tickets' );
 $menu_create_url   = admin_url( 'admin.php?page=pnpc-service-desk-create-ticket' );
 $menu_audit_url    = admin_url( 'admin.php?page=pnpc-service-desk-audit-log' );
 $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
@@ -80,7 +80,7 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 				<span class="psd-muted"><?php echo esc_html__( 'Support link not configured.', 'pnpc-pocket-service-desk' ); ?></span>
 			<?php endif; ?>
 
-			<?php /* This screen intentionally contains no promotional CTAs. */ ?>
+			<?php /* No upgrade/promotional CTAs in the Free build. */ ?>
 		</div>
 	</div>
 

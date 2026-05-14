@@ -507,3 +507,61 @@
 .pnpc-psd-services .pnpc-psd-service-price{
 	margin-bottom:8px;
 }
+
+
+/* Customer dashboard unread reply badge. */
+.pnpc-psd-dashboard .pnpc-psd-dashboard-total-card {
+	position: relative;
+	padding-top: 18px !important;
+}
+
+.pnpc-psd-dashboard .pnpc-psd-dashboard-total-card > .pnpc-psd-new-indicator-badge,
+.pnpc-psd-dashboard .pnpc-psd-new-indicator-badge.pnpc-psd-dashboard-alert-badge,
+.pnpc-psd-dashboard .pnpc-psd-new-indicator-badge.pnpc-psd-pro-dashboard-alert-badge {
+	position: absolute !important;
+	top: 10px !important;
+	right: 10px !important;
+	left: auto !important;
+	z-index: 2;
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	width: auto !important;
+	min-width: 34px !important;
+	max-width: none !important;
+	height: 22px !important;
+	min-height: 22px !important;
+	padding: 0 8px !important;
+	margin: 0 !important;
+	border: 0 !important;
+	border-radius: 999px !important;
+	background: #46b450 !important;
+	color: #fff !important;
+	font-size: 11px !important;
+	font-weight: 700 !important;
+	line-height: 1 !important;
+	letter-spacing: 0.01em;
+	text-align: center;
+	text-decoration: none !important;
+	box-shadow: 0 0 0 0 rgba(70, 180, 80, 0.48);
+	animation: pnpc-psd-dashboard-pulse 1.8s ease-out infinite !important;
+}
+
+@keyframes pnpc-psd-dashboard-pulse {
+	0% {
+		box-shadow: 0 0 0 0 rgba(70, 180, 80, 0.48);
+	}
+	70% {
+		box-shadow: 0 0 0 9px rgba(70, 180, 80, 0);
+	}
+	100% {
+		box-shadow: 0 0 0 0 rgba(70, 180, 80, 0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.pnpc-psd-dashboard .pnpc-psd-new-indicator-badge.pnpc-psd-dashboard-alert-badge,
+	.pnpc-psd-dashboard .pnpc-psd-new-indicator-badge.pnpc-psd-pro-dashboard-alert-badge {
+		animation: none;
+	}
+}

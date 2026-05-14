@@ -14,7 +14,7 @@
  * @package PNPC_Pocket_Service_Desk
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
     exit;
 }
 
@@ -146,7 +146,7 @@ if (! function_exists('pnpc_psd_get_ticket_detail_url')) {
  *
  * @return mixed
  */
-    function pnpc_psd_get_ticket_detail_url( $ticket_id)
+    function pnpc_psd_get_ticket_detail_url($ticket_id)
     {
         $ticket_id = (int) $ticket_id;
         if ($ticket_id <= 0) {
@@ -293,7 +293,7 @@ if (! function_exists('pnpc_psd_mysql_to_wp_local_ts')) {
  *
  * @return mixed
  */
-    function pnpc_psd_mysql_to_wp_local_ts( $mysql_datetime)
+    function pnpc_psd_mysql_to_wp_local_ts($mysql_datetime)
     {
         if ($mysql_datetime === null || $mysql_datetime === '' || $mysql_datetime === false) {
             return 0;
@@ -390,7 +390,7 @@ if (! function_exists('pnpc_psd_format_db_datetime_for_display')) {
  *
  * @return mixed
  */
-    function pnpc_psd_format_db_datetime_for_display( $mysql_datetime, $format = null)
+    function pnpc_psd_format_db_datetime_for_display($mysql_datetime, $format = null)
     {
         if ($mysql_datetime === null || $mysql_datetime === '') {
             return '';
@@ -427,7 +427,7 @@ if (! function_exists('pnpc_psd_debug_log')) {
  *
  * @return mixed
  */
-    function pnpc_psd_debug_log( $label, $data = '')
+    function pnpc_psd_debug_log($label, $data = '')
     {
         if (! defined('WP_DEBUG') || ! WP_DEBUG) {
             return;
@@ -436,13 +436,10 @@ if (! function_exists('pnpc_psd_debug_log')) {
         if (! $enabled) {
             return;
         }
-		/*
-		 * Intentionally avoid logging raw arrays/objects or environment details in
-		 * the WordPress.org build. This helper remains as a safe extension point
-		 * for future diagnostics without exposing sensitive data.
-		 */
-		unset( $label, $data );
-	}
+        $payload = is_scalar($data) ? $data : print_r($data, true);
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
+        error_log( 'pnpc-psd-debug [' . $label . ']: ' . $payload );
+    }
 }
 
 /**
@@ -458,7 +455,7 @@ if (! function_exists('pnpc_psd_rearrange_files')) {
  *
  * @return mixed
  */
-    function pnpc_psd_rearrange_files( $file_post)
+    function pnpc_psd_rearrange_files($file_post)
     {
         $files = array();
         if (! is_array($file_post) || empty($file_post['name'])) {
@@ -493,7 +490,7 @@ if (! function_exists('pnpc_psd_format_filesize')) {
  *
  * @return mixed
  */
-    function pnpc_psd_format_filesize( $bytes)
+    function pnpc_psd_format_filesize($bytes)
     {
         $bytes = intval($bytes);
         if (function_exists('size_format')) {
@@ -515,8 +512,8 @@ if (! function_exists('pnpc_psd_format_filesize')) {
 /**
  * Define preview file size limit for free version (5MB in bytes).
  */
-if (! defined('PNPC_PSD_PREVIEW_LIMIT')) {
-    define('PNPC_PSD_PREVIEW_LIMIT', 5 * 1024 * 1024);
+if (! defined('PNPC_PSD_FREE_PREVIEW_LIMIT')) {
+    define('PNPC_PSD_FREE_PREVIEW_LIMIT', 5 * 1024 * 1024);
 }
 
 /**
@@ -535,7 +532,7 @@ if (! function_exists('pnpc_psd_get_attachment_type')) {
  *
  * @return mixed
  */
-    function pnpc_psd_get_attachment_type( $extension)
+    function pnpc_psd_get_attachment_type($extension)
     {
         $extension = strtolower(trim($extension));
         $image_types = array('jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp');
@@ -568,7 +565,7 @@ if (! function_exists('pnpc_psd_get_file_icon')) {
  *
  * @return mixed
  */
-    function pnpc_psd_get_file_icon( $extension)
+    function pnpc_psd_get_file_icon($extension)
     {
         $extension = strtolower(trim($extension));
         $icons = array(
@@ -608,9 +605,9 @@ if (! function_exists('pnpc_psd_can_preview_attachment')) {
  *
  * @return mixed
  */
-    function pnpc_psd_can_preview_attachment( $file_size)
+    function pnpc_psd_can_preview_attachment($file_size)
     {
-        return intval($file_size) <= PNPC_PSD_PREVIEW_LIMIT;
+        return intval($file_size) <= PNPC_PSD_FREE_PREVIEW_LIMIT;
     }
 }
 
@@ -633,7 +630,7 @@ if (! function_exists('pnpc_psd_format_delete_reason')) {
  *
  * @return mixed
  */
-    function pnpc_psd_format_delete_reason( $reason, $other_details = '')
+    function pnpc_psd_format_delete_reason($reason, $other_details = '')
     {
         if (empty($reason)) {
             return esc_html__('No reason provided', 'pnpc-pocket-service-desk');
@@ -701,7 +698,7 @@ if ( ! function_exists( 'pnpc_psd_sync_roles_caps' ) ) {
 		/**
 		 * Extension seam: allow additional roles/caps to be registered by other plugins.
 		 */
-		do_action( 'pnpc_psd_roles_sync' );
+		do_action( 'pnpc_psd_register_roles' );
 		do_action( 'pnpc_psd_register_caps' );
 }
 }
@@ -709,46 +706,15 @@ if ( ! function_exists( 'pnpc_psd_sync_roles_caps' ) ) {
 add_action( 'init', 'pnpc_psd_sync_roles_caps', 1 );
 
 /**
- * Get core plugin limits.
- *
- * This is an extension seam intended for developers and extensions.
- * The Free plugin uses neutral defaults.
- *
- * @since 1.1.1.4
- *
- * @return array{max_enabled_agents:int,audit_log_cap:int}
- */
-if ( ! function_exists( 'pnpc_psd_get_limits' ) ) {
-	function pnpc_psd_get_limits() {
-		$limits = array(
-			'max_enabled_agents' => 2,
-			'audit_log_cap'      => 250,
-		);
-
-		/**
-		 * Filter the core limits used by the plugin.
-		 *
-		 * @param array $limits Current limits.
-		 */
-		$limits = apply_filters( 'pnpc_psd_limits', $limits );
-
-		$limits = is_array( $limits ) ? $limits : array();
-		$limits['max_enabled_agents'] = isset( $limits['max_enabled_agents'] ) ? (int) $limits['max_enabled_agents'] : 2;
-		$limits['audit_log_cap']      = isset( $limits['audit_log_cap'] ) ? (int) $limits['audit_log_cap'] : 250;
-
-		return $limits;
-	}
-}
-
-/**
  * Maximum enabled agents allowed.
+ *
+ * Extensions may raise this limit via the 'pnpc_psd_max_enabled_agents' filter.
  *
  * @return int
  */
 if ( ! function_exists( 'pnpc_psd_get_max_enabled_agents' ) ) {
 	function pnpc_psd_get_max_enabled_agents() {
-		$limits = pnpc_psd_get_limits();
-		$max    = isset( $limits['max_enabled_agents'] ) ? (int) $limits['max_enabled_agents'] : 2;
+		$max = (int) apply_filters( 'pnpc_psd_max_enabled_agents', 2 );
 		return max( 1, $max );
 	}
 }
@@ -756,17 +722,19 @@ if ( ! function_exists( 'pnpc_psd_get_max_enabled_agents' ) ) {
 /**
  * Maximum audit log entries retained.
  *
+ * Extensions may raise (or remove) this limit via the 'pnpc_psd_audit_log_cap' filter.
  * Return 0 to disable pruning.
  *
  * @return int
  */
 if ( ! function_exists( 'pnpc_psd_get_audit_log_cap' ) ) {
 	function pnpc_psd_get_audit_log_cap() {
-		$limits = pnpc_psd_get_limits();
-		$cap    = isset( $limits['audit_log_cap'] ) ? (int) $limits['audit_log_cap'] : 250;
+		$cap = (int) apply_filters( 'pnpc_psd_audit_log_cap', 250 );
 		return max( 0, $cap );
 	}
 }
+
+
 
 /**
  * Sanitize Agents option array.
@@ -787,7 +755,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_agents_option' ) ) {
  *
  * @return mixed
  */
-	function pnpc_psd_sanitize_agents_option(  $value ) {
+	function pnpc_psd_sanitize_agents_option( $value ) {
 		if ( ! is_array( $value ) ) {
 			return array();
 		}
@@ -904,7 +872,7 @@ if ( ! function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
  *
  * @return mixed
  */
-	function pnpc_psd_get_agent_notification_email(  $user_id ) {
+	function pnpc_psd_get_agent_notification_email( $user_id ) {
 		$user_id = absint( $user_id );
 		if ( ! $user_id ) {
 			return '';
@@ -933,6 +901,8 @@ if ( ! function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
 if ( ! function_exists( 'pnpc_psd_get_max_attachment_mb' ) ) {
 	/**
 	 * Maximum attachment size in megabytes.
+	 *
+	 * Extensions may raise this limit via the 'pnpc_psd_max_attachment_mb_cap' filter.
 	 *
 	 * @return int
 	 */
@@ -972,7 +942,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_max_attachment_mb' ) ) {
  *
  * @return mixed
  */
-	function pnpc_psd_sanitize_max_attachment_mb(  $value ) {
+	function pnpc_psd_sanitize_max_attachment_mb( $value ) {
 		$val = absint( $value );
 		$val = max( 1, $val );
 		$cap = (int) apply_filters( 'pnpc_psd_max_attachment_mb_cap', 5 );
@@ -1075,7 +1045,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_allowed_file_types' ) ) {
  *
  * @return mixed
  */
-	function pnpc_psd_sanitize_allowed_file_types(  $value ) {
+	function pnpc_psd_sanitize_allowed_file_types( $value ) {
 		if ( is_array( $value ) ) {
 			$raw = implode( ',', array_map( 'strval', $value ) );
 		} else {
@@ -1121,7 +1091,7 @@ if ( ! function_exists( 'pnpc_psd_attachment_db_to_path' ) ) {
 	 * @param string $stored Stored value (absolute path preferred; legacy URL supported).
 	 * @return string Absolute path or empty string if it cannot be resolved.
 	 */
-	function pnpc_psd_attachment_db_to_path(  $stored ) {
+	function pnpc_psd_attachment_db_to_path( $stored ) {
 		$stored = is_string( $stored ) ? trim( $stored ) : '';
 		if ( '' === $stored ) {
 			return '';
@@ -1154,7 +1124,7 @@ if ( ! function_exists( 'pnpc_psd_get_attachment_download_url' ) ) {
 	 * @param bool $inline        Whether to request inline display (preview).
 	 * @return string
 	 */
-	function pnpc_psd_get_attachment_download_url(  $attachment_id, $ticket_id, $inline = false ) {
+	function pnpc_psd_get_attachment_download_url( $attachment_id, $ticket_id, $inline = false ) {
 		$attachment_id = absint( $attachment_id );
 		$ticket_id     = absint( $ticket_id );
 		if ( ! $attachment_id || ! $ticket_id ) {
@@ -1203,7 +1173,7 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 		$att_table    = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 		$ticket_table = $wpdb->prefix . 'pnpc_psd_tickets';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom attachment table name is built from $wpdb->prefix and hardcoded suffix; values are prepared.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$att = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$att_table} WHERE id = %d AND ticket_id = %d AND deleted_at IS NULL",
@@ -1216,7 +1186,7 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 			wp_die( esc_html__( 'Attachment not found.', 'pnpc-pocket-service-desk' ), 404 );
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom ticket table name is built from $wpdb->prefix and hardcoded suffix; values are prepared.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$ticket = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT id, user_id FROM {$ticket_table} WHERE id = %d",
@@ -1282,8 +1252,7 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 			ob_end_clean();
 		}
 
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streaming a nonce/capability-verified attachment download to the browser after path validation.
-			readfile( $path );
+		readfile( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_readfile
 		exit;
 	}
 }
@@ -1300,7 +1269,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_public_login_mode' ) ) {
 	 * @param mixed $value Raw value.
 	 * @return string
 	 */
-	function pnpc_psd_sanitize_public_login_mode(  $value ) {
+	function pnpc_psd_sanitize_public_login_mode( $value ) {
 		$value = is_string( $value ) ? strtolower( trim( $value ) ) : 'inline';
 		return in_array( $value, array( 'inline', 'link' ), true ) ? $value : 'inline';
 	}
@@ -1313,7 +1282,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_public_login_url' ) ) {
 	 * @param mixed $value Raw value.
 	 * @return string
 	 */
-	function pnpc_psd_sanitize_public_login_url(  $value ) {
+	function pnpc_psd_sanitize_public_login_url( $value ) {
 		$value = is_string( $value ) ? trim( $value ) : '';
 		return $value ? esc_url_raw( $value ) : '';
 	}

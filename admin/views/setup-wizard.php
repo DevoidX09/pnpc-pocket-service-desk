@@ -175,7 +175,6 @@ if ( $dashboard_page_id > 0 && 'trash' !== get_post_status( $dashboard_page_id )
 						<strong><?php echo esc_html__( 'Tickets:', 'pnpc-pocket-service-desk' ); ?></strong>
 						<?php
 						if ( $ticket_count > 0 ) {
-							/* translators: %d: existing ticket count. */
 							echo esc_html( sprintf( __( '%d existing ticket(s) detected', 'pnpc-pocket-service-desk' ), $ticket_count ) );
 						} else {
 							echo esc_html__( 'No tickets detected (clean queue)', 'pnpc-pocket-service-desk' );
@@ -268,7 +267,7 @@ if ( $dashboard_page_id > 0 && 'trash' !== get_post_status( $dashboard_page_id )
 		?>
 		<div class="pnpc-psd-setup-card">
 			<h2><?php echo esc_html__( 'Shortcodes and Dashboard linking', 'pnpc-pocket-service-desk' ); ?></h2>
-			<p><?php echo esc_html__( 'Use the shortcodes below if you want to DIY your Dashboard page layout. If you use a builder, place these inside the appropriate sections or blocks.', 'pnpc-pocket-service-desk' ); ?></p>
+			<p><?php echo esc_html__( 'Use the shortcodes below on your Dashboard page. If you use a builder, place these inside the appropriate sections or blocks.', 'pnpc-pocket-service-desk' ); ?></p>
 
 			<?php if ( ! empty( $dashboard_url ) ) : ?>
 				<p>
@@ -315,17 +314,7 @@ if ( $dashboard_page_id > 0 && 'trash' !== get_post_status( $dashboard_page_id )
 						<td>
 							<label>
 								<input type="radio" name="editor" value="elementor" <?php checked( $editor, 'elementor' ); ?> <?php disabled( ! defined( 'ELEMENTOR_VERSION' ) ); ?> />
-								<?php
-								$elementor_url = 'https://wordpress.org/plugins/elementor/';
-								echo wp_kses_post(
-									sprintf(
-										/* translators: 1: Elementor label. 2: Elementor URL. */
-										__( '%1$s — <a href="%2$s" target="_blank" rel="noopener noreferrer">Install Elementor</a>', 'pnpc-pocket-service-desk' ),
-										esc_html__( 'Elementor (recommended if installed)', 'pnpc-pocket-service-desk' ),
-										esc_url( $elementor_url )
-									)
-								);
-								?>
+								<?php echo esc_html__( 'Elementor (recommended if installed)', 'pnpc-pocket-service-desk' ); ?>
 							</label><br />
 							<label>
 								<input type="radio" name="editor" value="block" <?php checked( $editor, 'block' ); ?> />
@@ -363,11 +352,7 @@ if ( $dashboard_page_id > 0 && 'trash' !== get_post_status( $dashboard_page_id )
 			<?php endif; ?>
 
 			<h3><?php echo esc_html__( 'Shortcodes reference', 'pnpc-pocket-service-desk' ); ?></h3>
-			<?php if ( 'builder' === $path ) : ?>
-			<p class="description"><?php echo esc_html__( 'These shortcodes have been automatically put into your dashboard page. Use these shortcodes for reference or to create a custom page. Link your "Login" menu item or button to the Dashboard URL above.', 'pnpc-pocket-service-desk' ); ?></p>
-		<?php else : ?>
 			<p class="description"><?php echo esc_html__( 'Use these shortcodes on your Dashboard page. Link your site menu to the Dashboard URL above.', 'pnpc-pocket-service-desk' ); ?></p>
-		<?php endif; ?>
 			<textarea class="large-text code" rows="10" readonly="readonly"><?php echo esc_textarea( $canonical ); ?></textarea>
 
 			<p class="description"><?php echo esc_html__( 'Clicking Finished will create a Ticket View page for your customers and generate a sample customer and sample ticket to help you get started.', 'pnpc-pocket-service-desk' ); ?></p>

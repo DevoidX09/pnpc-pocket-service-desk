@@ -1,14 +1,14 @@
 === PNPC Pocket Service Desk ===
 Contributors: pnpc
-Tags: helpdesk, service desk, support, tickets, customer support
+Tags: helpdesk, service desk, support, tickets, customer support, woocommerce
 Requires at least: 5.8
-Tested up to: 6.9
+Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.9
+Stable tag: 1.1.1.4.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A WordPress-native service desk plugin for managing customer support tickets.
+A comprehensive service desk plugin for managing customer support tickets with WooCommerce integration.
 
 == Description ==
 
@@ -48,7 +48,7 @@ You can place these shortcodes on pages or templates:
 
 A common setup is:
 
-1. Add a “Customer Login” link in your site header/menu that points to your dashboard page URL.
+1. Add a “Customer Login” link in your site header/menu that points to your dashboard page slug (example: `/dashboard/`).
 2. Place `[pnpc_service_desk]` on the dashboard page.
 
 When a customer visits the dashboard:
@@ -57,12 +57,12 @@ When a customer visits the dashboard:
 
 If you use a separate “Logout” link/button, point it back to the dashboard (or your desired landing page) so customers can log in/out without visiting `/wp-admin/`.
 
-== Testing Setup ==
-1. Create a test user in either a customer or other external role.
-2. Open an incognito browser session.
-3. Navigate directly to the dashboard URL or use your website external login link if it exists and links to the dashboard. 
+== Testing Setup==
+1. Create a test user  in either a customer or other external role.
+2. Open a Incognito Browser session.
+3. Navigate directly to the dashboard URL or use your websites external login link if it exists and links to the dashboard. 
 4. Login to test making and tracking tickets. 
-
+5. You can share products to users in their public dashboard via their user admin screen if this option is enabled. 
 
 == Privacy ==
 
@@ -79,65 +79,17 @@ Data retention on uninstall: by default, plugin data is preserved when the plugi
 No. The front-end queries are scoped so customers only see tickets they created (and replies on those tickets).
 
 = Does the plugin work without WooCommerce? =
-Yes. WooCommerce is not required for the core ticketing workflow.
-
-The `[pnpc_services]` block is included as a neutral extension seam. By default, it does not output anything in this free plugin.
+Yes. WooCommerce is only required for the `[pnpc_services]` shortcode and related service/product displays.
 
 == Screenshots ==
 
-1. Customer “My Support Tickets” dashboard (Open/Closed tabs).
-2. Public “Create Ticket” form (guest-friendly submission if enabled).
-3. Customer ticket detail view (thread + status).
-4. Customer reply interface on an existing ticket.
-5. User profile settings + dashboard stats view.
-6. Admin dashboard stats overview.
-7. Admin “All Tickets” list with filters/status tabs and badges.
-8. Admin ticket detail view (full thread + management actions).
-9. Settings: Core configuration.
-10. Settings: Customize (styling/options).
-11. Settings: Experience (UX/workflow toggles).
+1. Customer dashboard
+2. Create ticket form
+3. Ticket detail and responses
+4. Admin ticket list (status tabs)
+5. Admin ticket detail view
 
 == Changelog ==
-
-= 1.1.9 =
-* Final reviewer-prevention pass: tightened translator comments, read-only nonce annotations, prefixed activation hooks, request sanitization, and file/query review notes.
-
-= 1.1.8 =
-* Review-prep pass 3: added translator comments for placeholder strings, updated date handling to gmdate(), refreshed Tested up to, and added targeted Plugin Check annotations for safe schema/export/download operations.
-
-= 1.1.7 =
-* Review-prep pass: removed inactive WooCommerce product allocation remnants from Free.
-* Preserved the Services shortcode as a neutral extension seam.
-* Kept runtime behavior unchanged for core ticketing and dashboard flows.
-
-= 1.1.6 =
-* Review-preparation pass: standardize version metadata and distribution packaging.
-* Harden the internal debug logger to avoid unnecessary raw debug output.
-* Minor readme wording and formatting cleanup.
-
-= 1.1.5 =
-* WordPress.org submission fixes: Remove load_plugin_textdomain() calls (WordPress.org handles translations automatically since WP 4.6+)
-* Update "Tested up to" version to WordPress 6.9
-* Add .distignore file to exclude development files from distribution
-* Standardize version number across all plugin files
-
-= 1.1.4.3 =
-* Setup Wizard: clarify Builder shortcode guidance (DIY/custom page reference + login menu note).
-* Setup Wizard: remove heavy border styling from Elementor starter templates.
-
-
-
-= 1.1.4.2 =
-* Setup Wizard copy clarifies DIY shortcode usage.
-* Wizard-created Elementor pages default to Canvas template to reduce theme chrome/borders.
-= 1.1.4.1 =
-* Fix Setup Wizard auto-redirect and admin prompt logic so it is based on actual page configuration (dashboard + ticket view) rather than the setup_completed_at timestamp, preventing false "completed" states.
-* Activation now sets first-run Setup Wizard flags whenever required pages are not configured and there is no ticket history (clean installs).
-
-= 1.1.3 =
-* Add PHPCS ruleset (phpcs.xml.dist).
-* Fix first-run Setup Wizard redirect and show Setup Wizard prompt on Plugins screen.
-* Internal: tighten activation redirect flagging for clean installs.
 
 = 1.1.1.4 =
 * Version bump for WordPress.org submission.

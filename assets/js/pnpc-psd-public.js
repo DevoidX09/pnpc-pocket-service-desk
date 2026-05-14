@@ -4,9 +4,17 @@
 (function( $ ) {
 	'use strict';
 
-	var pnpcPsdDebug = ( 'undefined' !== typeof window.PNPC_PSD_DEBUG ) && !! window.PNPC_PSD_DEBUG;
-
 	$(document).ready(function() {
+		// Customer dashboard alert badge is intentionally a boolean activity indicator.
+		// Do not show an unreliable numeric count here.
+		$('.pnpc-psd-dashboard .pnpc-psd-dashboard-total-card .pnpc-psd-new-indicator-badge').each(function() {
+			$(this)
+				.addClass('pnpc-psd-dashboard-alert-badge')
+				.text('New')
+				.attr('title', 'New unread activity')
+				.attr('aria-label', 'New unread activity');
+		});
+
 		var createFiles = [];
 		var responseFiles = [];
 		var MAX_ATTACHMENTS = 10;
@@ -55,7 +63,7 @@
 					}
 				},
 				error: function(xhr, status, err) {
-					if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-public.js profile upload error', status, err, xhr && xhr.responseText); }
+					console.error('pnpc-psd-public.js profile upload error', status, err, xhr && xhr.responseText);
 					showProfileImageMessage('error', 'Upload failed. Please try again.');
 				}
 			});
@@ -105,7 +113,7 @@
 					}
 				},
 				error: function(xhr, status, err) {
-					if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-public.js my tickets refresh error', status, err, xhr && xhr.responseText); }
+					console.error('pnpc-psd-public.js my tickets refresh error', status, err, xhr && xhr.responseText);
 					setMyTicketsStatus('');
 				}
 			});
@@ -229,7 +237,7 @@
 					}
 				},
 				error: function(xhr, status, err) {
-					if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-public.js create ticket error', status, err, xhr && xhr.responseText); }
+					console.error('pnpc-psd-public.js create ticket error', status, err, xhr && xhr.responseText);
 					showCreateMessage('error', 'Request failed. Please reload and try again.', $form);
 					$submitBtn.prop('disabled', false);
 				},
@@ -302,7 +310,7 @@
 					}
 				},
 				error: function(xhr, status, err) {
-					if ( pnpcPsdDebug && window.console && console.error ) { console.error('pnpc-psd-public.js AJAX error', status, err, xhr && xhr.responseText); }
+					console.error('pnpc-psd-public.js AJAX error', status, err, xhr && xhr.responseText);
 					showResponseMessage('error', 'An error occurred. Please try again.');
 				}
 			});

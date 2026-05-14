@@ -1,0 +1,31 @@
+# Composer
+/vendor/
+composer.phar
+composer.lock
+
+# Temporary Composer files
+vendor/composer/tmp-*
+
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build artifacts
+/dist/
+/build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# WordPress
+wp-config-local.php
+.htaccess

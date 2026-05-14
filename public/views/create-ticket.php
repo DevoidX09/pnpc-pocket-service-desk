@@ -3,7 +3,7 @@
 /**
  * Public create ticket view (patched to include attachments field and preview/remove UI)
  */
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
 	exit;
 }
 ?>
@@ -65,7 +65,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<p class="pnpc-psd-help-text">
 				<?php
 				printf(
-					/* translators: 1: allowed file extensions, 2: maximum upload size in MB. */
 					esc_html__( 'Allowed formats: %1$s. Max size per file: %2$dMB (server limits may apply).', 'pnpc-pocket-service-desk' ),
 					esc_html( implode( ', ', $exts ) ),
 					(int) $max_mb

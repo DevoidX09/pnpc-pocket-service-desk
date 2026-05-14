@@ -11,7 +11,7 @@
  * Expects $ticket and $responses to be provided by render_ticket_detail().
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
 	exit;
 }
 
@@ -101,10 +101,7 @@ if (empty($dashboard_url)) {
 		<h2><?php echo esc_html($ticket->subject); ?></h2>
 		<div class="pnpc-psd-ticket-meta">
 			<span class="pnpc-psd-ticket-number">
-				<?php
-	/* translators: %s: ticket number. */
-	printf( esc_html__( 'Ticket #%s', 'pnpc-pocket-service-desk' ), esc_html( $ticket->ticket_number ) );
-	?>
+				<?php printf(esc_html__('Ticket #%s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?>
 			</span>
 			<?php
 			$raw_status = isset( $ticket->status ) ? (string) $ticket->status : '';
@@ -130,7 +127,6 @@ if (empty($dashboard_url)) {
 				? pnpc_psd_format_db_datetime_for_display($ticket->created_at)
 				: date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($ticket->created_at));
 
-			/* translators: %s: ticket creation date. */
 			printf(esc_html__('Created on %s', 'pnpc-pocket-service-desk'), esc_html($created_display));
 			?>
 		</div>
@@ -292,8 +288,7 @@ if (empty($dashboard_url)) {
 							<p class="pnpc-psd-help-text">
 								<?php
 								printf(
-									/* translators: 1: allowed file extensions, 2: maximum upload size in MB. */
-								esc_html__( 'Allowed formats: %1$s. Max size per file: %2$dMB (server limits may apply).', 'pnpc-pocket-service-desk' ),
+									esc_html__( 'Allowed formats: %1$s. Max size per file: %2$dMB (server limits may apply).', 'pnpc-pocket-service-desk' ),
 									esc_html( implode( ', ', $exts ) ),
 									(int) $max_mb
 								);

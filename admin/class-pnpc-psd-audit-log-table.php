@@ -86,7 +86,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @param string $column_name Column key.
 	 * @return string
 	 */
-	public function column_default(  $item, $column_name ) {
+	public function column_default( $item, $column_name ) {
 		switch ( $column_name ) {
 			case 'created_at':
 				return esc_html( (string) $item['created_at_display'] );
@@ -109,7 +109,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @param array $item Row.
 	 * @return string
 	 */
-	protected function render_actor(  $item ) {
+	protected function render_actor( $item ) {
 		$actor_id = isset( $item['actor_id'] ) ? absint( $item['actor_id'] ) : 0;
 		if ( $actor_id < 1 ) {
 			return '—';
@@ -136,7 +136,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @param array $item Row.
 	 * @return string
 	 */
-	protected function render_context(  $item ) {
+	protected function render_context( $item ) {
 		$raw = isset( $item['context'] ) ? (string) $item['context'] : '';
 		if ( '' === $raw ) {
 			return '—';
@@ -170,7 +170,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @param string $s Raw.
 	 * @return bool
 	 */
-	protected function looks_like_json(  $s ) {
+	protected function looks_like_json( $s ) {
 		$s = ltrim( $s );
 		return '' !== $s && ( '{' === $s[0] || '[' === $s[0] );
 	}
@@ -181,7 +181,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @param array $ctx Context.
 	 * @return string
 	 */
-	protected function format_context_array(  $ctx ) {
+	protected function format_context_array( $ctx ) {
 		$keys_prefer = array( 'message', 'note', 'status', 'from', 'to', 'field', 'value', 'reason' );
 		$parts       = array();
 
@@ -226,12 +226,9 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 		$per_page = (int) apply_filters( 'pnpc_psd_audit_log_per_page', 25 );
 		$per_page = max( 5, min( 200, $per_page ) );
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list table pagination.
 		$paged = isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1;
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list table sorting.
 		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'created_at';
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list table sorting.
 		$order   = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'desc';
 
 		$allowed_orderby = array( 'created_at', 'action', 'ticket_id', 'actor_id' );
@@ -258,26 +255,18 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 			$params[] = $filters['actor_id'];
 		}
 
-		
-// Count.
+		// Count.
 		$sql_count = "SELECT COUNT(*) FROM {$table} {$where}";
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$total_items = (int) $wpdb->get_var( $wpdb->prepare( $sql_count, $params ) );
 
-		/*
-		 * Free uses a capped dataset, so enforce newest-first ordering to keep paging and cap
-		 * semantics consistent even if a user tries to sort ascending.
-		 */
-		$order = 'desc';
-
 		$offset = ( $paged - 1 ) * $per_page;
-
 		$limit_clause = $wpdb->prepare( 'LIMIT %d OFFSET %d', $per_page, $offset );
 
 		// Main select.
 		$sql = "SELECT id, ticket_id, actor_id, action, context, created_at FROM {$table} {$where} ORDER BY {$orderby} {$order} {$limit_clause}";
 
-// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
 
 		$items = array();
@@ -306,11 +295,8 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 * @return array{action:string,ticket_id:int,actor_id:int}
 	 */
 	protected function get_filters() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only audit filter.
 		$action   = isset( $_GET['audit_action'] ) ? sanitize_text_field( wp_unslash( $_GET['audit_action'] ) ) : '';
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only audit filter.
 		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( wp_unslash( $_GET['ticket_id'] ) ) : 0;
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only audit filter.
 		$actor_id  = isset( $_GET['actor_id'] ) ? absint( wp_unslash( $_GET['actor_id'] ) ) : 0;
 
 		return array(
@@ -325,7 +311,7 @@ class PNPC_PSD_Audit_Log_Table extends WP_List_Table {
 	 *
 	 * @param string $which Top/bottom.
 	 */
-	protected function extra_tablenav(  $which ) {
+	protected function extra_tablenav( $which ) {
 		if ( 'top' !== $which ) {
 			return;
 		}

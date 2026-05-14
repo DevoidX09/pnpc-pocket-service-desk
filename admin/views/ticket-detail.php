@@ -6,7 +6,7 @@
  * Expects $ticket, $responses, $agents variables populated by the controller.
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
 	exit;
 }
 
@@ -14,10 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Mark ticket as viewed by current agent
  * This clears the "New" badge in the ticket list
  */
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view marker; state-changing actions are nonce protected.
 if (isset($_GET['ticket_id']) && is_user_logged_in() && current_user_can('pnpc_psd_view_tickets')) {
 	$current_user_id = get_current_user_id();
-	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view marker.
 	$ticket_id = absint( wp_unslash( $_GET['ticket_id'] ) );
 	
 	if ($ticket_id > 0) {
@@ -73,7 +71,7 @@ if (! function_exists('pnpc_psd_admin_format_datetime')) {
  *
  * @return mixed
  */
-	function pnpc_psd_admin_format_datetime( $datetime)
+	function pnpc_psd_admin_format_datetime($datetime)
 	{
 		return function_exists('pnpc_psd_format_db_datetime_for_display')
 			? pnpc_psd_format_db_datetime_for_display($datetime)
@@ -92,7 +90,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 <div class="wrap pnpc-psd-ticket-detail" id="pnpc-psd-ticket-detail" data-ticket-id="<?php echo esc_attr($ticket->id); ?>">
 	<div class="pnpc-psd-ticket-detail-header">
 		<div class="pnpc-psd-breadcrumb">
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk' ) ); ?>">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-tickets' ) ); ?>">
 				<?php esc_html_e('All Tickets', 'pnpc-pocket-service-desk'); ?>
 			</a>
 			<span class="separator"> &raquo; </span>
@@ -112,11 +110,11 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 					<span class="dashicons dashicons-arrow-right-alt2"></span>
 				</a>
 			<?php endif; ?>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk' ) ); ?>" class="button">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-tickets' ) ); ?>" class="button">
 				<span class="dashicons dashicons-arrow-left-alt2"></span>
 				<?php esc_html_e('Back to All Tickets', 'pnpc-pocket-service-desk'); ?>
 			</a>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk&status=open' ) ); ?>" class="button">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-tickets&status=open' ) ); ?>" class="button">
 				<?php esc_html_e('Open Tickets', 'pnpc-pocket-service-desk'); ?>
 			</a>
 		</div>
@@ -133,7 +131,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 		<div class="pnpc-psd-staff-created-badge">
 			<span class="dashicons dashicons-admin-users"></span>
 			<?php
-			/* translators: 1: staff member name, 2: customer name. */
+			/* translators: 1: staff member name, 2: customer name */
 			printf(
 				esc_html__('Staff-Created Ticket: Created by %1$s on behalf of %2$s', 'pnpc-pocket-service-desk'),
 				'<strong>' . esc_html( $staff_name ) . '</strong>',
@@ -326,10 +324,8 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 								⚠ <?php
 								/* translators: %s: file size limit */
 								printf(
-									/* translators: %s: formatted file size limit. */
-									/* translators: %s: formatted file size limit. */
-											esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
-									esc_html(pnpc_psd_format_filesize(PNPC_PSD_PREVIEW_LIMIT))
+									esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
+									esc_html(pnpc_psd_format_filesize(PNPC_PSD_FREE_PREVIEW_LIMIT))
 								);
 								?>
 							</span>
@@ -425,7 +421,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 											/* translators: %s: file size limit */
 											printf(
 												esc_html__('Exceeds %s preview limit', 'pnpc-pocket-service-desk'),
-												esc_html(pnpc_psd_format_filesize(PNPC_PSD_PREVIEW_LIMIT))
+												esc_html(pnpc_psd_format_filesize(PNPC_PSD_FREE_PREVIEW_LIMIT))
 											);
 											?>
 										</span>

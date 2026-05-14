@@ -7,7 +7,7 @@
  * @subpackage PNPC_Pocket_Service_Desk/includes
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
 	exit;
 }
 
@@ -16,7 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.1.1.4
  */
-class PNPC_PSD_Ticket{
+class PNPC_PSD_Ticket
+{
 
 	/**
 	 * Create a new ticket.
@@ -25,7 +26,7 @@ class PNPC_PSD_Ticket{
 	 * @param array $data Ticket data.
 	 * @return int|false Ticket ID on success, false on failure.
 	 */
-	public static function create( $data)
+	public static function create($data)
 	{
 		global $wpdb;
 
@@ -155,7 +156,7 @@ class PNPC_PSD_Ticket{
 	 * @param int $ticket_id Ticket ID.
 	 * @return object|null Ticket object or null if not found.
 	 */
-	public static function get( $ticket_id)
+	public static function get($ticket_id)
 	{
 		global $wpdb;
 
@@ -184,7 +185,7 @@ class PNPC_PSD_Ticket{
 	 * @param array $data      Associative array of columns to update.
 	 * @return bool True when a row is updated (or values are identical), false on error.
 	 */
-	public static function update(  $ticket_id, $data ) {
+	public static function update( $ticket_id, $data ) {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 		$ticket_id  = absint( $ticket_id );
@@ -270,7 +271,7 @@ class PNPC_PSD_Ticket{
 	 * @param array $args Query arguments.
 	 * @return array Array of ticket objects.
 	 */
-	public static function get_by_user( $user_id, $args = array())
+	public static function get_by_user($user_id, $args = array())
 	{
 		global $wpdb;
 
@@ -338,7 +339,7 @@ class PNPC_PSD_Ticket{
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$tickets = $wpdb->get_results(
 			"SELECT * FROM {$table_name} {$where} ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -356,7 +357,7 @@ class PNPC_PSD_Ticket{
 	 * @param array $args Query arguments.
 	 * @return int Ticket count.
 	 */
-	public static function get_user_count(  $user_id, $args = array() ) {
+	public static function get_user_count( $user_id, $args = array() ) {
 		global $wpdb;
 
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
@@ -397,7 +398,7 @@ class PNPC_PSD_Ticket{
 			}
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name} {$where}" );
 		return $count;
 	}
@@ -409,7 +410,7 @@ class PNPC_PSD_Ticket{
 	 * @param array $args Query arguments.
 	 * @return array Array of ticket objects.
 	 */
-	public static function get_all( $args = array())
+	public static function get_all($args = array())
 	{
 		global $wpdb;
 
@@ -474,7 +475,7 @@ class PNPC_PSD_Ticket{
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$tickets = $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE {$where} ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -489,7 +490,7 @@ class PNPC_PSD_Ticket{
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function delete( $ticket_id)
+	public static function delete($ticket_id)
 	{
 		global $wpdb;
 
@@ -546,7 +547,7 @@ class PNPC_PSD_Ticket{
 	 * @since 1.0.0
 	 * @param int $ticket_id Ticket ID.
 	 */
-	private static function send_ticket_created_notification( $ticket_id)
+	private static function send_ticket_created_notification($ticket_id)
 	{
 		// v1.1.0+: central notification service.
 		if ( class_exists( 'PNPC_PSD_Notifications' ) ) {
@@ -635,7 +636,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	/**
 	 * Initialize activity tracking for a newly created ticket.
 	 */
-	public static function update_activity_on_create(  $ticket_id ) {
+	public static function update_activity_on_create( $ticket_id ) {
 		$ticket_id = absint( $ticket_id );
 		if ( ! $ticket_id || ! self::has_activity_columns() ) {
 			return;
@@ -661,7 +662,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	/**
 	 * Update activity tracking when a response is created.
 	 */
-	public static function update_activity_on_response(  $ticket_id, $is_staff_response ) {
+	public static function update_activity_on_response( $ticket_id, $is_staff_response ) {
 		$ticket_id = absint( $ticket_id );
 		if ( ! $ticket_id || ! self::has_activity_columns() ) {
 			return;
@@ -678,7 +679,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	/**
 	 * Mark viewed for the customer side.
 	 */
-	public static function mark_customer_viewed(  $ticket_id ) {
+	public static function mark_customer_viewed( $ticket_id ) {
 		$ticket_id = absint( $ticket_id );
 		if ( ! $ticket_id || ! self::has_activity_columns() ) {
 			return;
@@ -693,7 +694,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	/**
 	 * Mark viewed for the staff side.
 	 */
-	public static function mark_staff_viewed(  $ticket_id ) {
+	public static function mark_staff_viewed( $ticket_id ) {
 		$ticket_id = absint( $ticket_id );
 		if ( ! $ticket_id || ! self::has_activity_columns() ) {
 			return;
@@ -712,7 +713,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param string $status Status (optional).
 	 * @return int Ticket count.
 	 */
-	public static function get_count( $status = '')
+	public static function get_count($status = '')
 	{
 		global $wpdb;
 
@@ -735,145 +736,13 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	}
 
 	/**
-	 * Get count of tickets with unread customer activity.
-	 *
-	 * This is used for the admin menu "New replies" badge. It mirrors the
-	 * "New" column logic in the All Tickets list: a ticket is considered to have
-	 * a new customer reply when the latest customer activity is newer than the
-	 * last staff viewed timestamp (or when staff has never viewed the ticket).
-	 *
-	 * @since 1.1.1.4
-	 * @param array $statuses List of ticket statuses to include.
-	 * @return int Count of tickets with unread customer activity.
-	 */
-	public static function get_unread_customer_activity_count(  $statuses = array() ) {
-		global $wpdb;
-
-		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
-
-		if ( empty( $statuses ) ) {
-			$statuses = array( 'open', 'in-progress', 'waiting' );
-		}
-		$statuses = array_values( array_filter( array_map( 'sanitize_key', (array) $statuses ) ) );
-		if ( empty( $statuses ) ) {
-			return 0;
-		}
-
-		$placeholders = implode( ',', array_fill( 0, count( $statuses ), '%s' ) );
-		$params       = $statuses;
-
-		$sql = "SELECT COUNT(*) FROM {$table_name}"
-			. " WHERE deleted_at IS NULL"
-			. " AND pending_delete_at IS NULL"
-			. " AND archived_at IS NULL"
-			. " AND status <> 'archived'"
-			. " AND status IN ({$placeholders})"
-			. " AND IFNULL( last_customer_activity_at, created_at )"
-			. " > IFNULL( last_staff_viewed_at, '0000-00-00 00:00:00' )";
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
-		$count = $wpdb->get_var( $wpdb->prepare( $sql, $params ) );
-		return absint( $count );
-	}
-
-	/**
-	 * Get total number of unread customer replies across tickets.
-	 *
-	 * This mirrors the admin list "New" column intent, but counts unread customer replies
-	 * (responses) instead of simply counting tickets.
-	 *
-	 * @since 1.1.1.4
-	 *
-	 * @param array $statuses Optional list of ticket statuses to include.
-	 * @return int Total unread customer reply count.
-	 */
-	public static function get_unread_customer_reply_total_count(  $statuses = array() ) {
-		global $wpdb;
-
-		$tickets_table   = $wpdb->prefix . 'pnpc_psd_tickets';
-		$responses_table = $wpdb->prefix . 'pnpc_psd_ticket_responses';
-
-		if ( empty( $statuses ) ) {
-			$statuses = array( 'open', 'in-progress', 'waiting' );
-		}
-
-		$statuses = array_values( array_filter( array_map( 'sanitize_text_field', (array) $statuses ) ) );
-		if ( empty( $statuses ) ) {
-			return 0;
-		}
-
-		$placeholders = implode( ',', array_fill( 0, count( $statuses ), '%s' ) );
-		$sql          = "SELECT COUNT(*)
-			FROM {$responses_table} r
-			INNER JOIN {$tickets_table} t ON t.id = r.ticket_id
-			WHERE r.deleted_at IS NULL
-			AND r.is_staff_response = 0
-			AND t.deleted_at IS NULL
-			AND t.status IN ({$placeholders})
-			AND r.created_at > COALESCE(t.last_staff_viewed_at, '0000-00-00 00:00:00')";
-
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared via $wpdb->prepare with dynamic placeholders.
-		$query = $wpdb->prepare( $sql, $statuses );
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $query is prepared.
-		$count = (int) $wpdb->get_var( $query );
-		return max( 0, $count );
-	}
-
-	/**
-	 * Get per-ticket unread customer reply counts.
-	 *
-	 * @since 1.1.1.4
-	 *
-	 * @param int[] $ticket_ids Ticket IDs.
-	 * @return array<int,int> Map of ticket_id => unread customer reply count.
-	 */
-	public static function get_unread_customer_reply_counts_by_ticket_ids(  $ticket_ids ) {
-		global $wpdb;
-
-		$ticket_ids = array_map( 'absint', (array) $ticket_ids );
-		$ticket_ids = array_values( array_filter( $ticket_ids ) );
-		if ( empty( $ticket_ids ) ) {
-			return array();
-		}
-
-		$tickets_table   = $wpdb->prefix . 'pnpc_psd_tickets';
-		$responses_table = $wpdb->prefix . 'pnpc_psd_ticket_responses';
-		$placeholders    = implode( ',', array_fill( 0, count( $ticket_ids ), '%d' ) );
-
-		$sql = "SELECT r.ticket_id, COUNT(*) AS cnt
-			FROM {$responses_table} r
-			INNER JOIN {$tickets_table} t ON t.id = r.ticket_id
-			WHERE r.deleted_at IS NULL
-			AND r.is_staff_response = 0
-			AND t.deleted_at IS NULL
-			AND r.ticket_id IN ({$placeholders})
-			AND r.created_at > COALESCE(t.last_staff_viewed_at, '0000-00-00 00:00:00')
-			GROUP BY r.ticket_id";
-
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared via $wpdb->prepare with dynamic placeholders.
-		$query = $wpdb->prepare( $sql, $ticket_ids );
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $query is prepared.
-		$rows = $wpdb->get_results( $query );
-
-		$map = array();
-		if ( ! empty( $rows ) ) {
-			foreach ( $rows as $row ) {
-				$tid        = isset( $row->ticket_id ) ? absint( $row->ticket_id ) : 0;
-				$map[ $tid ] = isset( $row->cnt ) ? max( 0, (int) $row->cnt ) : 0;
-			}
-		}
-
-		return $map;
-	}
-
-	/**
 	 * Get trashed tickets.
 	 *
 	 * @since 1.1.0
 	 * @param array $args Query arguments.
 	 * @return array Array of ticket objects.
 	 */
-	public static function get_trashed( $args = array())
+	public static function get_trashed($args = array())
 	{
 		global $wpdb;
 
@@ -908,7 +777,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$tickets = $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE deleted_at IS NOT NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -943,7 +812,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param array $args Query arguments.
 	 * @return array
 	 */
-	public static function get_archived(  $args = array() ) {
+	public static function get_archived( $args = array() ) {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 
@@ -973,7 +842,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$limit  = absint( $args['limit'] );
 		$offset = absint( $args['offset'] );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE archived_at IS NOT NULL AND deleted_at IS NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -1001,7 +870,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool
 	 */
-	public static function archive(  $ticket_id ) {
+	public static function archive( $ticket_id ) {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 		$ticket_id = absint( $ticket_id );
@@ -1055,7 +924,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool
 	 */
-	public static function archive_from_trash(  $ticket_id ) {
+	public static function archive_from_trash( $ticket_id ) {
 		$ticket_id = absint( $ticket_id );
 		if ( ! $ticket_id ) {
 			return false;
@@ -1109,7 +978,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool
 	 */
-	public static function restore_from_archive(  $ticket_id ) {
+	public static function restore_from_archive( $ticket_id ) {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 		$ticket_id = absint( $ticket_id );
@@ -1146,7 +1015,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		 * @param array $args Query arguments.
 		 * @return array Array of ticket objects.
 		 */
-		public static function get_pending_delete( $args = array())
+		public static function get_pending_delete($args = array())
 	{
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
@@ -1177,7 +1046,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$limit  = absint($args['limit']);
 		$offset = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic placeholders are prepared immediately above; table name is from $wpdb->prefix.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NOT NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -1208,7 +1077,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param string $reason_other Optional details.
 	 * @return bool
 	 */
-	public static function request_delete_with_reason( $ticket_id, $requested_by, $reason, $reason_other = '')
+	public static function request_delete_with_reason($ticket_id, $requested_by, $reason, $reason_other = '')
 	{
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
@@ -1253,7 +1122,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param string $reason_other Optional details.
 	 * @return int
 	 */
-	public static function bulk_request_delete_with_reason( $ticket_ids, $requested_by, $reason, $reason_other = '')
+	public static function bulk_request_delete_with_reason($ticket_ids, $requested_by, $reason, $reason_other = '')
 	{
 		if (! is_array($ticket_ids) || empty($ticket_ids)) {
 			return 0;
@@ -1274,7 +1143,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool
 	 */
-	public static function cancel_pending_delete( $ticket_id)
+	public static function cancel_pending_delete($ticket_id)
 	{
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
@@ -1307,7 +1176,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param array $ticket_ids Array of ticket IDs.
 	 * @return int Number of tickets updated.
 	 */
-	public static function bulk_cancel_pending_delete(  $ticket_ids ) {
+	public static function bulk_cancel_pending_delete( $ticket_ids ) {
 		if ( ! is_array( $ticket_ids ) || empty( $ticket_ids ) ) {
 			return 0;
 		}
@@ -1331,7 +1200,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool
 	 */
-	public static function approve_pending_delete_to_trash( $ticket_id)
+	public static function approve_pending_delete_to_trash($ticket_id)
 	{
 		$ticket_id = absint($ticket_id);
 		if (! $ticket_id) {
@@ -1433,7 +1302,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param array $ticket_ids Ticket IDs.
 	 * @return int
 	 */
-	public static function bulk_approve_pending_delete_to_trash( $ticket_ids)
+	public static function bulk_approve_pending_delete_to_trash($ticket_ids)
 	{
 		if (! is_array($ticket_ids) || empty($ticket_ids)) {
 			return 0;
@@ -1454,7 +1323,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function trash( $ticket_id)
+	public static function trash($ticket_id)
 	{
 		global $wpdb;
 
@@ -1497,7 +1366,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param array $ticket_ids Array of ticket IDs.
 	 * @return int Number of tickets trashed.
 	 */
-	public static function bulk_trash( $ticket_ids)
+	public static function bulk_trash($ticket_ids)
 	{
 		if (! is_array($ticket_ids) || empty($ticket_ids)) {
 			return 0;
@@ -1520,7 +1389,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function restore( $ticket_id)
+	public static function restore($ticket_id)
 	{
 		global $wpdb;
 
@@ -1588,7 +1457,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param array $ticket_ids Array of ticket IDs.
 	 * @return int Number of tickets restored.
 	 */
-	public static function bulk_restore( $ticket_ids)
+	public static function bulk_restore($ticket_ids)
 	{
 		if (! is_array($ticket_ids) || empty($ticket_ids)) {
 			return 0;
@@ -1611,7 +1480,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function delete_permanently( $ticket_id)
+	public static function delete_permanently($ticket_id)
 	{
 		global $wpdb;
 
@@ -1657,7 +1526,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param array $ticket_ids Ticket IDs.
 	 * @return int Number archived.
 	 */
-	public static function bulk_archive_closed(  $ticket_ids ) {
+	public static function bulk_archive_closed( $ticket_ids ) {
 		$ticket_ids = array_filter( array_map( 'absint', (array) $ticket_ids ) );
 		if ( empty( $ticket_ids ) ) {
 			return 0;
@@ -1678,7 +1547,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param array $ticket_ids Ticket IDs.
 	 * @return int Number restored.
 	 */
-	public static function bulk_restore_from_archive(  $ticket_ids ) {
+	public static function bulk_restore_from_archive( $ticket_ids ) {
 		$ticket_ids = array_filter( array_map( 'absint', (array) $ticket_ids ) );
 		if ( empty( $ticket_ids ) ) {
 			return 0;
@@ -1700,7 +1569,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	*
 	* @return mixed
 	*/
-	public static function bulk_delete_permanently( $ticket_ids)
+	public static function bulk_delete_permanently($ticket_ids)
 	{
 		if (! is_array($ticket_ids) || empty($ticket_ids)) {
 			return 0;
@@ -1723,7 +1592,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	private static function trash_attachments_by_ticket( $ticket_id)
+	private static function trash_attachments_by_ticket($ticket_id)
 	{
 		global $wpdb;
 
@@ -1751,7 +1620,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	private static function restore_attachments_by_ticket( $ticket_id)
+	private static function restore_attachments_by_ticket($ticket_id)
 	{
 		global $wpdb;
 
@@ -1777,7 +1646,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	private static function delete_attachments_by_ticket( $ticket_id)
+	private static function delete_attachments_by_ticket($ticket_id)
 	{
 		global $wpdb;
 
@@ -1803,7 +1672,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param string $reason_other Optional. Additional details if reason is 'other'.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function trash_with_reason( $ticket_id, $reason, $reason_other = '')
+	public static function trash_with_reason($ticket_id, $reason, $reason_other = '')
 	{
 		// Call existing trash method.
 		$result = self::trash($ticket_id);
@@ -1847,7 +1716,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param string $reason_other Optional. Additional details if reason is 'other'.
 	 * @return int Number of tickets trashed.
 	 */
-	public static function bulk_trash_with_reason( $ticket_ids, $reason, $reason_other = '')
+	public static function bulk_trash_with_reason($ticket_ids, $reason, $reason_other = '')
 	{
 		if (! is_array($ticket_ids) || empty($ticket_ids)) {
 			return 0;
@@ -1872,7 +1741,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param mixed  $meta_value Meta value.
 	 * @return bool|int False on failure, number of rows affected on success.
 	 */
-	public static function update_meta( $ticket_id, $meta_key, $meta_value)
+	public static function update_meta($ticket_id, $meta_key, $meta_value)
 	{
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_meta';
@@ -1922,7 +1791,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param bool   $single Optional. Whether to return a single value. Default true.
 	 * @return mixed Meta value or null if not found.
 	 */
-	public static function get_meta( $ticket_id, $meta_key, $single = true)
+	public static function get_meta($ticket_id, $meta_key, $single = true)
 	{
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_meta';
@@ -1951,7 +1820,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param string $meta_key Meta key.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function delete_meta( $ticket_id, $meta_key)
+	public static function delete_meta($ticket_id, $meta_key)
 	{
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_meta';

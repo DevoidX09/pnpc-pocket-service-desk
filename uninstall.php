@@ -28,6 +28,8 @@ if ( $delete_data ) {
 	delete_option( 'pnpc_psd_allowed_file_types' );
 	delete_option( 'pnpc_psd_show_welcome_profile' );
 	delete_option( 'pnpc_psd_show_welcome_service_desk' );
+	delete_option( 'pnpc_psd_show_products' );
+	delete_option( 'pnpc_psd_user_specific_products' );
 	delete_option( 'pnpc_psd_enable_menu_badge' );
 	delete_option( 'pnpc_psd_menu_badge_interval' );
 	delete_option( 'pnpc_psd_enable_auto_refresh' );

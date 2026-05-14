@@ -26,7 +26,7 @@ class PNPC_PSD_Audit_Log {
 	 * @param int|null    $actor_id  Actor user ID (defaults to current user).
 	 * @return bool
 	 */
-	public static function log(  $ticket_id, $action, $context = array(), $actor_id = null ) {
+	public static function log( $ticket_id, $action, $context = array(), $actor_id = null ) {
 		global $wpdb;
 
 		$table = $wpdb->prefix . 'pnpc_psd_audit_log';
@@ -85,7 +85,7 @@ class PNPC_PSD_Audit_Log {
 	 * @param int $cap Maximum number of rows to retain.
 	 * @return void
 	 */
-	private static function enforce_retention_cap(  $cap ) {
+	private static function enforce_retention_cap( $cap ) {
 		global $wpdb;
 		$table = $wpdb->prefix . 'pnpc_psd_audit_log';
 		$cap   = absint( $cap );
@@ -99,7 +99,7 @@ class PNPC_PSD_Audit_Log {
 			"DELETE FROM {$table} WHERE id NOT IN (SELECT id FROM (SELECT id FROM {$table} ORDER BY id DESC LIMIT %d) t)",
 			$cap
 		);
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared -- Prepared SQL is stored in $sql before execution.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->query( $sql );
 	}
 
@@ -110,7 +110,7 @@ class PNPC_PSD_Audit_Log {
 	 * @param int $limit     Max rows.
 	 * @return array
 	 */
-	public static function get_by_ticket(  $ticket_id, $limit = 50 ) {
+	public static function get_by_ticket( $ticket_id, $limit = 50 ) {
 		global $wpdb;
 		$table    = $wpdb->prefix . 'pnpc_psd_audit_log';
 		$ticket_id = absint( $ticket_id );

@@ -35,7 +35,7 @@ class PNPC_PSD_Internal_Notes {
 	 *
 	 * @param string $version Plugin version.
 	 */
-	public function __construct(  $version ) {
+	public function __construct( $version ) {
 		$this->version = (string) $version;
 	}
 
@@ -45,7 +45,7 @@ class PNPC_PSD_Internal_Notes {
 	 * @param string $hook Current admin hook.
 	 * @return void
 	 */
-	public function enqueue_admin_assets(  $hook ) {
+	public function enqueue_admin_assets( $hook ) {
 		if ( ! is_admin() ) {
 			return;
 		}
@@ -53,13 +53,11 @@ class PNPC_PSD_Internal_Notes {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin page check.
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 		if ( 'pnpc-service-desk-ticket' !== $page ) {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only ticket context for asset enqueue.
 		$ticket_id = isset( $_GET['ticket_id'] ) ? absint( wp_unslash( $_GET['ticket_id'] ) ) : 0;
 		if ( $ticket_id <= 0 ) {
 			return;
@@ -111,7 +109,7 @@ class PNPC_PSD_Internal_Notes {
 	 * @param object $ticket Ticket object.
 	 * @return int
 	 */
-	private static function get_client_user_id_from_ticket(  $ticket ) {
+	private static function get_client_user_id_from_ticket( $ticket ) {
 		if ( is_object( $ticket ) && isset( $ticket->user_id ) ) {
 			return absint( $ticket->user_id );
 		}
@@ -124,7 +122,7 @@ class PNPC_PSD_Internal_Notes {
 	 * @param int $client_user_id Client user ID.
 	 * @return array
 	 */
-	private static function get_client_notes(  $client_user_id ) {
+	private static function get_client_notes( $client_user_id ) {
 		$raw = get_user_meta( $client_user_id, self::USER_META_KEY, true );
 		return is_array( $raw ) ? $raw : array();
 	}
@@ -136,7 +134,7 @@ class PNPC_PSD_Internal_Notes {
 	 * @param array $notes Notes.
 	 * @return void
 	 */
-	private static function save_client_notes(  $client_user_id, $notes ) {
+	private static function save_client_notes( $client_user_id, $notes ) {
 		update_user_meta( $client_user_id, self::USER_META_KEY, $notes );
 	}
 
@@ -146,7 +144,7 @@ class PNPC_PSD_Internal_Notes {
 	 * @param array $note Note record.
 	 * @return array
 	 */
-	private static function format_item(  $note ) {
+	private static function format_item( $note ) {
 		$note_id = isset( $note['id'] ) ? (string) $note['id'] : '';
 		$user_id = isset( $note['user_id'] ) ? absint( $note['user_id'] ) : 0;
 		$created = isset( $note['created'] ) ? absint( $note['created'] ) : 0;
@@ -173,7 +171,7 @@ class PNPC_PSD_Internal_Notes {
 	 * @param int $client_user_id Client user ID.
 	 * @return array Migrated or existing notes.
 	 */
-	private static function maybe_migrate_legacy_ticket_notes(  $ticket_id, $client_user_id ) {
+	private static function maybe_migrate_legacy_ticket_notes( $ticket_id, $client_user_id ) {
 		$existing = self::get_client_notes( $client_user_id );
 		if ( ! empty( $existing ) ) {
 			return $existing;
@@ -264,7 +262,6 @@ class PNPC_PSD_Internal_Notes {
 		if ( $ticket_id <= 0 ) {
 			wp_send_json_error( array( 'message' => 'bad_ticket_id' ), 400 );
 		}
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized on next line with sanitize_textarea_field().
 		$content_raw = isset( $_POST['content'] ) ? wp_unslash( $_POST['content'] ) : '';
 		$content     = sanitize_textarea_field( $content_raw );
 		$content     = trim( $content );

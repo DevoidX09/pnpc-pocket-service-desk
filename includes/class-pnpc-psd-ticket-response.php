@@ -21,7 +21,8 @@
  *
  * @since 1.1.1.4
  */
-class PNPC_PSD_Ticket_Response{
+class PNPC_PSD_Ticket_Response
+{
 
 	/**
 	 * Create a new ticket response.
@@ -30,7 +31,7 @@ class PNPC_PSD_Ticket_Response{
 	 * @param array $data Response data.
 	 * @return int|false Response ID on success, false on failure.
 	 */
-	public static function create( $data)
+	public static function create($data)
 	{
 		global $wpdb;
 
@@ -127,7 +128,7 @@ class PNPC_PSD_Ticket_Response{
 	 * @param int $response_id Response ID.
 	 * @return object|null Response object or null if not found.
 	 */
-	public static function get( $response_id)
+	public static function get($response_id)
 	{
 		global $wpdb;
 
@@ -153,7 +154,7 @@ class PNPC_PSD_Ticket_Response{
 	 * @param array $args Query arguments.
 	 * @return array Array of response objects.
 	 */
-	public static function get_by_ticket( $ticket_id, $args = array())
+	public static function get_by_ticket($ticket_id, $args = array())
 	{
 		global $wpdb;
 
@@ -200,6 +201,98 @@ class PNPC_PSD_Ticket_Response{
 		return $responses;
 	}
 
+
+	/**
+	 * Count unread customer-facing responses across a customer's active tickets.
+	 *
+	 * This counts individual replies, not only tickets with unread activity. A reply is
+	 * considered unread when it was created after the customer's last viewed timestamp
+	 * for the ticket and was not written by that customer.
+	 *
+	 * @since 1.1.9.3
+	 * @param int $user_id Customer user ID.
+	 * @return int Number of unread replies across active tickets.
+	 */
+	public static function count_unread_for_customer( $user_id ) {
+		$user_id = absint( $user_id );
+		if ( ! $user_id || ! class_exists( 'PNPC_PSD_Ticket' ) ) {
+			return 0;
+		}
+
+		$tickets = PNPC_PSD_Ticket::get_by_user( $user_id, array( 'limit' => 1000 ) );
+		if ( empty( $tickets ) || ! is_array( $tickets ) ) {
+			return 0;
+		}
+
+		$active_statuses = apply_filters(
+			'pnpc_psd_customer_unread_active_statuses',
+			array( 'open', 'in-progress', 'in_progress', 'waiting' )
+		);
+
+		$active_statuses = array_map(
+			static function ( $status ) {
+				return strtolower( str_replace( '_', '-', sanitize_key( (string) $status ) ) );
+			},
+			(array) $active_statuses
+		);
+
+		$total = 0;
+
+		foreach ( $tickets as $ticket ) {
+			if ( empty( $ticket->id ) ) {
+				continue;
+			}
+
+			$status = isset( $ticket->status ) ? strtolower( str_replace( '_', '-', sanitize_key( (string) $ticket->status ) ) ) : '';
+			if ( ! in_array( $status, $active_statuses, true ) ) {
+				continue;
+			}
+
+			$last_view_ts = 0;
+			if ( ! empty( $ticket->last_customer_viewed_at ) ) {
+				$last_view_ts = max( $last_view_ts, (int) strtotime( (string) $ticket->last_customer_viewed_at . ' UTC' ) );
+			}
+
+			$last_view_meta = get_user_meta( $user_id, 'pnpc_psd_ticket_last_view_' . absint( $ticket->id ), true );
+			if ( ! empty( $last_view_meta ) ) {
+				$last_view_ts = max(
+					$last_view_ts,
+					is_numeric( $last_view_meta ) ? (int) $last_view_meta : (int) strtotime( (string) $last_view_meta )
+				);
+			}
+
+			$responses = self::get_by_ticket(
+				absint( $ticket->id ),
+				array(
+					'orderby' => 'created_at',
+					'order'   => 'ASC',
+				)
+			);
+
+			if ( empty( $responses ) || ! is_array( $responses ) ) {
+				continue;
+			}
+
+			foreach ( $responses as $response ) {
+				if ( empty( $response->created_at ) ) {
+					continue;
+				}
+
+				$is_customer_reply = isset( $response->user_id ) && (int) $response->user_id === (int) $user_id && empty( $response->is_staff_response );
+				if ( $is_customer_reply ) {
+					continue;
+				}
+
+				$response_ts = (int) strtotime( (string) $response->created_at . ' UTC' );
+				if ( $response_ts > $last_view_ts ) {
+					$total++;
+				}
+			}
+		}
+
+		return absint( $total );
+	}
+
 	/**
 	 * Delete responses for a ticket.
 	 *
@@ -207,7 +300,7 @@ class PNPC_PSD_Ticket_Response{
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function delete_by_ticket( $ticket_id)
+	public static function delete_by_ticket($ticket_id)
 	{
 		global $wpdb;
 
@@ -230,7 +323,7 @@ class PNPC_PSD_Ticket_Response{
 	 * @since 1.0.0
 	 * @param int $response_id Response ID.
 	 */
-	private static function send_response_notification( $response_id)
+	private static function send_response_notification($response_id)
 	{
 		// v1.1.0+: central notification service.
 		if ( class_exists( 'PNPC_PSD_Notifications' ) ) {
@@ -320,7 +413,7 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 	 * @param int $ticket_id Ticket ID.
 	 * @return int Response count.
 	 */
-	public static function get_count( $ticket_id)
+	public static function get_count($ticket_id)
 	{
 		global $wpdb;
 
@@ -345,7 +438,7 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function trash_by_ticket( $ticket_id)
+	public static function trash_by_ticket($ticket_id)
 	{
 		global $wpdb;
 
@@ -373,7 +466,7 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 	 * @param int $ticket_id Ticket ID.
 	 * @return bool True on success, false on failure.
 	 */
-	public static function restore_by_ticket( $ticket_id)
+	public static function restore_by_ticket($ticket_id)
 	{
 		global $wpdb;
 

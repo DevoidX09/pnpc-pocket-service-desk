@@ -7,8 +7,6 @@
 (function($) {
 	'use strict';
 
-	var pnpcPsdDebug = ( 'undefined' !== typeof window.PNPC_PSD_DEBUG ) && !! window.PNPC_PSD_DEBUG;
-
 	// Configuration constants
 	var CONFIG = {
 		SWIPE_THRESHOLD: 50,           // Minimum pixels for swipe detection
@@ -43,7 +41,7 @@
 		// If lightbox doesn't exist in DOM, it will be rendered by PHP
 		// This is just a safety check
 		if (!$lightbox.length) {
-			if ( pnpcPsdDebug && window.console && console.warn ) { console.warn('PNPC PSD: Lightbox element not found in DOM'); }
+			console.warn('PNPC PSD: Lightbox element not found in DOM');
 			return false;
 		}
 
@@ -195,12 +193,12 @@
 	 */
 	function openLightbox(index) {
 		if (!$lightbox || !$lightbox.length) {
-			if ( pnpcPsdDebug && window.console && console.error ) { console.error('PNPC PSD: Lightbox not initialized'); }
+			console.error('PNPC PSD: Lightbox not initialized');
 			return;
 		}
 
 		if (index < 0 || index >= attachmentGallery.length) {
-			if ( pnpcPsdDebug && window.console && console.error ) { console.error('PNPC PSD: Invalid attachment index'); }
+			console.error('PNPC PSD: Invalid attachment index');
 			return;
 		}
 

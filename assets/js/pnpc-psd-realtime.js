@@ -5,8 +5,6 @@
 (function($) {
 	'use strict';
 
-	var pnpcPsdDebug = ( 'undefined' !== typeof window.PNPC_PSD_DEBUG ) && !! window.PNPC_PSD_DEBUG;
-
 	// Configuration
 	var config = {
 		menuBadgeInterval: 30000, // 30 seconds
@@ -97,12 +95,6 @@
 	 * Initialize menu badge counter updates
 	 */
 	function initMenuBadgeUpdates() {
-		// Menu badges are handled by pnpc-psd-menu-badges.js (combined attention counters).
-		// Avoid competing scripts adding duplicate badges.
-		if ( 'undefined' !== typeof window.pnpcPsdMenuBadges ) {
-			return;
-		}
-
 		// Initial update
 		updateMenuBadge();
 
@@ -121,12 +113,6 @@
 	 * Update menu badge counter via AJAX
 	 */
 	function updateMenuBadge() {
-		// Menu badge updates are handled globally by pnpc-psd-menu-badges.js.
-		// Avoid duplicate/competing badge injectors.
-		if ( 'undefined' !== typeof window.pnpcPsdMenuBadges ) {
-			return;
-		}
-
 		$.ajax({
 			url: pnpcPsdRealtime.ajaxUrl,
 			type: 'POST',
@@ -142,7 +128,7 @@
 			},
 			error: function(jqXHR, textStatus, errorThrown) {
 				// Silently fail - don't disrupt user experience
-				if ( pnpcPsdDebug && window.console && console.log ) { console.log('Menu badge update failed:', textStatus); }
+				console.log('Menu badge update failed:', textStatus);
 			}
 		});
 	}
@@ -677,7 +663,7 @@
 				}
 			},
 			error: function(jqXHR, textStatus, errorThrown) {
-				if ( pnpcPsdDebug && window.console && console.log ) { console.log('Ticket list refresh failed:', textStatus); }
+				console.log('Ticket list refresh failed:', textStatus);
 			},
 			complete: function() {
 				$('.pnpc-psd-refresh-indicator').removeClass('active');
