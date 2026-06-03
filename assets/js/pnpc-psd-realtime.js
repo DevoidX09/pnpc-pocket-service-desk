@@ -126,9 +126,8 @@
 					updateMenuBadgeDisplay(count);
 				}
 			},
-			error: function(jqXHR, textStatus, errorThrown) {
-				// Silently fail - don't disrupt user experience
-				console.log('Menu badge update failed:', textStatus);
+			error: function() {
+				// Silently fail to avoid interrupting the admin screen.
 			}
 		});
 	}
@@ -144,11 +143,11 @@
 		}
 
 		// Remove existing badge
-		$menuItem.find('.update-plugins').remove();
+		$menuItem.find('.update-plugins, .pnpc-psd-admin-menu-parent-badge').remove();
 
 		// Add badge if count > 0
 		if (count > 0) {
-			var badgeHtml = ' <span class="update-plugins count-' + count + '"><span class="plugin-count">' + count + '</span></span>';
+			var badgeHtml = ' <span class="pnpc-psd-admin-menu-parent-badge count-' + count + '"><span class="pnpc-psd-admin-menu-parent-badge-count">' + count + '</span></span>';
 			$menuItem.append(badgeHtml);
 		}
 	}
@@ -662,8 +661,8 @@
 					});
 				}
 			},
-			error: function(jqXHR, textStatus, errorThrown) {
-				console.log('Ticket list refresh failed:', textStatus);
+			error: function() {
+				// Silently fail to avoid interrupting ticket management.
 			},
 			complete: function() {
 				$('.pnpc-psd-refresh-indicator').removeClass('active');
@@ -677,28 +676,38 @@
 	 * Update tab counts in navigation
 	 */
 	function updateTabCounts(counts) {
-		// Sanitize counts to ensure they are safe integers within valid range
-		if (counts.open !== undefined) {
-			var openCount = parseInt(counts.open, 10);
-			// Validate as safe integer, non-negative, and within safe range
-			if (!isNaN(openCount) && isFinite(openCount) && openCount >= 0 && openCount <= Number.MAX_SAFE_INTEGER) {
-				$('.subsubsub a[href*="status=open"]').text('Open (' + openCount + ')');
-			}
+		if (!counts) {
+			return;
 		}
-		if (counts.closed !== undefined) {
-			var closedCount = parseInt(counts.closed, 10);
-			// Validate as safe integer, non-negative, and within safe range
-			if (!isNaN(closedCount) && isFinite(closedCount) && closedCount >= 0 && closedCount <= Number.MAX_SAFE_INTEGER) {
-				$('.subsubsub a[href*="status=closed"]').text('Closed (' + closedCount + ')');
+
+		$('.subsubsub a').each(function () {
+			var $link = $(this);
+			var href = $link.attr('href') || '';
+			var key = '';
+
+			if (href.indexOf('view=trash') !== -1) { key = 'trash'; }
+			else if (href.indexOf('view=review') !== -1) { key = 'review'; }
+			else if (href.indexOf('view=archived') !== -1) { key = 'archived'; }
+			else if (href.indexOf('status=open') !== -1) { key = 'open'; }
+			else if (href.indexOf('status=in-progress') !== -1) { key = 'in-progress'; }
+			else if (href.indexOf('status=waiting') !== -1) { key = 'waiting'; }
+			else if (href.indexOf('status=closed') !== -1) { key = 'closed'; }
+			else { key = 'all'; }
+
+			if (counts[key] === undefined) {
+				return;
 			}
-		}
-		if (counts.trash !== undefined) {
-			var trashCount = parseInt(counts.trash, 10);
-			// Validate as safe integer, non-negative, and within safe range
-			if (!isNaN(trashCount) && isFinite(trashCount) && trashCount >= 0 && trashCount <= Number.MAX_SAFE_INTEGER) {
-				$('.subsubsub a[href*="view=trash"]').text('Trash (' + trashCount + ')');
+
+			var count = parseInt(counts[key], 10);
+			if (isNaN(count) || !isFinite(count) || count < 0 || count > Number.MAX_SAFE_INTEGER) {
+				return;
 			}
-		}
+
+			var label = $.trim($link.clone().children().remove().end().text());
+			label = label.replace(/\s*\(\d+\)\s*$/, '');
+			$link.find('.count').remove();
+			$link.text(label + ' ').append($('<span class="count"/>').text('(' + count + ')'));
+		});
 	}
 
 	/**

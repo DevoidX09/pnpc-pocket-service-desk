@@ -178,6 +178,11 @@ public function ensure_roles_caps() {
             PNPC_PSD_Activator::ensure_delete_reason_columns();
         }
 
+        // Defensive DB schema guard: ensure attachment table/columns exist on legacy installs.
+        if ( method_exists( 'PNPC_PSD_Activator', 'ensure_attachment_schema' ) ) {
+            PNPC_PSD_Activator::ensure_attachment_schema();
+        }
+
         // Run any pending DB migrations (no-ops once pnpc_psd_db_version is up to date).
         if ( method_exists( 'PNPC_PSD_Activator', 'maybe_upgrade_database' ) ) {
             PNPC_PSD_Activator::maybe_upgrade_database();

@@ -39,6 +39,56 @@ $total_pages = ( $per_page > 0 ) ? (int) ceil( $total_items / $per_page ) : 1;
 // The controller already queries the correct page; no need to slice again.
 $tickets_paginated = $tickets;
 
+
+// Attachment counts for the currently loaded ticket page.
+$pnpc_psd_attachment_counts = array();
+if ( ! empty( $tickets ) ) {
+	global $wpdb;
+	$pnpc_psd_ticket_ids = array();
+	foreach ( (array) $tickets as $pnpc_psd_ticket_for_count ) {
+		if ( isset( $pnpc_psd_ticket_for_count->id ) ) {
+			$pnpc_psd_ticket_ids[] = absint( $pnpc_psd_ticket_for_count->id );
+		}
+	}
+	$pnpc_psd_ticket_ids = array_values( array_filter( array_unique( $pnpc_psd_ticket_ids ) ) );
+	if ( ! empty( $pnpc_psd_ticket_ids ) ) {
+		$pnpc_psd_att_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$pnpc_psd_placeholders = implode( ',', array_fill( 0, count( $pnpc_psd_ticket_ids ), '%d' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is plugin-owned and IDs are absint-normalized.
+		$pnpc_psd_att_rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT ticket_id, COUNT(*) AS attachment_count FROM {$pnpc_psd_att_table} WHERE deleted_at IS NULL AND ticket_id IN ({$pnpc_psd_placeholders}) GROUP BY ticket_id",
+				$pnpc_psd_ticket_ids
+			)
+		);
+		foreach ( (array) $pnpc_psd_att_rows as $pnpc_psd_att_row ) {
+			$pnpc_psd_attachment_counts[ absint( $pnpc_psd_att_row->ticket_id ) ] = absint( $pnpc_psd_att_row->attachment_count );
+		}
+	}
+}
+
+if ( ! function_exists( 'pnpc_psd_render_attachment_indicator' ) ) {
+	/**
+	 * Render a compact attachment indicator for admin ticket lists.
+	 *
+	 * @param int   $ticket_id Ticket ID.
+	 * @param array $counts    Counts keyed by ticket ID.
+	 * @return void
+	 */
+	function pnpc_psd_render_attachment_indicator( $ticket_id, $counts ) {
+		$count = isset( $counts[ absint( $ticket_id ) ] ) ? absint( $counts[ absint( $ticket_id ) ] ) : 0;
+		if ( ! $count ) {
+			return;
+		}
+		?>
+		<span class="pnpc-psd-attachment-indicator" title="<?php echo esc_attr( sprintf( _n( '%d attachment', '%d attachments', $count, 'pnpc-pocket-service-desk' ), $count ) ); ?>" aria-label="<?php echo esc_attr( sprintf( _n( '%d attachment', '%d attachments', $count, 'pnpc-pocket-service-desk' ), $count ) ); ?>">
+			<span class="dashicons dashicons-paperclip"></span>
+			<span class="pnpc-psd-attachment-count"><?php echo esc_html( $count ); ?></span>
+		</span>
+		<?php
+	}
+}
+
 // Build pagination links helper function
 if (!function_exists('pnpc_psd_get_pagination_link')) {
 /**
@@ -349,6 +399,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 						<td><?php if ( $archived_at_raw ) { echo esc_html( function_exists('pnpc_psd_format_db_datetime_for_display') ? pnpc_psd_format_db_datetime_for_display( $archived_at_raw ) : date_i18n( get_option('date_format').' '.get_option('time_format'), $archived_ts ) ); } ?></td>
 						<td>
 							<a href="<?php echo esc_url( admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id) ); ?>" class="button button-small"><?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?></a>
+							<?php pnpc_psd_render_attachment_indicator( $ticket->id, $pnpc_psd_attachment_counts ); ?>
 							<?php $restore_url = wp_nonce_url( admin_url('admin-post.php?action=pnpc_psd_restore_archived_ticket&ticket_id=' . absint($ticket->id)), 'pnpc_psd_restore_archived_ticket_' . absint($ticket->id) ); ?>
 							<a href="<?php echo esc_url( $restore_url ); ?>" class="button button-small"><?php esc_html_e('Restore', 'pnpc-pocket-service-desk'); ?></a>
 						</td>
@@ -434,6 +485,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 								<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>" class="button button-small">
 									<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
 								</a>
+								<?php pnpc_psd_render_attachment_indicator( $ticket->id, $pnpc_psd_attachment_counts ); ?>
 								<?php if ( $is_trash_view ) : ?>
 									<?php
 									// Allow single-item archiving directly from Trash.
@@ -503,6 +555,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 								<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>" class="button button-small">
 									<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
 								</a>
+								<?php pnpc_psd_render_attachment_indicator( $ticket->id, $pnpc_psd_attachment_counts ); ?>
 							</td>
 						</tr>
 					<?php endforeach; ?>
@@ -616,6 +669,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 							<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>" class="button button-small">
 								<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
 							</a>
+							<?php pnpc_psd_render_attachment_indicator( $ticket->id, $pnpc_psd_attachment_counts ); ?>
 						</td>
 					</tr>
 				<?php endforeach; ?>
@@ -730,6 +784,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 							<a href="<?php echo esc_url(admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket->id)); ?>" class="button button-small">
 								<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
 							</a>
+							<?php pnpc_psd_render_attachment_indicator( $ticket->id, $pnpc_psd_attachment_counts ); ?>
 						</td>
 					</tr>
 				<?php endforeach; ?>

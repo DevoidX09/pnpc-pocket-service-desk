@@ -205,8 +205,10 @@
 			formData.append('description', description);
 			formData.append('priority', priority);
 
+			// Always append files from the persisted per-form file list. This avoids losing
+			// attachments when the browser clears the native file input after preview/remove UI updates.
 			for (var i = 0; i < createFiles.length; i++) {
-				formData.append('attachments[]', createFiles[i]);
+				formData.append('attachments[]', createFiles[i], createFiles[i].name);
 			}
 
 			$submitBtn.prop('disabled', true);

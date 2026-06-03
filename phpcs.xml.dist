@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<ruleset name="PNPC Pocket Service Desk">
+	<description>PHPCS ruleset for PNPC Pocket Service Desk.</description>
+
+	<arg name="basepath" value="."/>
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="p"/>
+
+	<rule ref="WordPress"/>
+	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress-Docs"/>
+
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+</ruleset>

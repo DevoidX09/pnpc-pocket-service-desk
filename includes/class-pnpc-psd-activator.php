@@ -213,6 +213,93 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 
 
 	/**
+	 * Ensure ticket attachment table and expected columns exist.
+	 *
+	 * Older in-development builds could create partial attachment schemas. Missing
+	 * columns cause front-end tickets to be created while file records silently fail.
+	 *
+	 * @return void
+	 */
+	public static function ensure_attachment_schema() {
+		global $wpdb;
+
+		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
+		$table_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$attachments_table
+			)
+		);
+
+		if ( ! $table_exists ) {
+			$charset_collate = $wpdb->get_charset_collate();
+			$sql = "CREATE TABLE {$attachments_table} (
+				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+				ticket_id bigint(20) UNSIGNED NOT NULL,
+				response_id bigint(20) UNSIGNED DEFAULT NULL,
+				file_name varchar(255) NOT NULL,
+				file_path varchar(500) NOT NULL,
+				file_type varchar(100) NOT NULL,
+				file_size bigint(20) UNSIGNED NOT NULL DEFAULT 0,
+				uploaded_by bigint(20) UNSIGNED NOT NULL DEFAULT 0,
+				created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+				deleted_at datetime DEFAULT NULL,
+				PRIMARY KEY  (id),
+				KEY ticket_id (ticket_id),
+				KEY response_id (response_id),
+				KEY deleted_at (deleted_at)
+			) {$charset_collate};";
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+			dbDelta( $sql );
+			return;
+		}
+
+		$columns = array(
+			'response_id' => "ALTER TABLE {$attachments_table} ADD COLUMN response_id bigint(20) UNSIGNED DEFAULT NULL AFTER ticket_id",
+			'file_type'   => "ALTER TABLE {$attachments_table} ADD COLUMN file_type varchar(100) NOT NULL DEFAULT '' AFTER file_path",
+			'file_size'   => "ALTER TABLE {$attachments_table} ADD COLUMN file_size bigint(20) UNSIGNED NOT NULL DEFAULT 0 AFTER file_type",
+			'uploaded_by' => "ALTER TABLE {$attachments_table} ADD COLUMN uploaded_by bigint(20) UNSIGNED NOT NULL DEFAULT 0 AFTER file_size",
+			'created_at'  => "ALTER TABLE {$attachments_table} ADD COLUMN created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL AFTER uploaded_by",
+			'deleted_at'  => "ALTER TABLE {$attachments_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at",
+		);
+
+		foreach ( $columns as $column => $sql ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
+			$exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$attachments_table} LIKE %s", $column ) );
+			if ( ! $exists ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required defensive schema repair.
+				$wpdb->query( $sql );
+			}
+		}
+
+		// Ensure the primary key/auto increment survives damaged imports.
+		// Some hosts/importers can preserve rows but drop the PRIMARY KEY, which makes
+		// AUTO_INCREMENT repair fail and causes new attachment rows to insert badly or
+		// not insert at all. Repair both pieces defensively.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
+		$id_column = $wpdb->get_row( "SHOW COLUMNS FROM {$attachments_table} LIKE 'id'" );
+		if ( $id_column ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
+			$primary_key = $wpdb->get_var( "SHOW INDEX FROM {$attachments_table} WHERE Key_name = 'PRIMARY'" );
+			if ( ! $primary_key ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required defensive schema repair.
+				$wpdb->query( "ALTER TABLE {$attachments_table} ADD PRIMARY KEY (id)" );
+			}
+
+			// Re-read after potential primary-key repair.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
+			$id_column = $wpdb->get_row( "SHOW COLUMNS FROM {$attachments_table} LIKE 'id'" );
+			if ( $id_column && false === stripos( (string) $id_column->Extra, 'auto_increment' ) ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required defensive schema repair.
+				$wpdb->query( "ALTER TABLE {$attachments_table} MODIFY id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT" );
+			}
+		}
+	}
+
+
+	/**
 	 * Ensure delete reason tracking columns exist (defensive schema guard).
 	 *
 	 * Some environments can miss the 1.2.0 migration if the plugin was upgraded without reactivation.

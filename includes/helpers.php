@@ -418,34 +418,36 @@ if (! function_exists('pnpc_psd_format_db_datetime_for_display')) {
  */
 if (! function_exists('pnpc_psd_debug_log')) {
 /**
- * Pnpc psd debug log.
+ * Write an opt-in debug log entry.
  *
- * @param mixed $label 
- * @param mixed $data 
- *
- * @since 1.1.1.4
- *
- * @return mixed
+ * @param string $label Log label.
+ * @param mixed  $data  Optional context data.
+ * @return void
  */
-    function pnpc_psd_debug_log($label, $data = '')
-    {
-        if (! defined('WP_DEBUG') || ! WP_DEBUG) {
-            return;
-        }
-        $enabled = get_option('pnpc_psd_debug_timestamps', 0);
-        if (! $enabled) {
-            return;
-        }
-        $payload = is_scalar($data) ? $data : print_r($data, true);
-        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
-        error_log( 'pnpc-psd-debug [' . $label . ']: ' . $payload );
-    }
+	function pnpc_psd_debug_log( $label, $data = '' ) {
+		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+			return;
+		}
+
+		$enabled = get_option( 'pnpc_psd_debug_timestamps', 0 );
+		if ( ! $enabled ) {
+			return;
+		}
+
+		$payload = is_scalar( $data ) ? (string) $data : wp_json_encode( $data );
+		if ( false === $payload ) {
+			$payload = '';
+		}
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log
+		error_log( 'pnpc-psd-debug [' . sanitize_key( $label ) . ']: ' . $payload );
+	}
 }
 
 /**
  * Normalize $_FILES multi-file structure to array of file arrays.
  */
-if (! function_exists('pnpc_psd_rearrange_files')) {
+if ( ! function_exists( 'pnpc_psd_rearrange_files' ) ) {
 /**
  * Pnpc psd rearrange files.
  *

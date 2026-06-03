@@ -20,6 +20,56 @@ class PNPC_PSD_Ticket
 {
 
 	/**
+	 * Return accepted database values for a ticket status.
+	 *
+	 * This keeps older sandbox/demo rows using underscore status slugs visible
+	 * without changing the canonical hyphenated status values.
+	 *
+	 * @since 1.1.9.21
+	 * @param string $status Status slug.
+	 * @return array<int, string> Status slugs.
+	 */
+	private static function get_status_aliases( $status ) {
+		$status = sanitize_key( (string) $status );
+
+		$aliases = array( $status );
+
+		if ( 'in-progress' === $status ) {
+			$aliases[] = 'in_progress';
+		} elseif ( 'in_progress' === $status ) {
+			$aliases[] = 'in-progress';
+		} elseif ( 'waiting' === $status ) {
+			$aliases[] = 'waiting_on_customer';
+			$aliases[] = 'waiting-on-customer';
+		} elseif ( 'waiting_on_customer' === $status || 'waiting-on-customer' === $status ) {
+			$aliases[] = 'waiting';
+		}
+
+		return array_values( array_unique( array_filter( $aliases ) ) );
+	}
+
+	/**
+	 * Append a prepared status WHERE clause.
+	 *
+	 * @since 1.1.9.21
+	 * @param string $status Status slug.
+	 * @return string Prepared SQL fragment beginning with AND.
+	 */
+	private static function prepare_status_where_clause( $status ) {
+		global $wpdb;
+
+		$aliases = self::get_status_aliases( $status );
+		if ( empty( $aliases ) ) {
+			return '';
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $aliases ), '%s' ) );
+
+		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Placeholder count is derived from sanitized aliases.
+		return $wpdb->prepare( " AND status IN ({$placeholders})", $aliases );
+	}
+
+	/**
 	 * Create a new ticket.
 	 *
 	 * @since 1.0.0
@@ -304,7 +354,7 @@ class PNPC_PSD_Ticket
 		}
 
 		if (! empty($args['status'])) {
-			$where .= $wpdb->prepare(' AND status = %s', $args['status']);
+			$where .= self::prepare_status_where_clause( $args['status'] );
 		}
 
 		// Exclude statuses when requested (e.g., hide Closed on the My Tickets tab).
@@ -334,6 +384,10 @@ class PNPC_PSD_Ticket
 		$orderby = sanitize_sql_orderby("{$args['orderby']} {$args['order']}");
 		if (false === $orderby) {
 			$orderby = 'created_at DESC';
+		}
+
+		if ( ! empty( $args['active_first'] ) ) {
+			$orderby = "CASE WHEN LOWER(REPLACE(status, '_', '-')) IN ('closed', 'resolved') THEN 1 ELSE 0 END ASC, {$orderby}";
 		}
 
 		$limit   = absint($args['limit']);
@@ -385,7 +439,7 @@ class PNPC_PSD_Ticket
 		}
 
 		if ( ! empty( $args['status'] ) ) {
-			$where .= $wpdb->prepare( ' AND status = %s', $args['status'] );
+			$where .= self::prepare_status_where_clause( $args['status'] );
 		}
 
 		if ( ! empty( $args['exclude_statuses'] ) && is_array( $args['exclude_statuses'] ) ) {
@@ -426,6 +480,7 @@ class PNPC_PSD_Ticket
 			'include_trashed' => false,
 			'include_archived' => false,
 			'include_pending_delete' => false,
+			'active_first' => false,
 		);
 
 		$args = wp_parse_args($args, $defaults);
@@ -448,7 +503,7 @@ class PNPC_PSD_Ticket
 		}
 
 		if (! empty($args['status'])) {
-			$where .= $wpdb->prepare(' AND status = %s', $args['status']);
+			$where .= self::prepare_status_where_clause( $args['status'] );
 		}
 
 		if (! empty($args['assigned_to'])) {
@@ -470,6 +525,10 @@ class PNPC_PSD_Ticket
 		$orderby = sanitize_sql_orderby("{$args['orderby']} {$args['order']}");
 		if (false === $orderby) {
 			$orderby = 'created_at DESC';
+		}
+
+		if ( ! empty( $args['active_first'] ) ) {
+			$orderby = "CASE WHEN LOWER(REPLACE(status, '_', '-')) IN ('closed', 'resolved') THEN 1 ELSE 0 END ASC, {$orderby}";
 		}
 
 		$limit   = absint($args['limit']);
@@ -719,13 +778,11 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 
-		if (! empty($status)) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		if ( ! empty( $status ) ) {
+			$status_where = self::prepare_status_where_clause( $status );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$count = $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$table_name} WHERE status = %s AND deleted_at IS NULL AND pending_delete_at IS NULL AND archived_at IS NULL AND status <> 'archived'",
-					$status
-				)
+				"SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NULL AND archived_at IS NULL AND status <> 'archived' {$status_where}"
 			);
 		} else {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery

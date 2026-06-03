@@ -94,7 +94,9 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 				<?php esc_html_e('All Tickets', 'pnpc-pocket-service-desk'); ?>
 			</a>
 			<span class="separator"> &raquo; </span>
-			<span class="current"><?php echo esc_html($ticket->ticket_number); ?></span>
+			<span class="current pnpc-psd-ticket-detail-current"><?php esc_html_e( 'Ticket Detail', 'pnpc-pocket-service-desk' ); ?></span>
+			<span class="separator"> &raquo; </span>
+			<span class="pnpc-psd-ticket-number-current"><?php echo esc_html($ticket->ticket_number); ?></span>
 		</div>
 		
 		<div class="pnpc-psd-quick-nav">

@@ -95,17 +95,36 @@ class PNPC_PSD_Notifications {
 		}
 
 		$to = array_filter( array_unique( array_map( 'sanitize_email', $to ) ) );
+
+		if ( empty( $to ) ) {
+			$admin_email = sanitize_email( (string) get_option( 'admin_email', '' ) );
+			if ( $admin_email ) {
+				$to[] = $admin_email;
+			}
+		}
+
+		/**
+		 * Filters staff recipients for ticket notifications.
+		 *
+		 * @param string[] $to     Recipient email addresses.
+		 * @param object   $ticket Ticket row object.
+		 */
+		$to = apply_filters( 'pnpc_psd_staff_notification_recipients', $to, $ticket );
+		$to = array_filter( array_unique( array_map( 'sanitize_email', (array) $to ) ) );
+
 		return $to;
 	}
 
 	/**
 	 * Send an email safely.
+	 *
+	 * @return bool True when wp_mail accepted the message for delivery.
 	 */
 	private static function send( $to, $subject, $message ) {
 		$to = is_array( $to ) ? $to : array( $to );
 		$to = array_filter( array_unique( array_map( 'sanitize_email', $to ) ) );
 		if ( empty( $to ) ) {
-			return;
+			return false;
 		}
 
 		$subject = sanitize_text_field( (string) $subject );
@@ -113,7 +132,19 @@ class PNPC_PSD_Notifications {
 		$headers = self::get_from_headers();
 
 		// wp_mail accepts array recipients.
-		wp_mail( $to, $subject, $message, $headers );
+		$sent = wp_mail( $to, $subject, $message, $headers );
+
+		if ( ! $sent && function_exists( 'pnpc_psd_debug_log' ) ) {
+			pnpc_psd_debug_log(
+				'notification_mail_failed',
+				array(
+					'to'      => $to,
+					'subject' => $subject,
+				)
+			);
+		}
+
+		return (bool) $sent;
 	}
 
 	/**

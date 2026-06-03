@@ -151,7 +151,7 @@ class PNPC_PSD_Public
 			$this->plugin_name,
 			'pnpcPsdPublic',
 			array(
-				'ajax_url' => admin_url('admin-ajax.php', 'relative'),
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
 				'nonce'    => wp_create_nonce('pnpc_psd_public_nonce'),
 			)
 		);
@@ -743,6 +743,14 @@ ob_start();
 			}
 		}
 
+		if ( ! empty( $att_skipped ) ) {
+			foreach ( (array) $att_skipped as $skipped_attachment ) {
+				if ( isset( $skipped_attachment['reason'] ) && 'type' === (string) $skipped_attachment['reason'] ) {
+					$__pnpc_json_error( __( 'Attachment type is not accepted. Use an approved file type.', 'pnpc-pocket-service-desk' ) );
+				}
+			}
+		}
+
 		$ticket_id = PNPC_PSD_Ticket::create(array(
 			'user_id' => $current_user->ID,
 			'subject' => $subject,
@@ -760,10 +768,14 @@ ob_start();
 		}
 
 		// Attachments are persisted once, below.
-		// Persist any uploaded attachments against this ticket.
+		$saved_attachment_count = 0;
 		if ( ! empty( $attachments ) && $ticket_id ) {
 			global $wpdb;
 			$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+
+			if ( class_exists( 'PNPC_PSD_Activator' ) && method_exists( 'PNPC_PSD_Activator', 'ensure_attachment_schema' ) ) {
+				PNPC_PSD_Activator::ensure_attachment_schema();
+			}
 
 			foreach ( (array) $attachments as $att ) {
 				$att_name = isset( $att['file_name'] ) ? (string) $att['file_name'] : '';
@@ -772,22 +784,34 @@ ob_start();
 					continue;
 				}
 
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-					$wpdb->insert(
-						$attachments_table,
-						array(
-							'ticket_id'    => absint( $ticket_id ),
-							// Ticket-level attachment (response_id=0). Using NULL here can fail under strict SQL modes.
-							'response_id'  => 0,
-							'file_name'    => sanitize_file_name( $att_name ),
-							'file_path'    => sanitize_text_field( $att_url ),
-							'file_type'    => isset( $att['file_type'] ) ? sanitize_text_field( (string) $att['file_type'] ) : '',
-							'file_size'    => isset( $att['file_size'] ) ? absint( $att['file_size'] ) : 0,
-							'uploaded_by'  => isset( $att['uploaded_by'] ) ? absint( $att['uploaded_by'] ) : absint( $current_user->ID ),
-							'created_at'   => current_time( 'mysql', true ),
-						),
-						array( '%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s' )
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Required to persist ticket attachments in plugin-owned table.
+				$inserted = $wpdb->insert(
+					$attachments_table,
+					array(
+						'ticket_id'    => absint( $ticket_id ),
+						'response_id'  => 0,
+						'file_name'    => sanitize_file_name( $att_name ),
+						'file_path'    => sanitize_text_field( $att_url ),
+						'file_type'    => isset( $att['file_type'] ) ? sanitize_text_field( (string) $att['file_type'] ) : '',
+						'file_size'    => isset( $att['file_size'] ) ? absint( $att['file_size'] ) : 0,
+						'uploaded_by'  => isset( $att['uploaded_by'] ) ? absint( $att['uploaded_by'] ) : absint( $current_user->ID ),
+						'created_at'   => current_time( 'mysql', true ),
+					),
+					array( '%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s' )
+				);
+
+				if ( false === $inserted ) {
+					$att_skipped[] = array(
+						'file'   => $att_name,
+						'reason' => 'db',
+						'msg'    => (string) $wpdb->last_error,
 					);
+					if ( function_exists( 'pnpc_psd_debug_log' ) ) {
+						pnpc_psd_debug_log( 'ajax_create_ticket_attachment_db_failed', array( 'ticket_id' => absint( $ticket_id ), 'file' => $att_name, 'error' => (string) $wpdb->last_error ) );
+					}
+				} else {
+					$saved_attachment_count++;
+				}
 			}
 		}
 		$ticket = PNPC_PSD_Ticket::get($ticket_id);
@@ -842,12 +866,23 @@ ob_start();
 					// Keep this short; wp_handle_upload messages are already user-facing.
 					$detail_note = ' ' . esc_html( (string) $sk['msg'] );
 				}
+				if ( empty( $detail_note ) && isset( $sk['reason'] ) && 'db' === (string) $sk['reason'] ) {
+					$detail_note = ' ' . esc_html__( 'The file uploaded, but could not be attached to the ticket record. Please contact support.', 'pnpc-pocket-service-desk' );
+				}
 			}
 			$note = ' ' . sprintf(
 				/* translators: 1: number of attachments skipped, 2: max size note */
 				esc_html__( 'Note: %1$d attachment(s) were skipped due to type/size/upload rules.%2$s', 'pnpc-pocket-service-desk' ),
 				count( $att_skipped ),
 				$max_note . $detail_note
+			);
+		}
+
+		if ( $saved_attachment_count > 0 && empty( $note ) ) {
+			$note = ' ' . sprintf(
+				/* translators: %d: saved attachment count */
+				esc_html__( '%d attachment(s) added.', 'pnpc-pocket-service-desk' ),
+				(int) $saved_attachment_count
 			);
 		}
 
@@ -1035,6 +1070,14 @@ ob_start();
 					'file_size'   => isset($file['size']) ? intval($file['size']) : 0,
 					'uploaded_by' => $viewer_id,
 				);
+			}
+		}
+
+		if ( ! empty( $att_skipped ) ) {
+			foreach ( (array) $att_skipped as $skipped_attachment ) {
+				if ( isset( $skipped_attachment['reason'] ) && 'type' === (string) $skipped_attachment['reason'] ) {
+					$__pnpc_json_error( __( 'Attachment type is not accepted. Use an approved file type.', 'pnpc-pocket-service-desk' ) );
+				}
 			}
 		}
 
