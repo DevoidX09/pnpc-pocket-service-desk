@@ -210,3 +210,134 @@
 .pnpc-psd-dashboard .psd-muted {
 	color: #646970;
 }
+
+/* Final Day 1 polish pass */
+.pnpc-psd-dashboard {
+	--pnpc-psd-deep: #14324d;
+	--pnpc-psd-blue: #2271b1;
+	--pnpc-psd-soft: #f6f9fb;
+	--pnpc-psd-line: #dce6ee;
+	--pnpc-psd-gold: #f5c542;
+}
+
+.pnpc-psd-dashboard .psd-topbar {
+	position: relative;
+	padding: 22px 24px;
+	background: linear-gradient(135deg, var(--pnpc-psd-deep) 0%, #1f6f95 62%, #2d9a89 100%);
+	border-radius: 18px;
+	box-shadow: 0 16px 40px rgba(20, 50, 77, .16);
+	color: #fff;
+	overflow: hidden;
+}
+
+.pnpc-psd-dashboard .psd-topbar::after {
+	content: '';
+	position: absolute;
+	right: -70px;
+	top: -80px;
+	width: 220px;
+	height: 220px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, .13);
+	pointer-events: none;
+}
+
+.pnpc-psd-dashboard .psd-brand,
+.pnpc-psd-dashboard .psd-actions {
+	position: relative;
+	z-index: 1;
+}
+
+.pnpc-psd-dashboard .psd-logo {
+	width: 58px;
+	height: 58px;
+	border-radius: 16px;
+	border-color: rgba(255, 255, 255, .44);
+	box-shadow: 0 12px 24px rgba(0, 0, 0, .16);
+}
+
+.pnpc-psd-dashboard .psd-title,
+.pnpc-psd-dashboard .psd-subtitle {
+	color: #fff;
+}
+
+.pnpc-psd-dashboard .psd-subtitle {
+	opacity: .88;
+}
+
+.pnpc-psd-dashboard .psd-actions .button {
+	border-color: rgba(255, 255, 255, .55);
+	background: rgba(255, 255, 255, .94);
+	color: #14324d;
+	font-weight: 650;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, .10);
+}
+
+.pnpc-psd-dashboard .psd-actions .button-primary {
+	background: #fff;
+	border-color: #fff;
+	color: #14324d;
+}
+
+.pnpc-psd-dashboard .psd-actions .psd-support-button {
+	background: var(--pnpc-psd-gold);
+	border-color: #d7a900;
+	color: #2f2500;
+	font-weight: 800;
+}
+
+.pnpc-psd-dashboard .psd-grid {
+	gap: 18px;
+	margin-top: 20px;
+}
+
+.pnpc-psd-dashboard .psd-card {
+	border-color: var(--pnpc-psd-line);
+	border-radius: 18px;
+	padding: 20px;
+	box-shadow: 0 10px 28px rgba(20, 50, 77, .07);
+}
+
+.pnpc-psd-dashboard .psd-metric {
+	background: linear-gradient(180deg, #fff 0%, var(--pnpc-psd-soft) 100%);
+	border-color: var(--pnpc-psd-line);
+	padding: 14px;
+	transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.pnpc-psd-dashboard .psd-metric:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 8px 18px rgba(20, 50, 77, .08);
+}
+
+.pnpc-psd-dashboard .psd-metric .v {
+	font-size: 24px;
+	color: var(--pnpc-psd-deep);
+}
+
+.pnpc-psd-dashboard .psd-ring {
+	box-shadow: inset 0 0 0 1px rgba(20, 50, 77, .08), 0 8px 18px rgba(20, 50, 77, .10);
+}
+
+.pnpc-psd-dashboard .psd-alert {
+	background: #fffdf5;
+	border-color: #f0dfaa;
+}
+
+.pnpc-psd-dashboard .psd-support-card {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	flex-wrap: wrap;
+	margin-top: 16px;
+	padding: 16px;
+	border: 1px solid #ead276;
+	border-radius: 16px;
+	background: linear-gradient(135deg, #fff8db 0%, #fffdf3 100%);
+}
+
+.pnpc-psd-dashboard .psd-support-card p {
+	margin: 4px 0 0;
+	color: #5d500f;
+}

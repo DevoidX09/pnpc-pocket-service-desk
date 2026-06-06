@@ -18,6 +18,39 @@ global $wpdb;
 $delete_data = (bool) get_option( 'pnpc_psd_delete_data_on_uninstall', 0 );
 
 if ( $delete_data ) {
+
+	// Delete only pages created by the plugin setup wizard/builder.
+	$generated_page_ids = array();
+	foreach ( array( 'pnpc_psd_dashboard_page_id', 'pnpc_psd_ticket_view_page_id' ) as $page_option ) {
+		$page_id = absint( get_option( $page_option, 0 ) );
+		if ( $page_id > 0 ) {
+			$generated_page_ids[] = $page_id;
+		}
+	}
+
+	$generated_pages = get_posts(
+		array(
+			'post_type'      => 'page',
+			'post_status'    => 'any',
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+			'no_found_rows'  => true,
+			'meta_key'       => '_pnpc_psd_created_by_builder', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Uninstall cleanup only.
+			'meta_value'     => '1', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Uninstall cleanup only.
+		)
+	);
+
+	if ( is_array( $generated_pages ) ) {
+		$generated_page_ids = array_merge( $generated_page_ids, array_map( 'absint', $generated_pages ) );
+	}
+
+	$generated_page_ids = array_unique( array_filter( $generated_page_ids ) );
+	foreach ( $generated_page_ids as $generated_page_id ) {
+		if ( (int) get_post_meta( $generated_page_id, '_pnpc_psd_created_by_builder', true ) === 1 ) {
+			wp_delete_post( $generated_page_id, true );
+		}
+	}
+
 	// Delete plugin options.
 	delete_option( 'pnpc_psd_version' );
 	delete_option( 'pnpc_psd_db_version' );
@@ -35,6 +68,12 @@ if ( $delete_data ) {
 	delete_option( 'pnpc_psd_enable_auto_refresh' );
 	delete_option( 'pnpc_psd_auto_refresh_interval' );
 	delete_option( 'pnpc_psd_tickets_per_page' );
+	delete_option( 'pnpc_psd_dashboard_page_id' );
+	delete_option( 'pnpc_psd_ticket_view_page_id' );
+	delete_option( 'pnpc_psd_setup_completed_at' );
+	delete_option( 'pnpc_psd_setup_editor' );
+	delete_option( 'pnpc_psd_setup_error' );
+	delete_option( 'pnpc_psd_error_log_cap' );
 	delete_option( 'pnpc_psd_primary_button_color' );
 	delete_option( 'pnpc_psd_primary_button_hover_color' );
 	delete_option( 'pnpc_psd_logout_button_color' );
@@ -63,6 +102,10 @@ if ( $delete_data ) {
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_ticket_responses" );
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_ticket_attachments" );
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_audit_log" );
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_error_log" );
 }
 
 // Remove custom capabilities from roles.

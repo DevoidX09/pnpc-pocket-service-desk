@@ -115,6 +115,38 @@ class PNPC_PSD_Notifications {
 		return $to;
 	}
 
+
+	/**
+	 * Format notification body as simple HTML with clickable links.
+	 *
+	 * @param string $message Plain-text notification body.
+	 * @return string
+	 */
+	private static function format_html_message( $message ) {
+		$lines = preg_split( '/\r\n|\r|\n/', (string) $message );
+		$html  = '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.55;color:#111827;">';
+
+		foreach ( (array) $lines as $line ) {
+			$line = trim( (string) $line );
+			if ( '' === $line ) {
+				$html .= '<br />';
+				continue;
+			}
+
+			if ( preg_match( '#^https?://#i', $line ) ) {
+				$url   = esc_url( $line );
+				$html .= '<p><a href="' . $url . '">' . esc_html( $line ) . '</a></p>';
+				continue;
+			}
+
+			$html .= '<p>' . esc_html( $line ) . '</p>';
+		}
+
+		$html .= '</div>';
+
+		return $html;
+	}
+
 	/**
 	 * Send an email safely.
 	 *
@@ -128,8 +160,9 @@ class PNPC_PSD_Notifications {
 		}
 
 		$subject = sanitize_text_field( (string) $subject );
-		$message = (string) $message;
+		$message = self::format_html_message( (string) $message );
 		$headers = self::get_from_headers();
+		$headers[] = 'Content-Type: text/html; charset=UTF-8';
 
 		// wp_mail accepts array recipients.
 		$sent = wp_mail( $to, $subject, $message, $headers );
@@ -168,11 +201,17 @@ class PNPC_PSD_Notifications {
 			$dashboard_url   = function_exists( 'pnpc_psd_get_dashboard_url' ) ? pnpc_psd_get_dashboard_url() : '';
 			$ticket_view_url = function_exists( 'pnpc_psd_get_ticket_detail_url' ) ? pnpc_psd_get_ticket_detail_url( $ticket_id ) : '';
 			$subj = sprintf( __( 'Ticket created: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
+			$instruction = apply_filters(
+				'pnpc_psd_customer_ticket_email_reply_instruction',
+				__( 'To view and respond to your ticket, click the link below.', 'pnpc-pocket-service-desk' ),
+				$ticket
+			);
 			$msg  = sprintf(
-				__( "Hello %1\$s,\n\nYour support ticket has been created.\n\nTicket: %2\$s\nSubject: %3\$s\n\nWe will respond as soon as possible.", 'pnpc-pocket-service-desk' ),
+				__( "Hello %1\$s,\n\nYour support ticket has been created.\n\nTicket: %2\$s\nSubject: %3\$s\n\n%4\$s", 'pnpc-pocket-service-desk' ),
 				(string) $user->display_name,
 				(string) $ticket->ticket_number,
-				(string) $ticket->subject
+				(string) $ticket->subject,
+				(string) $instruction
 			);
 			if ( ! empty( $dashboard_url ) ) {
 				$msg .= "\n\n" . __( 'Dashboard:', 'pnpc-pocket-service-desk' ) . "\n" . $dashboard_url;
@@ -233,11 +272,17 @@ class PNPC_PSD_Notifications {
 		if ( $is_staff ) {
 			if ( self::opt_bool( 'pnpc_psd_notify_customer_on_staff_reply', 1 ) ) {
 				$subj = sprintf( __( 'Update on ticket %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
+				$instruction = apply_filters(
+					'pnpc_psd_customer_ticket_email_reply_instruction',
+					__( 'To view and respond to your ticket, click the link below.', 'pnpc-pocket-service-desk' ),
+					$ticket
+				);
 				$msg  = sprintf(
-					__( "Hello %1\$s,\n\nYou have a new response on your ticket %2\$s.\n\nSubject: %3\$s\n\nLog in to view and reply.", 'pnpc-pocket-service-desk' ),
+					__( "Hello %1\$s,\n\nYou have a new response on your ticket %2\$s.\n\nSubject: %3\$s\n\n%4\$s", 'pnpc-pocket-service-desk' ),
 					(string) $customer->display_name,
 					(string) $ticket->ticket_number,
-					(string) $ticket->subject
+					(string) $ticket->subject,
+					(string) $instruction
 				);
 				if ( ! empty( $dashboard_url ) ) {
 					$msg .= "\n\n" . __( 'Dashboard:', 'pnpc-pocket-service-desk' ) . "\n" . $dashboard_url;

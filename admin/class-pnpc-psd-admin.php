@@ -72,12 +72,16 @@ class PNPC_PSD_Admin
 			// Setup Repair: create/attach required pages without changing existing content.
 			add_action( 'admin_post_pnpc_psd_setup_repair', array( $this, 'handle_setup_repair' ) );
 
+			// Support Hub: support bundle download and future receiver handoff.
+			add_action( 'admin_post_pnpc_psd_download_support_bundle', array( $this, 'handle_download_support_bundle' ) );
+
 			// For non-admin service desk staff, keep wp-admin access but limit menus to reduce confusion.
 			add_action('admin_menu', array($this, 'restrict_non_admin_menus'), 999);
 			add_action('admin_head', array($this, 'print_admin_menu_badge_styles'));
 			add_action('admin_init', array($this, 'register_settings'));
 			add_action('admin_init', array($this, 'process_admin_create_ticket'));
 			add_action('admin_init', array($this, 'process_admin_update_ticket_priority'));
+			add_action( 'admin_notices', array( $this, 'maybe_show_operational_health_notice' ) );
 		}
 	}
 
@@ -255,7 +259,7 @@ class PNPC_PSD_Admin
 
 			// Enqueue setup wizard CSS on setup wizard page
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
-			if (isset($_GET['page']) && 'pnpc-service-desk-setup' === sanitize_text_field(wp_unslash($_GET['page']))) {
+			if ( isset( $_GET['page'] ) && in_array( sanitize_text_field( wp_unslash( $_GET['page'] ) ), array( 'pnpc-service-desk-setup', 'pnpc-service-desk-shortcodes' ), true ) ) {
 				wp_enqueue_style(
 					$this->plugin_name . '-setup-wizard',
 					PNPC_PSD_PLUGIN_URL . 'admin/css/setup-wizard.css',
@@ -511,6 +515,16 @@ class PNPC_PSD_Admin
 			array( $this, 'display_setup_wizard_page' )
 		);
 
+
+		add_submenu_page(
+			'pnpc-service-desk',
+			esc_html__( 'Shortcodes', 'pnpc-pocket-service-desk' ),
+			esc_html__( 'Shortcodes', 'pnpc-pocket-service-desk' ),
+			'pnpc_psd_view_tickets',
+			'pnpc-service-desk-shortcodes',
+			array( $this, 'display_shortcode_reference_page' )
+		);
+
 		add_submenu_page(
 			'pnpc-service-desk',
 			esc_html__( 'Repair Setup', 'pnpc-pocket-service-desk' ),
@@ -536,6 +550,24 @@ class PNPC_PSD_Admin
 			'pnpc_psd_view_tickets',
 			'pnpc-service-desk-audit-log',
 			array( $this, 'display_audit_log_page' )
+		);
+
+		add_submenu_page(
+			'pnpc-service-desk',
+			esc_html__( 'Diagnostics', 'pnpc-pocket-service-desk' ),
+			esc_html__( 'Diagnostics', 'pnpc-pocket-service-desk' ),
+			'pnpc_psd_view_tickets',
+			'pnpc-service-desk-diagnostics',
+			array( $this, 'display_diagnostics_page' )
+		);
+
+		add_submenu_page(
+			'pnpc-service-desk',
+			esc_html__( 'Support', 'pnpc-pocket-service-desk' ),
+			'<span class="pnpc-psd-support-menu-link">' . esc_html__( 'Support', 'pnpc-pocket-service-desk' ) . '</span>',
+			'pnpc_psd_view_tickets',
+			'pnpc-service-desk-support',
+			array( $this, 'display_support_page' )
 		);
 
 		add_submenu_page(
@@ -667,6 +699,14 @@ class PNPC_PSD_Admin
 				background: transparent !important;
 				color: inherit !important;
 			}
+			#adminmenu .pnpc-psd-support-menu-link {
+				display: inline-block;
+				padding: 1px 7px;
+				border-radius: 999px;
+				background: #dba617;
+				color: #1d2327;
+				font-weight: 700;
+			}
 		</style>
 		<?php
 	}
@@ -680,10 +720,12 @@ class PNPC_PSD_Admin
 	public function add_plugin_action_links( $links ) {
 		$dashboard = admin_url( 'admin.php?page=pnpc-service-desk-tickets' );
 		$settings  = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
+		$support   = admin_url( 'admin.php?page=pnpc-service-desk-support' );
 
 		$custom = array(
 			'<a href="' . esc_url( $dashboard ) . '">' . esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' ) . '</a>',
 			'<a href="' . esc_url( $settings ) . '">' . esc_html__( 'Settings', 'pnpc-pocket-service-desk' ) . '</a>',
+			'<a style="font-weight:700;color:#b38600;" href="' . esc_url( $support ) . '">' . esc_html__( 'Support', 'pnpc-pocket-service-desk' ) . '</a>',
 		);
 
 		return array_merge( $custom, (array) $links );
@@ -697,6 +739,34 @@ class PNPC_PSD_Admin
 	public function display_dashboard_page() {
 		$stats = $this->get_dashboard_stats();
 		include plugin_dir_path( __FILE__ ) . 'views/dashboard.php';
+	}
+
+
+	/**
+	 * Display the shortcode reference page for custom and DIY builders.
+	 *
+	 * @return void
+	 */
+	public function display_shortcode_reference_page() {
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		include PNPC_PSD_PLUGIN_DIR . 'admin/views/shortcodes.php';
+	}
+
+
+	/**
+	 * Display the Support Hub page.
+	 *
+	 * @return void
+	 */
+	public function display_support_page() {
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		include PNPC_PSD_PLUGIN_DIR . 'admin/views/support.php';
 	}
 
 	/**
@@ -752,16 +822,25 @@ class PNPC_PSD_Admin
 			}
 
 			if ( 'confirm_shortcodes' === $mode ) {
-				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=complete&path=existing' ) );
+				$redirect_path = in_array( $path, array( 'existing', 'custom' ), true ) ? $path : 'existing';
+				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=complete&path=' . rawurlencode( $redirect_path ) ) );
 				exit;
 			}
 
 			if ( 'create_dashboard' === $mode ) {
 				$editor = isset( $_POST['editor'] ) ? sanitize_key( wp_unslash( $_POST['editor'] ) ) : 'block';
-				if ( ! defined( 'ELEMENTOR_VERSION' ) ) {
+				if ( ! in_array( $editor, array( 'block', 'elementor', 'custom' ), true ) ) {
+					$editor = 'block';
+				}
+				if ( 'elementor' === $editor && ! defined( 'ELEMENTOR_VERSION' ) ) {
 					$editor = 'block';
 				}
 				update_option( 'pnpc_psd_setup_editor', $editor, false );
+
+				if ( 'custom' === $editor ) {
+					wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=shortcodes&path=custom' ) );
+					exit;
+				}
 
 				$page_id = $this->create_dashboard_page_from_wizard(
 					array(
@@ -787,6 +866,9 @@ class PNPC_PSD_Admin
 		$dashboard_page_id = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
 		$dashboard_page    = ( $dashboard_page_id > 0 ) ? get_post( $dashboard_page_id ) : null;
 		$editor            = (string) get_option( 'pnpc_psd_setup_editor', defined( 'ELEMENTOR_VERSION' ) ? 'elementor' : 'block' );
+		if ( ! in_array( $editor, array( 'block', 'elementor', 'custom' ), true ) ) {
+			$editor = defined( 'ELEMENTOR_VERSION' ) ? 'elementor' : 'block';
+		}
 
 		include plugin_dir_path( __FILE__ ) . 'views/setup-wizard.php';
 	}
@@ -806,7 +888,7 @@ class PNPC_PSD_Admin
 	 *
 	 * @return array<string,mixed>
 	 */
-	
+
 	/**
 	 * Determine whether the configured dashboard page is valid for setup purposes.
 	 *
@@ -959,6 +1041,9 @@ private function is_ticket_view_configured( $page_id ) {
 				update_option( 'pnpc_psd_ticket_view_page_id', $ticket_view_id, false );
 			} else {
 				$editor = (string) get_option( 'pnpc_psd_setup_editor', defined( 'ELEMENTOR_VERSION' ) ? 'elementor' : 'block' );
+				if ( ! in_array( $editor, array( 'block', 'elementor' ), true ) ) {
+					$editor = 'block';
+				}
 
 				$created_id = $this->create_ticket_view_page_from_wizard(
 					array(
@@ -1502,11 +1587,11 @@ private function is_ticket_view_configured( $page_id ) {
 
 				if ( file_exists( $template_path ) ) {
 					$template_json = file_get_contents( $template_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-					
+
 					if ( false === $template_json ) {
 						return (int) $page_id;
 					}
-					
+
 					$template_data = json_decode( $template_json, true );
 
 					// Validate JSON structure.
@@ -1793,6 +1878,203 @@ public function display_tickets_page()
 	}
 
 
+	/**
+	 * Display the Diagnostics admin page.
+	 *
+	 * @return void
+	 */
+	public function display_diagnostics_page() {
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		include PNPC_PSD_PLUGIN_DIR . 'admin/views/diagnostics.php';
+	}
+
+	/**
+	 * Export the error log as CSV.
+	 *
+	 * @return void
+	 */
+	public function handle_export_error_log() {
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_die( esc_html__( 'You do not have permission to export this log.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		check_admin_referer( 'pnpc_psd_export_error_log' );
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'pnpc_psd_error_log';
+		$rows  = $wpdb->get_results( "SELECT id, type, severity, message, context, created_at FROM {$table} ORDER BY created_at DESC, id DESC", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename=pnpc-service-desk-error-log-' . gmdate( 'Y-m-d-His' ) . '.csv' );
+
+		$output = fopen( 'php://output', 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- CSV download stream.
+		fputcsv( $output, array( 'ID', 'Type', 'Severity', 'Message', 'Context', 'Created At' ) );
+		foreach ( $rows as $row ) {
+			fputcsv( $output, $row );
+		}
+		fclose( $output ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- CSV download stream.
+		exit;
+	}
+
+
+	/**
+	 * Download a diagnostics-only support bundle as JSON.
+	 *
+	 * @return void
+	 */
+	public function handle_download_support_bundle() {
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_die( esc_html__( 'You do not have permission to download support bundles.', 'pnpc-pocket-service-desk' ) );
+		}
+
+		check_admin_referer( 'pnpc_psd_download_support_bundle' );
+
+		$bundle = $this->build_support_bundle();
+		$json   = wp_json_encode( $bundle, JSON_PRETTY_PRINT );
+		if ( false === $json ) {
+			$json = '{}';
+		}
+
+		nocache_headers();
+		header( 'Content-Type: application/json; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename=pnpc-service-desk-support-bundle-' . gmdate( 'Y-m-d-His' ) . '.json' );
+		echo $json; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON download payload generated from sanitized bundle data.
+		exit;
+	}
+
+	/**
+	 * Build a diagnostics-only support bundle.
+	 *
+	 * @return array
+	 */
+	private function build_support_bundle() {
+		global $wpdb;
+
+		$health = function_exists( 'pnpc_psd_get_operational_health_summary' ) ? pnpc_psd_get_operational_health_summary() : array();
+
+		$bundle = array(
+			'generated_at_utc' => gmdate( 'Y-m-d H:i:s' ),
+			'product'          => array(
+				'edition' => 'Core',
+				'version' => defined( 'PNPC_PSD_VERSION' ) ? PNPC_PSD_VERSION : '',
+			),
+			'site'             => array(
+				'url'      => home_url(),
+				'admin_url'=> admin_url(),
+			),
+			'environment'      => array(
+				'wordpress_version' => get_bloginfo( 'version' ),
+				'php_version'       => PHP_VERSION,
+				'database_version'  => $wpdb->db_version(),
+				'is_multisite'      => is_multisite() ? 'yes' : 'no',
+			),
+			'operational_health' => array(
+				'status' => isset( $health['status'] ) ? sanitize_key( $health['status'] ) : 'unknown',
+				'label'  => isset( $health['label'] ) ? sanitize_text_field( $health['label'] ) : '',
+				'issues' => isset( $health['issues'] ) && is_array( $health['issues'] ) ? array_map( 'sanitize_text_field', $health['issues'] ) : array(),
+			),
+			'logs'             => array(
+				'errors' => $this->get_recent_error_log_entries( 20 ),
+				'audit'  => $this->get_recent_audit_log_entries( 20 ),
+			),
+			'privacy'          => array(
+				'customer_tickets_included'     => 'no',
+				'customer_messages_included'    => 'no',
+				'attachments_included'          => 'no',
+				'woocommerce_orders_included'   => 'no',
+				'personal_customer_data_included'=> 'no',
+			),
+		);
+
+		return apply_filters( 'pnpc_psd_support_bundle_data', $bundle );
+	}
+
+	/**
+	 * Get recent error log entries for the support bundle.
+	 *
+	 * @param int $limit Maximum rows.
+	 * @return array
+	 */
+	private function get_recent_error_log_entries( $limit = 20 ) {
+		global $wpdb;
+		$table = $wpdb->prefix . 'pnpc_psd_error_log';
+		$limit = max( 1, min( 50, absint( $limit ) ) );
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		if ( $exists !== $table ) {
+			return array();
+		}
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT type, severity, message, created_at FROM {$table} ORDER BY created_at DESC, id DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		return is_array( $rows ) ? array_map( array( $this, 'sanitize_support_bundle_row' ), $rows ) : array();
+	}
+
+	/**
+	 * Get recent audit entries for the support bundle.
+	 *
+	 * @param int $limit Maximum rows.
+	 * @return array
+	 */
+	private function get_recent_audit_log_entries( $limit = 20 ) {
+		global $wpdb;
+		$table = $wpdb->prefix . 'pnpc_psd_audit_log';
+		$limit = max( 1, min( 50, absint( $limit ) ) );
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		if ( $exists !== $table ) {
+			return array();
+		}
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT ticket_id, actor_id, action, created_at FROM {$table} ORDER BY created_at DESC, id DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		return is_array( $rows ) ? array_map( array( $this, 'sanitize_support_bundle_row' ), $rows ) : array();
+	}
+
+	/**
+	 * Sanitize support bundle row values.
+	 *
+	 * @param array $row Raw DB row.
+	 * @return array
+	 */
+	private function sanitize_support_bundle_row( $row ) {
+		$clean = array();
+		foreach ( (array) $row as $key => $value ) {
+			$clean[ sanitize_key( $key ) ] = is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
+		}
+		return $clean;
+	}
+
+	/**
+	 * Surface critical Service Desk health notices on the WP dashboard/admin.
+	 *
+	 * @return void
+	 */
+	public function maybe_show_operational_health_notice() {
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			return;
+		}
+
+		if ( ! function_exists( 'pnpc_psd_get_operational_health_summary' ) ) {
+			return;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || ( 'dashboard' !== $screen->id && false === strpos( (string) $screen->id, 'pnpc' ) ) ) {
+			return;
+		}
+
+		$health = pnpc_psd_get_operational_health_summary();
+		if ( empty( $health['status'] ) || 'healthy' === $health['status'] ) {
+			return;
+		}
+
+		$class = 'critical' === $health['status'] ? 'notice-error' : 'notice-warning';
+		$url   = admin_url( 'admin.php?page=pnpc-service-desk-diagnostics' );
+		echo '<div class="notice ' . esc_attr( $class ) . '"><p>';
+		echo '<strong>' . esc_html__( 'PNPC Service Desk operational health needs attention.', 'pnpc-pocket-service-desk' ) . '</strong> ';
+		echo '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Review diagnostics', 'pnpc-pocket-service-desk' ) . '</a>';
+		echo '</p></div>';
+	}
+
 
 	/**
 	* Display ticket detail page.
@@ -1845,7 +2127,7 @@ public function display_tickets_page()
 		// Compute adjacent ticket IDs for Prev/Next navigation.
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
-		
+
 		// Get previous ticket (by ID, descending).
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$prev_ticket_id = $wpdb->get_var(
@@ -1855,7 +2137,7 @@ public function display_tickets_page()
 			)
 		);
 		$prev_ticket_id = $prev_ticket_id ? absint( $prev_ticket_id ) : 0;
-		
+
 		// Get next ticket (by ID, ascending).
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$next_ticket_id = $wpdb->get_var(
@@ -2006,6 +2288,35 @@ public function display_tickets_page()
 				'type'              => 'string',
 				'sanitize_callback' => 'pnpc_psd_sanitize_public_login_url',
 				'default'           => '',
+			)
+		);
+
+		// Support Hub receiver settings. Core uses these for links and bundle metadata only.
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_support_receiver_name',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => 'PNPC Support',
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_support_receiver_url',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'esc_url_raw',
+				'default'           => 'https://plugnplayconsultants.com/dashboard/',
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_support_access_url',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'esc_url_raw',
+				'default'           => 'https://plugnplayconsultants.com/pnpc-service-desk-support/',
 			)
 		);
 
@@ -2608,6 +2919,16 @@ public function display_tickets_page()
 				$move = wp_handle_upload($file, array('test_form' => false));
 				if (isset($move['error'])) {
 					$att_skipped[] = array('file' => $file_name, 'reason' => 'upload', 'msg' => (string) $move['error']);
+					if ( function_exists( 'pnpc_psd_log_error' ) ) {
+						pnpc_psd_log_error(
+							'attachment',
+							__( 'Attachment upload failed.', 'pnpc-pocket-service-desk' ),
+							array(
+								'file'  => $file_name,
+								'error' => (string) $move['error'],
+							)
+						);
+					}
 					continue;
 				}
 				$attachments[] = array(
@@ -3174,18 +3495,18 @@ public function display_tickets_page()
 	{
 		$user_id = get_current_user_id();
 		$transient_key = 'pnpc_psd_new_count_' . $user_id;
-		
+
 		// Try to get cached count
 		$count = get_transient($transient_key);
-		
+
 		if (false === $count) {
 			// Query database for count
 			$count = $this->query_new_ticket_count($user_id);
-			
+
 			// Cache for 10 seconds
 			set_transient($transient_key, $count, 10);
 		}
-		
+
 		return intval($count);
 	}
 
@@ -3258,17 +3579,17 @@ public function display_tickets_page()
 			$args['status'] = $status;
 			$tickets = PNPC_PSD_Ticket::get_all($args);
 		}
-		
+
 		// Calculate badge counts for each ticket (fresh calculation)
 		$badge_counts = array();
-		
+
 		foreach ($tickets as $ticket) {
 			if ( ! $is_trash_view && ! $is_review_view && ! $is_archived_view ) {
 				$badge_count = $this->calculate_new_badge_count($ticket->id, $current_user_id);
 				$badge_counts[$ticket->id] = $badge_count;
 			}
 		}
-		
+
 		// Pass pagination info to view (use local $paged; avoid mutating superglobals)
 
 		// Generate HTML for ticket rows
@@ -3302,11 +3623,11 @@ public function display_tickets_page()
 							<div class="pnpc-psd-divider-content">
 								<span class="pnpc-psd-divider-line"></span>
 								<span class="pnpc-psd-divider-text">
-									<?php 
+									<?php
 									printf(
 										esc_html__('Closed Tickets (%d)', 'pnpc-pocket-service-desk'),
 										count($closed_tickets)
-									); 
+									);
 									?>
 								</span>
 								<span class="pnpc-psd-divider-line"></span>
@@ -3371,7 +3692,7 @@ public function display_tickets_page()
 			),
 		));
 	}
-	
+
 
 	/**
 	 * Get a live attachment count for a ticket.
@@ -3497,7 +3818,7 @@ public function display_tickets_page()
 	{
 		$active = array();
 		$closed = array();
-		
+
 		foreach ($tickets as $ticket) {
 			$status_lower = strtolower($ticket->status);
 			if ($status_lower === 'closed' || $status_lower === 'resolved') {
@@ -3506,7 +3827,7 @@ public function display_tickets_page()
 				$active[] = $ticket;
 			}
 		}
-		
+
 		return array(
 			'active' => $active,
 			'closed' => $closed,
@@ -3527,24 +3848,24 @@ public function display_tickets_page()
 		$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
 		$is_review_view = ('review' === $view);
 		$can_bulk = $is_review_view ? current_user_can('pnpc_psd_delete_tickets') : current_user_can('manage_options');
-		
+
 		// Extract numeric part from ticket number for sorting
 		$ticket_num_for_sort = (int) preg_replace('/[^0-9]/', '', $ticket->ticket_number);
-		
+
 		// Status sort order
 		$status_order = array('open' => 1, 'in-progress' => 2, 'waiting' => 3, 'closed' => 4);
 		$status_sort_value = isset($status_order[$ticket->status]) ? $status_order[$ticket->status] : 999;
-		
+
 		// Priority sort order
 		$priority_order = array('urgent' => 1, 'high' => 2, 'normal' => 3, 'low' => 4);
 		$priority_sort_value = isset($priority_order[$ticket->priority]) ? $priority_order[$ticket->priority] : 999;
-		
+
 		// Get timestamp for date sorting
 		$created_timestamp = strtotime($ticket->created_at);
 		if (false === $created_timestamp) {
 			$created_timestamp = 0;
 		}
-		
+
 		// Calculate new customer responses for the current staff viewer.
 		$new_responses    = 0;
 		$current_admin_id = get_current_user_id();
@@ -3791,14 +4112,14 @@ public function display_tickets_page()
 			if (!empty($_FILES['attachments']['name'][0])) {
 				global $wpdb;
 				$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
-				
+
 				require_once ABSPATH . 'wp-admin/includes/file.php';
 				require_once ABSPATH . 'wp-admin/includes/image.php';
 				require_once ABSPATH . 'wp-admin/includes/media.php';
-				
+
 				$files = $_FILES['attachments'];
 				$file_count = count($files['name']);
-				
+
 				// Size cap, additionally clamped by the server/WP upload cap.
 				$cap_max_bytes = function_exists( 'pnpc_psd_get_max_attachment_bytes' ) ? (int) pnpc_psd_get_max_attachment_bytes() : (5 * 1024 * 1024);
 				$server_max_bytes = function_exists( 'wp_max_upload_size' ) ? (int) wp_max_upload_size() : 0;
@@ -3809,7 +4130,7 @@ public function display_tickets_page()
 					if (empty($files['name'][$i])) {
 						continue;
 					}
-					
+
 					// Respect PHP/WP upload error codes first; do not mislabel server rejections as "size" issues.
 					if ( isset( $files['error'][$i] ) && (int) $files['error'][$i] !== UPLOAD_ERR_OK ) {
 						add_settings_error(
@@ -3843,7 +4164,7 @@ public function display_tickets_page()
 						);
 						continue;
 					}
-					
+
 					// Prepare file array for wp_handle_upload
 					$file_array = array(
 						'name'     => $files['name'][$i],
@@ -3852,16 +4173,16 @@ public function display_tickets_page()
 						'error'    => $files['error'][$i],
 						'size'     => $files['size'][$i],
 					);
-					
+
 					// Upload file
 					$upload = wp_handle_upload($file_array, array('test_form' => false));
-					
+
 					if (isset($upload['file']) && !isset($upload['error'])) {
 						// Insert attachment record into database
-						$created_at_utc = function_exists('pnpc_psd_get_utc_mysql_datetime') 
-							? pnpc_psd_get_utc_mysql_datetime() 
+						$created_at_utc = function_exists('pnpc_psd_get_utc_mysql_datetime')
+							? pnpc_psd_get_utc_mysql_datetime()
 							: current_time('mysql', true);
-						
+
 						$att_data = array(
 							'ticket_id'   => absint($ticket_id),
 							'response_id' => 0,
@@ -3872,7 +4193,7 @@ public function display_tickets_page()
 							'uploaded_by' => get_current_user_id(),
 							'created_at'  => $created_at_utc,
 						);
-						
+
 						// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 						$wpdb->insert(
 							$attachments_table,
@@ -3882,7 +4203,7 @@ public function display_tickets_page()
 					}
 				}
 			}
-			
+
 			// Send notification if requested (don't let email failures break the redirect)
 			if ($notify_customer) {
 				try {
@@ -3937,13 +4258,13 @@ public function display_tickets_page()
 			}
 
 			$to = $customer->user_email;
-			
+
 			// Validate email address
 			if (!is_email($to)) {
 				error_log('PNPC PSD: Invalid customer email address for customer ID: ' . absint($customer_id));
 				return false;
 			}
-			
+
 			$subject = sprintf(
 				/* translators: 1: site name, 2: ticket number */
 				__('[%1$s] Support Ticket Created - #%2$s', 'pnpc-pocket-service-desk'),
@@ -3953,7 +4274,7 @@ public function display_tickets_page()
 
 			// Try to get customer-facing ticket detail page, fallback to admin URL
 			$ticket_url = admin_url('admin.php?page=pnpc-service-desk-ticket&ticket_id=' . absint($ticket_id));
-			
+
 			$ticket_detail_page_id = absint(get_option('pnpc_psd_ticket_detail_page_id', 0));
 			if ($ticket_detail_page_id > 0) {
 				$page = get_post($ticket_detail_page_id);
@@ -3998,13 +4319,13 @@ public function display_tickets_page()
 			$headers = array('Content-Type: text/plain; charset=UTF-8');
 
 			$result = wp_mail($to, $subject, $message, $headers);
-			
+
 			if (!$result) {
 				error_log('PNPC PSD: Failed to send notification email for ticket ID: ' . absint($ticket_id) . ', customer ID: ' . absint($customer_id));
 			}
-			
+
 			return $result;
-			
+
 		} catch (Exception $e) {
 			error_log('PNPC PSD: Exception in send_staff_created_ticket_notification: ' . $e->getMessage());
 			return false;

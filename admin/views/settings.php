@@ -17,6 +17,8 @@ $tabs       = array(
 	'core'      => __( 'Core Setup', 'pnpc-pocket-service-desk' ),
 	'experience'=> __( 'Experience', 'pnpc-pocket-service-desk' ),
 	'customize' => __( 'Customize', 'pnpc-pocket-service-desk' ),
+	'shortcodes' => __( 'Shortcodes', 'pnpc-pocket-service-desk' ),
+	'support'    => __( 'Support', 'pnpc-pocket-service-desk' ),
 );
 if ( ! isset( $tabs[ $active_tab ] ) ) {
 	$active_tab = 'core';
@@ -137,7 +139,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				</tr>
 			</table>
 
-			
+
 			<h2><?php esc_html_e( 'Public Login', 'pnpc-pocket-service-desk' ); ?></h2>
 			<table class="form-table">
 				<tr>
@@ -518,13 +520,17 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 			<p class="description"><?php esc_html_e( 'Customize colors used across shortcodes and cards. Values are stored as hex colors (e.g., #2b9f6a).', 'pnpc-pocket-service-desk' ); ?></p>
 			<table class="form-table">
 				<tr>
+					<th scope="row"><label for="pnpc_psd_primary_button_color"><?php esc_html_e( 'Primary Button color', 'pnpc-pocket-service-desk' ); ?></label></th>
 					<td>
 						<input type="color" id="pnpc_psd_primary_button_color" name="pnpc_psd_primary_button_color" value="<?php echo esc_attr( get_option( 'pnpc_psd_primary_button_color', '#2b9f6a' ) ); ?>" />
+						<p class="description"><?php esc_html_e( 'Main action button color used across customer-facing Service Desk shortcodes, including ticket submission and dashboard actions.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 				<tr>
+					<th scope="row"><label for="pnpc_psd_primary_button_hover_color"><?php esc_html_e( 'Primary Button hover color', 'pnpc-pocket-service-desk' ); ?></label></th>
 					<td>
 						<input type="color" id="pnpc_psd_primary_button_hover_color" name="pnpc_psd_primary_button_hover_color" value="<?php echo esc_attr( get_option( 'pnpc_psd_primary_button_hover_color', '#238a56' ) ); ?>" />
+						<p class="description"><?php esc_html_e( 'Hover state for the main action buttons used across customer-facing Service Desk shortcodes.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 				<tr>
@@ -628,6 +634,105 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 					</td>
 				</tr>
 			</table>
+		</div>
+
+
+		<!-- =====================
+		     TAB: SHORTCODES
+		===================== -->
+		<div class="pnpc-psd-settings-panel" id="pnpc-psd-tab-shortcodes" style="<?php echo esc_attr( $panel_style( 'shortcodes' ) ); ?>">
+			<h2><?php esc_html_e( 'Shortcode Reference', 'pnpc-pocket-service-desk' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'Use these shortcodes when building Service Desk pages manually with Gutenberg, Elementor, another page builder, or custom theme templates.', 'pnpc-pocket-service-desk' ); ?></p>
+
+			<table class="widefat striped" style="max-width: 980px; margin-top: 16px;">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Shortcode', 'pnpc-pocket-service-desk' ); ?></th>
+						<th><?php esc_html_e( 'Purpose', 'pnpc-pocket-service-desk' ); ?></th>
+						<th><?php esc_html_e( 'Recommended placement', 'pnpc-pocket-service-desk' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><code>[pnpc_profile_settings]</code></td>
+						<td><?php esc_html_e( 'Customer profile and support details.', 'pnpc-pocket-service-desk' ); ?></td>
+						<td><?php esc_html_e( 'Customer dashboard page.', 'pnpc-pocket-service-desk' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>[pnpc_service_desk]</code></td>
+						<td><?php esc_html_e( 'Primary customer-facing service desk dashboard area.', 'pnpc-pocket-service-desk' ); ?></td>
+						<td><?php esc_html_e( 'Customer dashboard page.', 'pnpc-pocket-service-desk' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>[pnpc_create_ticket]</code></td>
+						<td><?php esc_html_e( 'Customer ticket submission form.', 'pnpc-pocket-service-desk' ); ?></td>
+						<td><?php esc_html_e( 'Customer dashboard page or dedicated submit-ticket page.', 'pnpc-pocket-service-desk' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>[pnpc_services]</code></td>
+						<td><?php esc_html_e( 'Reserved services area for connected workflows and future extensions.', 'pnpc-pocket-service-desk' ); ?></td>
+						<td><?php esc_html_e( 'Customer dashboard page.', 'pnpc-pocket-service-desk' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>[pnpc_my_tickets]</code></td>
+						<td><?php esc_html_e( 'Customer ticket list and current ticket statuses.', 'pnpc-pocket-service-desk' ); ?></td>
+						<td><?php esc_html_e( 'Customer dashboard page.', 'pnpc-pocket-service-desk' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>[pnpc_ticket_detail]</code></td>
+						<td><?php esc_html_e( 'Single-ticket conversation view.', 'pnpc-pocket-service-desk' ); ?></td>
+						<td><?php esc_html_e( 'Ticket View page.', 'pnpc-pocket-service-desk' ); ?></td>
+					</tr>
+				</tbody>
+			</table>
+
+			<h3><?php esc_html_e( 'Recommended all-in-one dashboard stack', 'pnpc-pocket-service-desk' ); ?></h3>
+			<textarea class="large-text code" rows="8" readonly="readonly">[pnpc_profile_settings]
+
+[pnpc_service_desk]
+
+[pnpc_create_ticket]
+
+[pnpc_services]
+
+[pnpc_my_tickets]</textarea>
+
+			<p>
+				<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-shortcodes' ) ); ?>"><?php esc_html_e( 'Open full shortcode reference page', 'pnpc-pocket-service-desk' ); ?></a>
+			</p>
+		</div>
+
+
+		<!-- =====================
+		     TAB: SUPPORT
+		===================== -->
+		<div class="pnpc-psd-settings-panel" id="pnpc-psd-tab-support" style="<?php echo esc_attr( $panel_style( 'support' ) ); ?>">
+			<h2><?php esc_html_e( 'Support Hub', 'pnpc-pocket-service-desk' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'Configure where the Support Hub points users when they need help. Core uses this for support links and diagnostics bundle context.', 'pnpc-pocket-service-desk' ); ?></p>
+			<table class="form-table">
+				<tr>
+					<th scope="row"><label for="pnpc_psd_support_receiver_name"><?php esc_html_e( 'Support Destination Name', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<td>
+						<input type="text" name="pnpc_psd_support_receiver_name" id="pnpc_psd_support_receiver_name" value="<?php echo esc_attr( get_option( 'pnpc_psd_support_receiver_name', 'PNPC Support' ) ); ?>" class="regular-text" />
+						<p class="description"><?php esc_html_e( 'Displayed in the Support Hub. Agency/white-label receivers can override this later.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="pnpc_psd_support_receiver_url"><?php esc_html_e( 'Support Portal URL', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<td>
+						<input type="url" name="pnpc_psd_support_receiver_url" id="pnpc_psd_support_receiver_url" value="<?php echo esc_attr( get_option( 'pnpc_psd_support_receiver_url', 'https://plugnplayconsultants.com/dashboard/' ) ); ?>" class="regular-text" />
+						<p class="description"><?php esc_html_e( 'The support portal users open from the Support Hub. Receiver/API submission will be layered in later.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="pnpc_psd_support_access_url"><?php esc_html_e( 'Support Access URL', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<td>
+						<input type="url" name="pnpc_psd_support_access_url" id="pnpc_psd_support_access_url" value="<?php echo esc_attr( get_option( 'pnpc_psd_support_access_url', 'https://plugnplayconsultants.com/pnpc-service-desk-support/' ) ); ?>" class="regular-text" />
+						<p class="description"><?php esc_html_e( 'The lightweight account access page used by the Support Hub. This should collect name, email, and website URL before sending users to the support dashboard.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+			</table>
+			<p><a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-support' ) ); ?>"><?php esc_html_e( 'Open Support Hub', 'pnpc-pocket-service-desk' ); ?></a></p>
 		</div>
 
 		<?php submit_button(); ?>

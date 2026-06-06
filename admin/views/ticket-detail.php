@@ -17,7 +17,7 @@ if (! defined('ABSPATH')) {
 if (isset($_GET['ticket_id']) && is_user_logged_in() && current_user_can('pnpc_psd_view_tickets')) {
 	$current_user_id = get_current_user_id();
 	$ticket_id = absint( wp_unslash( $_GET['ticket_id'] ) );
-	
+
 	if ($ticket_id > 0) {
 		// Store current timestamp as "last viewed" for this agent
 		update_user_meta(
@@ -65,7 +65,7 @@ if (! function_exists('pnpc_psd_admin_format_datetime')) {
 /**
  * Pnpc psd admin format datetime.
  *
- * @param mixed $datetime 
+ * @param mixed $datetime
  *
  * @since 1.1.1.4
  *
@@ -98,7 +98,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 			<span class="separator"> &raquo; </span>
 			<span class="pnpc-psd-ticket-number-current"><?php echo esc_html($ticket->ticket_number); ?></span>
 		</div>
-		
+
 		<div class="pnpc-psd-quick-nav">
 			<?php if ( ! empty( $prev_ticket_id ) ) : ?>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-ticket&ticket_id=' . absint( $prev_ticket_id ) ) ); ?>" class="button" title="<?php esc_attr_e( 'Previous Ticket', 'pnpc-pocket-service-desk' ); ?>">
@@ -181,7 +181,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 					} else {
 						echo esc_html( $ticket_user_name );
 					}
-					
+
 					// Display user_url if present
 					if ($ticket_user && !empty($ticket_user->user_url)) {
 						echo ' | <a href="' . esc_url($ticket_user->user_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Website', 'pnpc-pocket-service-desk') . '</a>';
@@ -264,7 +264,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 		</div>
 	</div>
 
-	
+
 	<div id="pnpc-psd-admin-action-message" class="pnpc-psd-message" style="display:none;"></div>
 
 	<div class="pnpc-psd-ticket-body" style="margin: 15px 0; padding: 12px 14px; background: #FAFFA1; border: 1px solid #dcdcde; border-radius: 4px;">
@@ -291,7 +291,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 	<?php if (! empty($ticket_attachments)) : ?>
 		<div class="pnpc-psd-attachments">
 			<h3><?php esc_html_e('Attachments', 'pnpc-pocket-service-desk'); ?> (<?php echo count($ticket_attachments); ?>)</h3>
-			
+
 			<?php foreach ($ticket_attachments as $att) : ?>
 				<?php
 				$file_size = intval($att->file_size);
@@ -303,24 +303,24 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 				$can_preview = pnpc_psd_can_preview_attachment($file_size);
 				$file_size_formatted = pnpc_psd_format_filesize($file_size);
 				?>
-				
+
 				<div class="pnpc-psd-attachment pnpc-psd-attachment-<?php echo esc_attr($file_type); ?>">
 					<?php if ($file_type === 'image' && $can_preview) : ?>
-						<img src="<?php echo esc_url( $file_url ); ?>" 
-							 alt="<?php echo esc_attr( $file_name ); ?>" 
+						<img src="<?php echo esc_url( $file_url ); ?>"
+							 alt="<?php echo esc_attr( $file_name ); ?>"
 							 class="pnpc-psd-attachment-thumbnail">
 					<?php else : ?>
 						<div class="pnpc-psd-attachment-icon">
 							<?php echo esc_html( pnpc_psd_get_file_icon($file_ext) ); ?>
 						</div>
 					<?php endif; ?>
-					
+
 					<div class="pnpc-psd-attachment-info">
 						<strong><?php echo esc_html( $file_name ); ?></strong>
 						<span class="pnpc-psd-attachment-meta">
 							<?php echo esc_html($file_size_formatted); ?> · <?php echo esc_html(strtoupper($file_ext)); ?>
 						</span>
-						
+
 						<?php if (! $can_preview) : ?>
 							<span class="pnpc-psd-attachment-warning">
 								⚠ <?php
@@ -333,25 +333,25 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 							</span>
 						<?php endif; ?>
 					</div>
-					
+
 					<div class="pnpc-psd-attachment-actions">
 						<?php if ($can_preview && in_array($file_type, array('image', 'pdf'), true)) : ?>
-							<button type="button" class="pnpc-psd-view-attachment button" 
-									data-type="<?php echo esc_attr($file_type); ?>" 
+							<button type="button" class="pnpc-psd-view-attachment button"
+									data-type="<?php echo esc_attr($file_type); ?>"
 									data-url="<?php echo esc_url( $file_url ); ?>"
 									data-filename="<?php echo esc_attr( $file_name ); ?>">
 								<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
 							</button>
 						<?php endif; ?>
-						
-						<a href="<?php echo esc_url( $download_url ); ?>" 
-						   download 
+
+						<a href="<?php echo esc_url( $download_url ); ?>"
+						   download
 						   class="button <?php echo ! $can_preview ? 'button-primary' : ''; ?>">
 							<?php esc_html_e('Download', 'pnpc-pocket-service-desk'); ?>
 						</a>
 					</div>
 				</div>
-				
+
 			<?php endforeach; ?>
 		</div>
 	<?php endif; ?>
@@ -387,7 +387,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 				<?php if (! empty($atts_for_response)) : ?>
 					<div class="pnpc-psd-response-attachments">
 						<strong><?php esc_html_e('Attachments:', 'pnpc-pocket-service-desk'); ?></strong>
-						
+
 						<?php foreach ($atts_for_response as $ra) : ?>
 							<?php
 							$file_size = intval($ra->file_size);
@@ -399,24 +399,24 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 							$can_preview = pnpc_psd_can_preview_attachment($file_size);
 							$file_size_formatted = pnpc_psd_format_filesize($file_size);
 							?>
-							
+
 							<div class="pnpc-psd-attachment pnpc-psd-attachment-<?php echo esc_attr($file_type); ?>">
 								<?php if ($file_type === 'image' && $can_preview) : ?>
-									<img src="<?php echo esc_url( $file_url ); ?>" 
-										 alt="<?php echo esc_attr( $file_name ); ?>" 
+									<img src="<?php echo esc_url( $file_url ); ?>"
+										 alt="<?php echo esc_attr( $file_name ); ?>"
 										 class="pnpc-psd-attachment-thumbnail">
 								<?php else : ?>
 									<div class="pnpc-psd-attachment-icon">
 										<?php echo esc_html( pnpc_psd_get_file_icon($file_ext) ); ?>
 									</div>
 								<?php endif; ?>
-								
+
 								<div class="pnpc-psd-attachment-info">
 									<strong><?php echo esc_html( $file_name ); ?></strong>
 									<span class="pnpc-psd-attachment-meta">
 										<?php echo esc_html($file_size_formatted); ?> · <?php echo esc_html(strtoupper($file_ext)); ?>
 									</span>
-									
+
 									<?php if (! $can_preview) : ?>
 										<span class="pnpc-psd-attachment-warning">
 											⚠ <?php
@@ -429,25 +429,25 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 										</span>
 									<?php endif; ?>
 								</div>
-								
+
 								<div class="pnpc-psd-attachment-actions">
 									<?php if ($can_preview && in_array($file_type, array('image', 'pdf'), true)) : ?>
-										<button type="button" class="pnpc-psd-view-attachment button" 
-												data-type="<?php echo esc_attr($file_type); ?>" 
+										<button type="button" class="pnpc-psd-view-attachment button"
+												data-type="<?php echo esc_attr($file_type); ?>"
 												data-url="<?php echo esc_url( $file_url ); ?>"
 												data-filename="<?php echo esc_attr( $file_name ); ?>">
 											<?php esc_html_e('View', 'pnpc-pocket-service-desk'); ?>
 										</button>
 									<?php endif; ?>
-									
-									<a href="<?php echo esc_url( $download_url ); ?>" 
-									   download 
+
+									<a href="<?php echo esc_url( $download_url ); ?>"
+									   download
 									   class="button <?php echo ! $can_preview ? 'button-primary' : ''; ?>">
 										<?php esc_html_e('Download', 'pnpc-pocket-service-desk'); ?>
 									</a>
 								</div>
 							</div>
-							
+
 						<?php endforeach; ?>
 					</div>
 				<?php endif; ?>
@@ -501,7 +501,7 @@ if ( current_user_can( 'pnpc_psd_view_tickets' ) ) :
 <div class="pnpc-psd-danger-zone">
 	<h3><?php esc_html_e('Danger Zone', 'pnpc-pocket-service-desk'); ?></h3>
 	<p><?php esc_html_e('Submitting a delete request sends this ticket to the Review queue for approval by a manager or administrator.', 'pnpc-pocket-service-desk'); ?></p>
-	
+
 	<button type="button" class="button button-danger pnpc-psd-delete-ticket-btn" data-ticket-id="<?php echo absint($ticket->id); ?>">
 		<?php esc_html_e('Request Delete', 'pnpc-pocket-service-desk'); ?>
 	</button>
@@ -518,7 +518,7 @@ if ( current_user_can( 'pnpc_psd_view_tickets' ) ) :
 		</div>
 		<div class="pnpc-psd-modal-body">
 			<p id="pnpc-psd-delete-modal-message"></p>
-			
+
 			<div class="pnpc-psd-form-group">
 				<label for="pnpc-psd-delete-reason-select">
 					<?php esc_html_e('Reason:', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span>
@@ -533,14 +533,14 @@ if ( current_user_can( 'pnpc_psd_view_tickets' ) ) :
 					<option value="other"><?php esc_html_e('Other (please specify)', 'pnpc-pocket-service-desk'); ?></option>
 				</select>
 			</div>
-			
+
 			<div class="pnpc-psd-form-group" id="pnpc-psd-delete-reason-other-wrapper" style="display:none;">
 				<label for="pnpc-psd-delete-reason-other">
 					<?php esc_html_e('Additional details:', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span>
 				</label>
 				<textarea id="pnpc-psd-delete-reason-other" rows="3" placeholder="<?php esc_attr_e('Please provide more details (minimum 10 characters)', 'pnpc-pocket-service-desk'); ?>"></textarea>
 			</div>
-			
+
 			<div id="pnpc-psd-delete-error-message" class="pnpc-psd-error-message" style="display:none;"></div>
 		</div>
 		<div class="pnpc-psd-modal-footer">
@@ -556,12 +556,12 @@ if ( current_user_can( 'pnpc_psd_view_tickets' ) ) :
 	<div class="pnpc-psd-lightbox-content">
 		<!-- Close Button -->
 		<button type="button" class="pnpc-psd-lightbox-close" aria-label="<?php esc_attr_e('Close', 'pnpc-pocket-service-desk'); ?>">×</button>
-		
+
 		<!-- Download Button -->
 		<a href="#" download class="pnpc-psd-lightbox-download button">
 			<?php esc_html_e('Download', 'pnpc-pocket-service-desk'); ?>
 		</a>
-		
+
 		<!-- Image View -->
 		<div class="pnpc-psd-lightbox-image-container">
 			<img src="" alt="" class="pnpc-psd-lightbox-image">
@@ -570,7 +570,7 @@ if ( current_user_can( 'pnpc_psd_view_tickets' ) ) :
 				<span class="pnpc-psd-lightbox-counter"></span>
 			</div>
 		</div>
-		
+
 		<!-- PDF View -->
 		<div class="pnpc-psd-lightbox-pdf-container" style="display:none;">
 			<iframe src="" type="application/pdf" class="pnpc-psd-lightbox-pdf" title="<?php esc_attr_e('PDF Viewer', 'pnpc-pocket-service-desk'); ?>"></iframe>
@@ -581,7 +581,7 @@ if ( current_user_can( 'pnpc_psd_view_tickets' ) ) :
 				</a>
 			</div>
 		</div>
-		
+
 		<!-- Navigation Arrows -->
 		<button type="button" class="pnpc-psd-lightbox-prev" aria-label="<?php esc_attr_e('Previous', 'pnpc-pocket-service-desk'); ?>">‹</button>
 		<button type="button" class="pnpc-psd-lightbox-next" aria-label="<?php esc_attr_e('Next', 'pnpc-pocket-service-desk'); ?>">›</button>

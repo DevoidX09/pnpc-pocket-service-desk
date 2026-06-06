@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$support_url = apply_filters( 'pnpc_psd_support_url', '' );
+$support_url = apply_filters( 'pnpc_psd_support_url', admin_url( 'admin.php?page=pnpc-service-desk-support' ) );
 
 // Default to the bundled dashboard logo if none is provided by a theme/site filter.
 $logo_url = apply_filters( 'pnpc_psd_dashboard_logo_url', '' );
@@ -72,13 +72,9 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 			<a class="button" href="<?php echo esc_url( $menu_audit_url ); ?>"><?php echo esc_html__( 'Audit Log', 'pnpc-pocket-service-desk' ); ?></a>
 			<a class="button" href="<?php echo esc_url( $menu_settings_url ); ?>"><?php echo esc_html__( 'Settings', 'pnpc-pocket-service-desk' ); ?></a>
 
-			<?php if ( $support_url ) : ?>
-				<a class="button" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $support_url ); ?>">
-					<?php echo esc_html__( 'Support', 'pnpc-pocket-service-desk' ); ?>
-				</a>
-			<?php else : ?>
-				<span class="psd-muted"><?php echo esc_html__( 'Support link not configured.', 'pnpc-pocket-service-desk' ); ?></span>
-			<?php endif; ?>
+			<a class="button psd-support-button" href="<?php echo esc_url( $support_url ); ?>">
+				<?php echo esc_html__( 'Support', 'pnpc-pocket-service-desk' ); ?>
+			</a>
 
 			<?php /* No upgrade/promotional CTAs in the Free build. */ ?>
 		</div>
@@ -204,12 +200,14 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 				<?php endforeach; ?>
 			<?php endif; ?>
 
-			<div class="psd-cta">
-				<?php if ( $support_url ) : ?>
-					<a class="button button-primary" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url( $support_url ); ?>">
-						<?php echo esc_html__( 'Support', 'pnpc-pocket-service-desk' ); ?>
-					</a>
-				<?php endif; ?>
+			<div class="psd-support-card">
+				<div>
+					<strong><?php echo esc_html__( 'Need help with your setup?', 'pnpc-pocket-service-desk' ); ?></strong>
+					<p><?php echo esc_html__( 'Open the Support Hub to review diagnostics, download a support bundle, or access support resources.', 'pnpc-pocket-service-desk' ); ?></p>
+				</div>
+				<a class="button button-primary" href="<?php echo esc_url( $support_url ); ?>">
+					<?php echo esc_html__( 'Open Support Hub', 'pnpc-pocket-service-desk' ); ?>
+				</a>
 			</div>
 		</div>
 	</div>

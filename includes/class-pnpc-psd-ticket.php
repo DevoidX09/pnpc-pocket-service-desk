@@ -150,7 +150,7 @@ class PNPC_PSD_Ticket
 
 			// Format array must match the insert order above.
 			$format = array('%s', '%d', '%s', '%s', '%s', '%s', '%d', '%s');
-			
+
 			// Add format for created_by_staff if present
 			if (isset($insert_data['created_by_staff'])) {
 				$format[] = '%d';
@@ -184,16 +184,15 @@ class PNPC_PSD_Ticket
 			$is_duplicate = (false !== stripos($last_error, 'Duplicate entry')) && (false !== stripos($last_error, 'ticket_number'));
 		} while ($attempts < $max_attempts && $is_duplicate);
 
-		// Diagnostic logging for failures (only when debug enabled)
-		if (defined('WP_DEBUG') && WP_DEBUG) {
-			if (function_exists('pnpc_psd_debug_log')) {
-				pnpc_psd_debug_log('ticket_create_failed', array(
-					'insert_data'   => $insert_data,
-					'wpdb_error'    => isset($wpdb->last_error) ? $wpdb->last_error : '',
-					'wpdb_last_query' => isset($wpdb->last_query) ? $wpdb->last_query : '',
-				));
-			} else {
-			}
+		if ( function_exists( 'pnpc_psd_log_error' ) ) {
+			pnpc_psd_log_error(
+				'database',
+				__( 'Ticket creation failed.', 'pnpc-pocket-service-desk' ),
+				array(
+					'user_id'    => isset( $insert_data['user_id'] ) ? absint( $insert_data['user_id'] ) : 0,
+					'wpdb_error' => isset( $wpdb->last_error ) ? $wpdb->last_error : '',
+				)
+			);
 		}
 
 		return false;
@@ -1575,7 +1574,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	 * @param array $ticket_ids Array of ticket IDs.
 	 * @return int Number of tickets deleted.
 	 */
-	
+
 	/**
 	 * Bulk archive closed tickets.
 	 *

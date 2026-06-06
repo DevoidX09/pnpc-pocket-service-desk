@@ -140,7 +140,7 @@ if (! function_exists('pnpc_psd_get_ticket_detail_url')) {
 /**
  * Pnpc psd get ticket detail url.
  *
- * @param mixed $ticket_id 
+ * @param mixed $ticket_id
  *
  * @since 1.1.1.4
  *
@@ -287,7 +287,7 @@ if (! function_exists('pnpc_psd_mysql_to_wp_local_ts')) {
 /**
  * Pnpc psd mysql to wp local ts.
  *
- * @param mixed $mysql_datetime 
+ * @param mixed $mysql_datetime
  *
  * @since 1.1.1.4
  *
@@ -383,8 +383,8 @@ if (! function_exists('pnpc_psd_format_db_datetime_for_display')) {
 /**
  * Pnpc psd format db datetime for display.
  *
- * @param mixed $mysql_datetime 
- * @param mixed $format 
+ * @param mixed $mysql_datetime
+ * @param mixed $format
  *
  * @since 1.1.1.4
  *
@@ -451,7 +451,7 @@ if ( ! function_exists( 'pnpc_psd_rearrange_files' ) ) {
 /**
  * Pnpc psd rearrange files.
  *
- * @param mixed $file_post 
+ * @param mixed $file_post
  *
  * @since 1.1.1.4
  *
@@ -486,7 +486,7 @@ if (! function_exists('pnpc_psd_format_filesize')) {
 /**
  * Pnpc psd format filesize.
  *
- * @param mixed $bytes 
+ * @param mixed $bytes
  *
  * @since 1.1.1.4
  *
@@ -528,7 +528,7 @@ if (! function_exists('pnpc_psd_get_attachment_type')) {
 /**
  * Pnpc psd get attachment type.
  *
- * @param mixed $extension 
+ * @param mixed $extension
  *
  * @since 1.1.1.4
  *
@@ -538,15 +538,15 @@ if (! function_exists('pnpc_psd_get_attachment_type')) {
     {
         $extension = strtolower(trim($extension));
         $image_types = array('jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp');
-        
+
         if (in_array($extension, $image_types, true)) {
             return 'image';
         }
-        
+
         if ('pdf' === $extension) {
             return 'pdf';
         }
-        
+
         return 'other';
     }
 }
@@ -561,7 +561,7 @@ if (! function_exists('pnpc_psd_get_file_icon')) {
 /**
  * Pnpc psd get file icon.
  *
- * @param mixed $extension 
+ * @param mixed $extension
  *
  * @since 1.1.1.4
  *
@@ -586,7 +586,7 @@ if (! function_exists('pnpc_psd_get_file_icon')) {
             'png'  => '🖼',
             'gif'  => '🖼',
         );
-        
+
         return isset($icons[$extension]) ? $icons[$extension] : '📎';
     }
 }
@@ -601,7 +601,7 @@ if (! function_exists('pnpc_psd_can_preview_attachment')) {
 /**
  * Pnpc psd can preview attachment.
  *
- * @param mixed $file_size 
+ * @param mixed $file_size
  *
  * @since 1.1.1.4
  *
@@ -625,8 +625,8 @@ if (! function_exists('pnpc_psd_format_delete_reason')) {
 /**
  * Pnpc psd format delete reason.
  *
- * @param mixed $reason 
- * @param mixed $other_details 
+ * @param mixed $reason
+ * @param mixed $other_details
  *
  * @since 1.1.1.4
  *
@@ -696,7 +696,7 @@ if ( ! function_exists( 'pnpc_psd_sync_roles_caps' ) ) {
 				$r->add_cap( 'pnpc_psd_view_own_tickets' );
 			}
 		}
-	
+
 		/**
 		 * Extension seam: allow additional roles/caps to be registered by other plugins.
 		 */
@@ -751,7 +751,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_agents_option' ) ) {
 /**
  * Pnpc psd sanitize agents option.
  *
- * @param mixed $value 
+ * @param mixed $value
  *
  * @since 1.1.1.4
  *
@@ -868,7 +868,7 @@ if ( ! function_exists( 'pnpc_psd_get_agent_notification_email' ) ) {
 /**
  * Pnpc psd get agent notification email.
  *
- * @param mixed $user_id 
+ * @param mixed $user_id
  *
  * @since 1.1.1.4
  *
@@ -938,7 +938,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_max_attachment_mb' ) ) {
 /**
  * Pnpc psd sanitize max attachment mb.
  *
- * @param mixed $value 
+ * @param mixed $value
  *
  * @since 1.1.1.4
  *
@@ -1041,7 +1041,7 @@ if ( ! function_exists( 'pnpc_psd_sanitize_allowed_file_types' ) ) {
 /**
  * Pnpc psd sanitize allowed file types.
  *
- * @param mixed $value 
+ * @param mixed $value
  *
  * @since 1.1.1.4
  *
@@ -1225,7 +1225,7 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 
 		/**
 		 * Serve attachment file with security verification.
-		 * 
+		 *
 		 * Security measures in place:
 		 * 1. Nonce verification (check_admin_referer)
 		 * 2. User login requirement (is_user_logged_in)
@@ -1233,7 +1233,7 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 		 * 4. File existence and readability validation
 		 * 5. Path traversal protection via pnpc_psd_attachment_db_to_path()
 		 * 6. MIME type validation via wp_check_filetype()
-		 * 
+		 *
 		 * Using readfile() instead of WP_Filesystem because:
 		 * - Efficiently streams large binary files without loading into memory
 		 * - Properly handles Content-Length for download progress
@@ -1287,5 +1287,82 @@ if ( ! function_exists( 'pnpc_psd_sanitize_public_login_url' ) ) {
 	function pnpc_psd_sanitize_public_login_url( $value ) {
 		$value = is_string( $value ) ? trim( $value ) : '';
 		return $value ? esc_url_raw( $value ) : '';
+	}
+}
+
+
+/**
+ * Maximum error log entries retained.
+ *
+ * @return int
+ */
+if ( ! function_exists( 'pnpc_psd_get_error_log_cap' ) ) {
+	function pnpc_psd_get_error_log_cap() {
+		$cap = (int) apply_filters( 'pnpc_psd_error_log_cap', (int) get_option( 'pnpc_psd_error_log_cap', 250 ) );
+		return max( 0, $cap );
+	}
+}
+
+/**
+ * Record a Service Desk failure in the plugin error log.
+ *
+ * @param string $type Error type.
+ * @param string $message Error message.
+ * @param array  $context Optional context.
+ * @param string $severity Severity.
+ * @return int|false
+ */
+if ( ! function_exists( 'pnpc_psd_log_error' ) ) {
+	function pnpc_psd_log_error( $type, $message, $context = array(), $severity = 'error' ) {
+		if ( class_exists( 'PNPC_PSD_Error_Log' ) ) {
+			return PNPC_PSD_Error_Log::log( $type, $message, $context, $severity );
+		}
+		return false;
+	}
+}
+
+/**
+ * Basic operational health summary for Core diagnostics.
+ *
+ * @return array
+ */
+if ( ! function_exists( 'pnpc_psd_get_operational_health_summary' ) ) {
+	function pnpc_psd_get_operational_health_summary() {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'pnpc_psd_error_log';
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		if ( $exists !== $table ) {
+			return array(
+				'status' => 'needs_attention',
+				'label'  => __( 'Needs Attention', 'pnpc-pocket-service-desk' ),
+				'issues' => array( __( 'Error log table is missing.', 'pnpc-pocket-service-desk' ) ),
+			);
+		}
+
+		$critical = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table} WHERE severity = %s", 'critical' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$recent   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table} WHERE created_at >= %s", gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+
+		if ( $critical > 0 ) {
+			return array(
+				'status' => 'critical',
+				'label'  => __( 'Critical Issues Detected', 'pnpc-pocket-service-desk' ),
+				'issues' => array( sprintf( _n( '%d critical error is recorded.', '%d critical errors are recorded.', $critical, 'pnpc-pocket-service-desk' ), $critical ) ),
+			);
+		}
+
+		if ( $recent >= 5 ) {
+			return array(
+				'status' => 'needs_attention',
+				'label'  => __( 'Needs Attention', 'pnpc-pocket-service-desk' ),
+				'issues' => array( sprintf( _n( '%d error was recorded in the last 24 hours.', '%d errors were recorded in the last 24 hours.', $recent, 'pnpc-pocket-service-desk' ), $recent ) ),
+			);
+		}
+
+		return array(
+			'status' => 'healthy',
+			'label'  => __( 'Healthy', 'pnpc-pocket-service-desk' ),
+			'issues' => array(),
+		);
 	}
 }

@@ -137,7 +137,7 @@
 	 */
 	function updateMenuBadgeDisplay(count) {
 		var $menuItem = $('#toplevel_page_pnpc-service-desk .wp-menu-name');
-		
+
 		if (!$menuItem.length) {
 			return;
 		}
@@ -208,7 +208,7 @@
 		localStorage.setItem('pnpc_psd_auto_refresh', autoRefreshEnabled ? 'true' : 'false');
 
 		var $button = $('#pnpc-psd-toggle-auto-refresh');
-		
+
 		if (autoRefreshEnabled) {
 			$button.text('Pause Auto-Refresh');
 			startAutoRefresh();
@@ -275,7 +275,7 @@
 		var $sortedColumn = $('.pnpc-psd-sortable').filter(function() {
 			return $(this).attr('data-sort-order') !== '';
 		}).first();
-		
+
 		if ($sortedColumn.length) {
 			currentSortColumn = $sortedColumn.attr('data-sort-type');
 			currentSortOrder = $sortedColumn.attr('data-sort-order');
@@ -310,14 +310,14 @@
 			setTimeout(function() {
 				// Find the column header
 				var $columnHeader = $('.pnpc-psd-sortable[data-sort-type="' + currentSortColumn + '"]');
-				
+
 				if ($columnHeader.length) {
 					// Remove all existing sort indicators
 					$('.pnpc-psd-sortable').attr('data-sort-order', '');
-					
+
 					// Set the sort order data attribute
 					$columnHeader.attr('data-sort-order', currentSortOrder);
-					
+
 					// Actually sort the table
 					sortTable(currentSortColumn, currentSortOrder);
 				}
@@ -336,19 +336,19 @@
 	function sortTable(sortType, sortOrder) {
 		var $tbody = $('#pnpc-psd-tickets-table tbody');
 		var $rows = $tbody.find('tr').toArray();
-		
+
 		if ($rows.length <= 1) {
 			return; // Nothing to sort
 		}
-		
+
 		$rows.sort(function(a, b) {
 			var $aCells = $(a).find('td');
 			var $bCells = $(b).find('td');
-			
+
 			// Find cells with data-sort-value matching our column
 			var aValue = null;
 			var bValue = null;
-			
+
 			$aCells.each(function() {
 				var $cell = $(this);
 				if ($cell.attr('data-sort-value') !== undefined) {
@@ -361,7 +361,7 @@
 					}
 				}
 			});
-			
+
 			$bCells.each(function() {
 				var $cell = $(this);
 				if ($cell.attr('data-sort-value') !== undefined) {
@@ -373,7 +373,7 @@
 					}
 				}
 			});
-			
+
 			// Handle different data types
 			if (!isNaN(aValue) && !isNaN(bValue)) {
 				// Numeric comparison
@@ -384,14 +384,14 @@
 				aValue = String(aValue).toLowerCase();
 				bValue = String(bValue).toLowerCase();
 			}
-			
+
 			if (sortOrder === 'asc') {
 				return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
 			} else {
 				return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
 			}
 		});
-		
+
 		// Re-append sorted rows
 		$.each($rows, function(index, row) {
 			$tbody.append(row);
@@ -406,26 +406,26 @@
 		if ($('body').hasClass('pnpc-psd-flash-active')) {
 			return;
 		}
-		
+
 		// Add body class to prevent scroll shift
 		$('body').addClass('pnpc-psd-flash-active');
-		
+
 		// Create full-screen border overlay
 		var $overlay = $('<div class="pnpc-psd-screen-flash-overlay"></div>');
-		
+
 		// Add notification text
-		var ticketText = count === 1 
+		var ticketText = count === 1
 			? '1 new ticket arrived'
 			: count + ' new tickets arrived';
-		
-		var $notification = $('<div class="pnpc-psd-screen-flash-notification">' + 
-			'<span class="dashicons dashicons-yes-alt" style="margin-right: 8px; font-size: 18px; vertical-align: middle;"></span>' + 
-			ticketText + 
+
+		var $notification = $('<div class="pnpc-psd-screen-flash-notification">' +
+			'<span class="dashicons dashicons-yes-alt" style="margin-right: 8px; font-size: 18px; vertical-align: middle;"></span>' +
+			ticketText +
 			'</div>');
-		
+
 		// Append to body (not inside any scrollable container)
 		$('body').append($overlay).append($notification);
-		
+
 		// Remove after animation completes
 		setTimeout(function() {
 			$overlay.fadeOut(400, function() {
@@ -434,7 +434,7 @@
 			$notification.fadeOut(400, function() {
 				$(this).remove();
 			});
-			
+
 			// Remove body class
 			$('body').removeClass('pnpc-psd-flash-active');
 		}, 3000);
@@ -470,32 +470,32 @@
 					$row.removeClass('pnpc-psd-ticket-row-new');
 				}, config.newTicketAnimationDuration);
 			});
-			
+
 			// ALSO flash entire screen border
 			flashScreenBorder(newTicketIds.length);
 		}
 	}
-	
+
 	/**
 	 * Flash full-screen border to alert user of new tickets
 	 */
 	function flashScreenBorder(count) {
 		// Create full-screen border overlay
 		var $overlay = $('<div class="pnpc-psd-screen-flash-overlay"></div>');
-		
+
 		// Add notification text
-		var ticketText = count === 1 
-			? (typeof pnpcPsdAdmin !== 'undefined' && pnpcPsdAdmin.i18n && pnpcPsdAdmin.i18n.new_ticket_singular 
-				? pnpcPsdAdmin.i18n.new_ticket_singular 
+		var ticketText = count === 1
+			? (typeof pnpcPsdAdmin !== 'undefined' && pnpcPsdAdmin.i18n && pnpcPsdAdmin.i18n.new_ticket_singular
+				? pnpcPsdAdmin.i18n.new_ticket_singular
 				: '1 new ticket arrived')
-			: count + ' ' + (typeof pnpcPsdAdmin !== 'undefined' && pnpcPsdAdmin.i18n && pnpcPsdAdmin.i18n.new_tickets_plural 
-				? pnpcPsdAdmin.i18n.new_tickets_plural 
+			: count + ' ' + (typeof pnpcPsdAdmin !== 'undefined' && pnpcPsdAdmin.i18n && pnpcPsdAdmin.i18n.new_tickets_plural
+				? pnpcPsdAdmin.i18n.new_tickets_plural
 				: 'new tickets arrived');
-		
+
 		var $notification = $('<div class="pnpc-psd-screen-flash-notification">' + ticketText + '</div>');
-		
+
 		$('body').append($overlay).append($notification);
-		
+
 		// Remove after animation
 		setTimeout(function() {
 			$overlay.fadeOut(500, function() {
@@ -505,7 +505,7 @@
 				$(this).remove();
 			});
 		}, 3000);
-		
+
 		// Optional: Play notification sound
 		// playNotificationSound();
 	}

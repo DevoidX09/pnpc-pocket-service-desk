@@ -432,61 +432,61 @@
 	.tablenav {
 		margin-bottom: 15px;
 	}
-	
+
 	.tablenav .alignleft {
 		float: none;
 		margin-bottom: 10px;
 	}
-	
+
 	#pnpc-psd-bulk-message {
 		display: block;
 		margin-top: 10px;
 		margin-left: 0 !important;
 	}
-	
+
 	.pnpc-psd-sortable {
 		padding-right: 20px !important;
 	}
-	
+
 	.pnpc-psd-sort-arrow {
 		right: 5px;
 	}
-	
+
 	.pnpc-psd-refresh-controls {
 		flex-wrap: wrap;
 	}
-	
+
 	.pnpc-psd-last-refresh {
 		width: 100%;
 		margin-left: 0;
 		margin-top: 5px;
 	}
-	
+
 	.pnpc-psd-ticket-detail-header {
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 15px;
 	}
-	
+
 	.pnpc-psd-quick-nav {
 		flex-direction: column;
 		width: 100%;
 	}
-	
+
 	.pnpc-psd-quick-nav .button {
 		width: 100%;
 		justify-content: center;
 	}
-	
+
 	.pnpc-psd-pagination {
 		flex-direction: column;
 		gap: 15px;
 	}
-	
+
 	.pnpc-psd-pagination-info {
 		text-align: center;
 	}
-	
+
 	.pnpc-psd-pagination-links {
 		flex-wrap: wrap;
 		justify-content: center;
@@ -695,7 +695,7 @@
 	pointer-events: none;
 	z-index: 999999;
 	border: 8px solid #48bb78;
-	box-shadow: 
+	box-shadow:
 		inset 0 0 30px rgba(72, 187, 120, 0.4),
 		0 0 40px rgba(72, 187, 120, 0.3);
 	animation: pnpc-psd-screen-border-flash 3s ease-in-out;
@@ -714,21 +714,21 @@ body.pnpc-psd-flash-active {
 	0% {
 		opacity: 0;
 		border-width: 8px;
-		box-shadow: 
+		box-shadow:
 			inset 0 0 30px rgba(72, 187, 120, 0),
 			0 0 40px rgba(72, 187, 120, 0);
 	}
 	10% {
 		opacity: 1;
 		border-width: 10px;
-		box-shadow: 
+		box-shadow:
 			inset 0 0 40px rgba(72, 187, 120, 0.5),
 			0 0 50px rgba(72, 187, 120, 0.4);
 	}
 	50% {
 		opacity: 1;
 		border-width: 8px;
-		box-shadow: 
+		box-shadow:
 			inset 0 0 30px rgba(72, 187, 120, 0.4),
 			0 0 40px rgba(72, 187, 120, 0.3);
 	}
@@ -739,7 +739,7 @@ body.pnpc-psd-flash-active {
 	100% {
 		opacity: 0;
 		border-width: 8px;
-		box-shadow: 
+		box-shadow:
 			inset 0 0 30px rgba(72, 187, 120, 0),
 			0 0 40px rgba(72, 187, 120, 0);
 	}
@@ -758,7 +758,7 @@ body.pnpc-psd-flash-active {
 	border-radius: 8px;
 	font-size: 15px;
 	font-weight: 600;
-	box-shadow: 
+	box-shadow:
 		0 4px 12px rgba(0, 0, 0, 0.15),
 		0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 	animation: pnpc-psd-notification-slide 3s ease-in-out;

@@ -4,7 +4,7 @@ Tags: helpdesk, service desk, support, tickets, customer support, woocommerce
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.1.1.4.1.1
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,9 +60,9 @@ If you use a separate “Logout” link/button, point it back to the dashboard (
 == Testing Setup==
 1. Create a test user  in either a customer or other external role.
 2. Open a Incognito Browser session.
-3. Navigate directly to the dashboard URL or use your websites external login link if it exists and links to the dashboard. 
-4. Login to test making and tracking tickets. 
-5. You can share products to users in their public dashboard via their user admin screen if this option is enabled. 
+3. Navigate directly to the dashboard URL or use your websites external login link if it exists and links to the dashboard.
+4. Login to test making and tracking tickets.
+5. You can share products to users in their public dashboard via their user admin screen if this option is enabled.
 
 == Privacy ==
 
@@ -70,7 +70,7 @@ PNPC Pocket Service Desk stores support ticket data in your WordPress database. 
 
 The plugin does not send ticket content or attachments to third parties by default. Ticket visibility is enforced using WordPress roles and capabilities; for example, customers can only view their own tickets, while agents and administrators can view tickets according to their permissions.
 
-Data retention on uninstall: by default, plugin data is preserved when the plugin is deleted so that you can reinstall without losing tickets or settings. To permanently remove plugin data on uninstall, enable the “Delete data on uninstall” setting in the plugin settings before uninstalling. When enabled, the uninstall process removes plugin options and deletes plugin-created data.
+Data retention on uninstall: by default, plugin data is preserved when the plugin is deleted so that you can reinstall without losing tickets or settings. To permanently remove plugin data on uninstall, enable the “Delete data on uninstall” setting in the plugin settings before uninstalling. When enabled, the uninstall process removes plugin options, plugin-created pages, custom tables, logs, and plugin-created data.
 
 
 == Frequently Asked Questions ==
@@ -90,6 +90,10 @@ Yes. WooCommerce is only required for the `[pnpc_services]` shortcode and relate
 5. Admin ticket detail view
 
 == Changelog ==
+
+= 1.2.0 =
+* Product polish release with refreshed setup wizard, Diagnostics, Operational Health, Error Log, Support Hub, shortcode reference, uninstall cleanup, and dashboard visual refinements.
+* Code cleanup pass for release packaging.
 
 = 1.1.1.4 =
 * Version bump for WordPress.org submission.

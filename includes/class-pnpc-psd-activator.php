@@ -209,6 +209,11 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 		if ( version_compare( $current_db_version, '1.6.0', '<' ) ) {
 			self::upgrade_to_1_6_0();
 		}
+
+		// Update to 1.7.0 if needed (core error log and diagnostics).
+		if ( version_compare( $current_db_version, '1.7.0', '<' ) ) {
+			self::upgrade_to_1_7_0();
+		}
 	}
 
 
@@ -516,6 +521,40 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 		update_option( 'pnpc_psd_db_version', '1.6.0' );
 	}
 
+
+	/**
+	 * Add error log table for core diagnostics.
+	 *
+	 * @since 1.7.0
+	 * @return void
+	 */
+	private static function upgrade_to_1_7_0() {
+		global $wpdb;
+		$charset_collate = $wpdb->get_charset_collate();
+		$error_table     = $wpdb->prefix . 'pnpc_psd_error_log';
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		$sql_error = "CREATE TABLE {$error_table} (
+			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			type varchar(40) NOT NULL,
+			severity varchar(20) DEFAULT 'error' NOT NULL,
+			message text NOT NULL,
+			context longtext DEFAULT NULL,
+			created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+			PRIMARY KEY  (id),
+			KEY type (type),
+			KEY severity (severity),
+			KEY created_at (created_at)
+		) {$charset_collate};";
+		dbDelta( $sql_error );
+
+		if ( false === get_option( 'pnpc_psd_error_log_cap', false ) ) {
+			add_option( 'pnpc_psd_error_log_cap', 250 );
+		}
+
+		update_option( 'pnpc_psd_db_version', '1.7.0' );
+	}
+
 	/**
 	 * Update database to version 1.1.0 (trash system).
 	 *
@@ -527,7 +566,7 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 
 		// Add deleted_at column to tickets table if not exists.
 		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
-		
+
 		// Verify table exists before attempting to alter it.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$table_exists = $wpdb->get_var(
@@ -556,7 +595,7 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 
 		// Add deleted_at column to responses table if not exists.
 		$responses_table = $wpdb->prefix . 'pnpc_psd_ticket_responses';
-		
+
 		// Verify table exists before attempting to alter it.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$table_exists = $wpdb->get_var(
@@ -585,7 +624,7 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 
 		// Add deleted_at column to attachments table if not exists.
 		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
-		
+
 		// Verify table exists before attempting to alter it.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$table_exists = $wpdb->get_var(
@@ -649,7 +688,7 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 			if ( empty( $column_exists ) ) {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
 				$wpdb->query(
-					"ALTER TABLE {$tickets_table} 
+					"ALTER TABLE {$tickets_table}
 					ADD COLUMN delete_reason VARCHAR(50) DEFAULT NULL AFTER deleted_at,
 					ADD COLUMN delete_reason_other TEXT DEFAULT NULL AFTER delete_reason,
 					ADD COLUMN deleted_by BIGINT(20) UNSIGNED DEFAULT NULL AFTER delete_reason_other,
@@ -713,7 +752,7 @@ if ( ! $has_tickets && $setup_completed_at <= 0 ) {
 				// which is a controlled WordPress constant.
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
 				$wpdb->query(
-					"ALTER TABLE {$tickets_table} 
+					"ALTER TABLE {$tickets_table}
 					ADD COLUMN created_by_staff BIGINT(20) UNSIGNED DEFAULT NULL AFTER assigned_to,
 					ADD KEY created_by_staff (created_by_staff)"
 				);

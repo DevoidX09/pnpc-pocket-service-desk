@@ -99,11 +99,22 @@ class PNPC_PSD_Ticket_Response
 					);
 					// IMPORTANT: keep formats aligned with $att_data keys to avoid corrupting file_type/file_size.
 					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
-					$wpdb->insert(
+					$attachment_result = $wpdb->insert(
 						$attachments_table,
 						$att_data,
 						array('%d', '%d', '%s', '%s', '%s', '%d', '%d', '%s')
 					);
+					if ( false === $attachment_result && function_exists( 'pnpc_psd_log_error' ) ) {
+						pnpc_psd_log_error(
+							'attachment',
+							__( 'Response attachment database insert failed.', 'pnpc-pocket-service-desk' ),
+							array(
+								'ticket_id'   => absint( $data['ticket_id'] ),
+								'response_id' => absint( $response_id ),
+								'wpdb_error'  => isset( $wpdb->last_error ) ? $wpdb->last_error : '',
+							)
+						);
+					}
 				}
 			}
 
@@ -116,6 +127,18 @@ class PNPC_PSD_Ticket_Response
 			self::send_response_notification($response_id);
 
 			return $response_id;
+		}
+
+		if ( function_exists( 'pnpc_psd_log_error' ) ) {
+			pnpc_psd_log_error(
+				'database',
+				__( 'Ticket response creation failed.', 'pnpc-pocket-service-desk' ),
+				array(
+					'ticket_id'  => isset( $data['ticket_id'] ) ? absint( $data['ticket_id'] ) : 0,
+					'user_id'    => isset( $data['user_id'] ) ? absint( $data['user_id'] ) : 0,
+					'wpdb_error' => isset( $wpdb->last_error ) ? $wpdb->last_error : '',
+				)
+			);
 		}
 
 		return false;

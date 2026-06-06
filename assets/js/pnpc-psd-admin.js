@@ -8,16 +8,16 @@
 		var $ticketDetail = $('#pnpc-psd-ticket-detail');
 		var ticketId = $ticketDetail.data('ticket-id');
 		var adminNonce = (typeof pnpcPsdAdmin !== 'undefined') ? pnpcPsdAdmin.nonce :  '';
-		
+
 		// Use localized ticket-specific values if available (for ticket detail page).
 		if (typeof pnpcPsdTicketDetail !== 'undefined') {
 			ticketId = pnpcPsdTicketDetail.ticketId || ticketId;
 			adminNonce = pnpcPsdTicketDetail.adminNonce || adminNonce;
 		}
-		
+
 		// Convert ticketId to integer for proper comparisons (0 = no ticket, skip ticket-specific features)
 		ticketId = ticketId != null ? parseInt(ticketId, 10) : 0;
-		
+
 		var MESSAGE_TARGETS = ['pnpc-psd-admin-action-message', 'response-message', 'pnpc-psd-bulk-message'];
 		// ================================
 		// Attachments (Admin Response): preview + remove before send
@@ -182,7 +182,7 @@
 		// ==============================================
 		var $tip = $('#pnpc-psd-autosave-tip');
 		var $panel = $('#pnpc-psd-autosave-tip-panel');
-		
+
 		// Exit if elements don't exist
 		if (!$tip.length || !$panel.length) {
 			// Not the ticket detail screen; do not halt the rest of the admin JS.
@@ -398,7 +398,7 @@
 			// Handle empty or undefined values
 			var aEmpty = (aVal === undefined || aVal === '' || aVal === null);
 			var bEmpty = (bVal === undefined || bVal === '' || bVal === null);
-			
+
 			if (aEmpty && bEmpty) {
 				return 0; // Both empty, equal
 			}
@@ -964,10 +964,10 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 			if (! $messageDiv.length) {
 				return;
 			}
-			
+
 			// Remove existing notice classes (preserve pnpc-psd-message base class)
 			$messageDiv.removeClass('notice notice-success notice-error notice-info notice-warning success error info');
-			
+
 			// Add WP notice classes based on type
 			var noticeClass = 'notice';
 			if (type === 'success') {
@@ -979,12 +979,12 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 			} else if (type === 'warning') {
 				noticeClass += ' notice-warning';
 			}
-			
+
 			// Ensure base message class is present
 			if (!$messageDiv.hasClass('pnpc-psd-message')) {
 				$messageDiv.addClass('pnpc-psd-message');
 			}
-			
+
 			$messageDiv.addClass(noticeClass).text(message).show();
 
 			setTimeout(function() {
@@ -997,7 +997,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 			var files = this.files;
 			var $preview = $('#pnpc-psd-admin-attachments-preview');
 			$preview.empty();
-			
+
 			if (files.length > 0) {
 				var html = '<strong>Files to upload:</strong><ul>';
 				for (var i = 0; i < files.length; i++) {

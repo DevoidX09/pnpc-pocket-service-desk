@@ -4,7 +4,7 @@
  * Plugin Name: PNPC Pocket Service Desk
  * Plugin URI: https://github.com/DevoidX09/pnpc-pocket-service-desk
  * Description: A comprehensive service desk plugin for managing customer support tickets with WooCommerce integration.
- * Version: 1.1.9.23
+ * Version: 1.2.1
  * Author: PNPC
  * Author URI: https://github.com/DevoidX09
  * License: GPL v2 or later
@@ -26,7 +26,7 @@ if (! defined('ABSPATH')) {
  * Current plugin version.
  */
 if ( ! defined( 'PNPC_PSD_VERSION' ) ) {
-	define( 'PNPC_PSD_VERSION', '1.1.9.23' );
+	define( 'PNPC_PSD_VERSION', '1.2.1' );
 }
 
 /**
@@ -169,6 +169,7 @@ add_action(
 $pnpc_core_files = array(
 	PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd.php',
 	PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-notifications.php',
+	PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-error-log.php',
 	PNPC_PSD_PLUGIN_DIR . 'includes/helpers.php',
 	PNPC_PSD_PLUGIN_DIR . 'public/class-pnpc-psd-public.php',
 );

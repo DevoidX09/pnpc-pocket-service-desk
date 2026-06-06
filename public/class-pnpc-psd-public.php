@@ -731,6 +731,16 @@ ob_start();
 				if (isset($move['error'])) {
 					// Preserve the underlying WP upload message so we do not misdiagnose as "size".
 					$att_skipped[] = array('file' => $file_name, 'reason' => 'upload', 'msg' => (string) $move['error']);
+					if ( function_exists( 'pnpc_psd_log_error' ) ) {
+						pnpc_psd_log_error(
+							'attachment',
+							__( 'Attachment upload failed.', 'pnpc-pocket-service-desk' ),
+							array(
+								'file'  => $file_name,
+								'error' => (string) $move['error'],
+							)
+						);
+					}
 					continue;
 				}
 				$attachments[] = array(
@@ -1061,6 +1071,16 @@ ob_start();
 				if (isset($move['error'])) {
 					// Preserve the underlying WP upload message so we do not misdiagnose as "size".
 					$att_skipped[] = array('file' => $file_name, 'reason' => 'upload', 'msg' => (string) $move['error']);
+					if ( function_exists( 'pnpc_psd_log_error' ) ) {
+						pnpc_psd_log_error(
+							'attachment',
+							__( 'Attachment upload failed.', 'pnpc-pocket-service-desk' ),
+							array(
+								'file'  => $file_name,
+								'error' => (string) $move['error'],
+							)
+						);
+					}
 					continue;
 				}
 				$attachments[] = array(

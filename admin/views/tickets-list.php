@@ -94,7 +94,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 /**
  * Pnpc psd get pagination link.
  *
- * @param mixed $page 
+ * @param mixed $page
  *
  * @since 1.1.1.4
  *
@@ -333,12 +333,12 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 			</tr>
 		</thead>
 		<tbody>
-			<?php 
+			<?php
 			// Separate active and closed tickets (only for main list view)
 			if (! empty($tickets) && ! $is_trash_view && ! $is_review_view && ! $is_archived_view) {
 				$active_tickets = array();
 				$closed_tickets = array();
-				
+
 				foreach ($tickets as $ticket) {
 					$status_lower = strtolower($ticket->status);
 					if ($status_lower === 'closed' || $status_lower === 'resolved') {
@@ -347,7 +347,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 						$active_tickets[] = $ticket;
 					}
 				}
-				
+
 				$has_active = !empty($active_tickets);
 				$has_closed = !empty($closed_tickets);
 			} else {
@@ -357,7 +357,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 				$has_closed = false;
 			}
 			?>
-			
+
 			<?php if (! empty($tickets)) : ?>
 				<?php if ( $is_archived_view ) : ?>
 				<?php foreach ( $tickets as $ticket ) : ?>
@@ -411,24 +411,24 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 						<?php
 						$user          = get_userdata($ticket->user_id);
 						$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
-						
+
 						// Extract numeric part from ticket number for sorting (e.g., PNPC-1234 -> 1234)
 						$ticket_num_for_sort = (int) preg_replace('/[^0-9]/', '', $ticket->ticket_number);
-						
+
 						// Status sort order: open=1, in-progress=2, waiting=3, closed=4
 						$status_order = array('open' => 1, 'in-progress' => 2, 'waiting' => 3, 'closed' => 4);
 						$status_sort_value = isset($status_order[$ticket->status]) ? $status_order[$ticket->status] : 999;
-						
+
 						// Priority sort order: urgent=1, high=2, normal=3, low=4
 						$priority_order = array('urgent' => 1, 'high' => 2, 'normal' => 3, 'low' => 4);
 						$priority_sort_value = isset($priority_order[$ticket->priority]) ? $priority_order[$ticket->priority] : 999;
-						
+
 						// Get timestamp for date sorting
 						$created_timestamp = strtotime($ticket->created_at);
 						if (false === $created_timestamp) {
 							$created_timestamp = 0; // Fallback for invalid dates
 						}
-						
+
 						// Trash view: show delete reason, deleted by, deleted at
 						$delete_reason       = ! empty($ticket->delete_reason) ? $ticket->delete_reason : '';
 						$delete_reason_other = ! empty($ticket->delete_reason_other) ? $ticket->delete_reason_other : '';
@@ -566,24 +566,24 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 					<?php
 					$user          = get_userdata($ticket->user_id);
 					$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
-					
+
 					// Extract numeric part from ticket number for sorting (e.g., PNPC-1234 -> 1234)
 					$ticket_num_for_sort = (int) preg_replace('/[^0-9]/', '', $ticket->ticket_number);
-					
+
 					// Status sort order: open=1, in-progress=2, waiting=3, closed=4
 					$status_order = array('open' => 1, 'in-progress' => 2, 'waiting' => 3, 'closed' => 4);
 					$status_sort_value = isset($status_order[$ticket->status]) ? $status_order[$ticket->status] : 999;
-					
+
 					// Priority sort order: urgent=1, high=2, normal=3, low=4
 					$priority_order = array('urgent' => 1, 'high' => 2, 'normal' => 3, 'low' => 4);
 					$priority_sort_value = isset($priority_order[$ticket->priority]) ? $priority_order[$ticket->priority] : 999;
-					
+
 					// Get timestamp for date sorting
 					$created_timestamp = strtotime($ticket->created_at);
 					if (false === $created_timestamp) {
 						$created_timestamp = 0; // Fallback for invalid dates
 					}
-					
+
 					// Calculate "New" badge count for this agent
 					// Use pre-calculated badge count if available (from AJAX refresh)
 					if (isset($badge_counts) && isset($badge_counts[$ticket->id])) {
@@ -674,7 +674,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 					</tr>
 				<?php endforeach; ?>
 			<?php endif; ?>
-			
+
 			<?php // DIVIDER ROW - Only show if both active and closed exist ?>
 			<?php if ($has_active && $has_closed) : ?>
 				<tr class="pnpc-psd-closed-divider">
@@ -682,11 +682,11 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 						<div class="pnpc-psd-divider-content">
 							<span class="pnpc-psd-divider-line"></span>
 							<span class="pnpc-psd-divider-text">
-								<?php 
+								<?php
 								printf(
 									esc_html__('Closed Tickets (%d)', 'pnpc-pocket-service-desk'),
 									count($closed_tickets)
-								); 
+								);
 								?>
 							</span>
 							<span class="pnpc-psd-divider-line"></span>
@@ -694,25 +694,25 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 					</td>
 				</tr>
 			<?php endif; ?>
-			
+
 			<?php // CLOSED TICKETS SECTION ?>
 			<?php if ($has_closed) : ?>
 				<?php foreach ($closed_tickets as $ticket) : ?>
 					<?php
 					$user          = get_userdata($ticket->user_id);
 					$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
-					
+
 					// Extract numeric part from ticket number for sorting (e.g., PNPC-1234 -> 1234)
 					$ticket_num_for_sort = (int) preg_replace('/[^0-9]/', '', $ticket->ticket_number);
-					
+
 					// Status sort order: open=1, in-progress=2, waiting=3, closed=4
 					$status_order = array('open' => 1, 'in-progress' => 2, 'waiting' => 3, 'closed' => 4);
 					$status_sort_value = isset($status_order[$ticket->status]) ? $status_order[$ticket->status] : 999;
-					
+
 					// Priority sort order: urgent=1, high=2, normal=3, low=4
 					$priority_order = array('urgent' => 1, 'high' => 2, 'normal' => 3, 'low' => 4);
 					$priority_sort_value = isset($priority_order[$ticket->priority]) ? $priority_order[$ticket->priority] : 999;
-					
+
 					// Get timestamp for date sorting
 					$created_timestamp = strtotime($ticket->created_at);
 					if (false === $created_timestamp) {
@@ -807,7 +807,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 			<?php endif; ?>
 		</tbody>
 	</table>
-	
+
 	<?php if ( $total_pages > 1 ) : ?>
 		<?php
 		$showing_start = $offset + 1;

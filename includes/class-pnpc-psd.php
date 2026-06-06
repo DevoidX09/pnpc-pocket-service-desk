@@ -59,6 +59,7 @@ class PNPC_PSD
 		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-ticket.php';
 		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-ticket-response.php';
 		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-audit-log.php';
+		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-error-log.php';
 		require_once PNPC_PSD_PLUGIN_DIR . 'includes/class-pnpc-psd-internal-notes.php';
 
 		$this->loader = new PNPC_PSD_Loader();
@@ -116,7 +117,7 @@ class PNPC_PSD
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_delete_permanently_tickets', $plugin_admin, 'ajax_bulk_delete_permanently_tickets');
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_approve_review_tickets', $plugin_admin, 'ajax_bulk_approve_review_tickets');
 		$this->loader->add_action('wp_ajax_pnpc_psd_bulk_cancel_review_tickets', $plugin_admin, 'ajax_bulk_cancel_review_tickets');
-		
+
 		// Real-time update AJAX handlers
 		$this->loader->add_action('wp_ajax_pnpc_psd_get_new_ticket_count', $plugin_admin, 'ajax_get_new_ticket_count');
 		$this->loader->add_action('wp_ajax_pnpc_psd_refresh_ticket_list', $plugin_admin, 'ajax_refresh_ticket_list');
@@ -130,6 +131,12 @@ class PNPC_PSD
 		$this->loader->add_action('admin_post_pnpc_psd_archive_ticket', $plugin_admin, 'handle_archive_ticket');
 		$this->loader->add_action('admin_post_pnpc_psd_restore_archived_ticket', $plugin_admin, 'handle_restore_archived_ticket');
 		$this->loader->add_action('admin_post_pnpc_psd_export_tickets', $plugin_admin, 'handle_export_tickets');
+		$this->loader->add_action('admin_post_pnpc_psd_export_error_log', $plugin_admin, 'handle_export_error_log');
+
+		if ( class_exists( 'PNPC_PSD_Error_Log' ) ) {
+			$this->loader->add_action( 'wp_mail_failed', 'PNPC_PSD_Error_Log', 'log_mail_failure' );
+			register_shutdown_function( array( 'PNPC_PSD_Error_Log', 'maybe_log_shutdown_error' ) );
+		}
 	}
 
 	/**
@@ -147,7 +154,7 @@ class PNPC_PSD
 		$this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
 		$this->loader->add_action('init', $plugin_public, 'register_shortcodes');
 
-		
+
 		// Ensure custom roles have required capabilities (roles may pre-exist from older installs).
 		$this->loader->add_action('init', $this, 'ensure_roles_caps', 1);
 $this->loader->add_action('wp_ajax_pnpc_psd_create_ticket', $plugin_public, 'ajax_create_ticket');
@@ -157,7 +164,7 @@ $this->loader->add_action('wp_ajax_pnpc_psd_create_ticket', $plugin_public, 'aja
 		$this->loader->add_action('wp_ajax_pnpc_psd_get_ticket_detail', $plugin_public, 'ajax_get_ticket_detail');
 	}
 
-	
+
 
 /**
  * Ensure custom roles and required capabilities are present.

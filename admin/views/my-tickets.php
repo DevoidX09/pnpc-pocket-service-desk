@@ -56,34 +56,34 @@ $current_user_id = $current_user ? intval($current_user->ID) : 0;
 
                     // Calculate "New" badge count for this agent
                     $new_responses = 0;
-                    
+
                     // Get last view timestamp for THIS agent
                     $last_view_meta = get_user_meta($current_user_id, 'pnpc_psd_ticket_last_view_' . intval($t->id), true);
-                    
+
                     if (empty($last_view_meta)) {
                         // Agent has NEVER viewed this ticket
                         $new_responses = 1;
                     } else {
                         // Agent has viewed before - count NEW customer responses since then
-                        $last_view_time = is_numeric($last_view_meta) 
-                            ? intval($last_view_meta) 
+                        $last_view_time = is_numeric($last_view_meta)
+                            ? intval($last_view_meta)
                             : strtotime($last_view_meta);
-                        
+
                         // Get all responses for this ticket
                         $responses = PNPC_PSD_Ticket_Response::get_by_ticket($t->id, array('orderby' => 'created_at', 'order' => 'ASC'));
-                        
+
                         if (! empty($responses)) {
                             foreach ($responses as $r) {
                                 // Skip agent's own responses
                                 if (intval($r->user_id) === $current_user_id) {
                                     continue;
                                 }
-                                
+
                                 // Convert response timestamp
-                                $r_time = function_exists('pnpc_psd_mysql_to_wp_local_ts') 
-                                    ? intval(pnpc_psd_mysql_to_wp_local_ts($r->created_at)) 
+                                $r_time = function_exists('pnpc_psd_mysql_to_wp_local_ts')
+                                    ? intval(pnpc_psd_mysql_to_wp_local_ts($r->created_at))
                                     : intval(strtotime($r->created_at));
-                                
+
                                 // Count if AFTER last view
                                 if ($r_time > $last_view_time) {
                                     $new_responses++;

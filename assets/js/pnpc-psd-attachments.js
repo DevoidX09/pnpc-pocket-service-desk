@@ -27,7 +27,7 @@
 			// Lightbox not available, disable attachment viewer
 			return;
 		}
-		
+
 		bindEvents();
 		buildAttachmentGallery();
 	});
@@ -37,7 +37,7 @@
 	 */
 	function initLightbox() {
 		$lightbox = $('#pnpc-psd-lightbox');
-		
+
 		// If lightbox doesn't exist in DOM, it will be rendered by PHP
 		// This is just a safety check
 		if (!$lightbox.length) {
@@ -63,13 +63,13 @@
 	 */
 	function buildAttachmentGallery() {
 		attachmentGallery = [];
-		
+
 		$('.pnpc-psd-view-attachment').each(function() {
 			var $btn = $(this);
 			var type = $btn.data('type');
 			var url = $btn.data('url');
 			var filename = $btn.data('filename');
-			
+
 			if (type && url) {
 				attachmentGallery.push({
 					type: type,
@@ -92,12 +92,12 @@
 			var type = $btn.data('type');
 			var url = $btn.data('url');
 			var filename = $btn.data('filename');
-			
+
 			// Find index in gallery
 			var index = attachmentGallery.findIndex(function(item) {
 				return item.url === url && item.type === type;
 			});
-			
+
 			if (index === -1) {
 				// Not in gallery, add it
 				index = attachmentGallery.length;
@@ -108,7 +108,7 @@
 					$element: $btn
 				});
 			}
-			
+
 			openLightbox(index);
 		});
 
@@ -117,7 +117,7 @@
 			e.preventDefault();
 			var $img = $(this);
 			var $btn = $img.closest('.pnpc-psd-attachment').find('.pnpc-psd-view-attachment');
-			
+
 			if ($btn.length) {
 				$btn.trigger('click');
 			}
@@ -221,7 +221,7 @@
 
 		// Update download link
 		$lightbox.find('.pnpc-psd-lightbox-download').attr('href', attachment.url);
-		
+
 		// Set focus to close button for accessibility
 		setTimeout(function() {
 			$lightbox.find('.pnpc-psd-lightbox-close').focus();
@@ -271,7 +271,7 @@
 		// Update counter for images only
 		var imageCount = getImageCount();
 		var imageIndex = getImageIndex(currentIndex);
-		
+
 		if (imageCount > 1) {
 			$counter.text((imageIndex + 1) + ' / ' + imageCount);
 			$counter.show();
@@ -302,7 +302,7 @@
 			// Check iframe dimensions and load state
 			var pdfHeight = $pdf.height();
 			var pdfWidth = $pdf.width();
-			
+
 			// If iframe has no dimensions, assume load failed
 			if (pdfHeight === 0 && pdfWidth === 0) {
 				$pdf.hide();
@@ -376,13 +376,13 @@
 		}
 
 		var attachment = attachmentGallery[index];
-		
+
 		// Only navigate if it's an image (navigation only works for images)
 		if (attachment.type === 'image') {
 			currentIndex = index;
 			loadImage(attachment);
 			updateNavigationButtons();
-			
+
 			// Update download link
 			$lightbox.find('.pnpc-psd-lightbox-download').attr('href', attachment.url);
 		}
