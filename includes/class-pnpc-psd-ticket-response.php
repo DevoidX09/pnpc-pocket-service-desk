@@ -53,8 +53,36 @@ class PNPC_PSD_Ticket_Response
 			return false;
 		}
 
-		// Check if user is staff.
-		$is_staff = current_user_can('pnpc_psd_respond_to_tickets');
+		// Determine whether this response is staff-authored.
+		//
+		// The request handler is the source of truth when it provides
+		// is_staff_response. Admin handlers pass 1 after nonce/capability checks;
+		// frontend customer handlers pass 0 after ownership checks. Do not reclassify
+		// an explicit handler decision through the current capability context, because
+		// that caused staff replies to be treated as customer replies on some installs.
+		$actor_id = absint( isset( $data['user_id'] ) ? $data['user_id'] : get_current_user_id() );
+		if ( array_key_exists( 'is_staff_response', $data ) ) {
+			$is_staff = ! empty( $data['is_staff_response'] );
+		} else {
+			$is_staff = current_user_can( 'pnpc_psd_respond_to_tickets' )
+				|| current_user_can( 'manage_options' )
+				|| ( $actor_id && ( user_can( $actor_id, 'pnpc_psd_respond_to_tickets' ) || user_can( $actor_id, 'manage_options' ) ) );
+		}
+
+		if ( function_exists( 'pnpc_psd_log_error' ) ) {
+			pnpc_psd_log_error(
+				'email',
+				'Notification trace: response_create_classification',
+				array(
+					'ticket_id' => isset( $data['ticket_id'] ) ? absint( $data['ticket_id'] ) : 0,
+					'actor_id' => $actor_id,
+					'explicit_is_staff_response_present' => array_key_exists( 'is_staff_response', $data ) ? 1 : 0,
+					'explicit_is_staff_response_value' => ! empty( $data['is_staff_response'] ) ? 1 : 0,
+					'computed_is_staff' => $is_staff ? 1 : 0,
+				),
+				'warning'
+			);
+		}
 
 		$created_at_utc = function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true);
 

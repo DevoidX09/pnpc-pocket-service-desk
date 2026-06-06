@@ -21,6 +21,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PNPC_PSD_Notifications {
 
 	/**
+	 * Temporary launch-hardening trace for outbound notification routing.
+	 *
+	 * Stored in the Service Desk error log as warning-level records so failed
+	 * customer notification paths are visible even without WP Mail SMTP Pro logs.
+	 *
+	 * @param string $event   Event key.
+	 * @param array  $context Context data.
+	 * @return void
+	 */
+	private static function trace( $event, $context = array() ) {
+		if ( function_exists( 'pnpc_psd_log_error' ) ) {
+			pnpc_psd_log_error(
+				'email',
+				'Notification trace: ' . sanitize_key( (string) $event ),
+				is_array( $context ) ? $context : array(),
+				'warning'
+			);
+		}
+	}
+
+	/**
 	 * Get a boolean option with a default.
 	 */
 	private static function opt_bool( $key, $default = 0 ) {
@@ -164,8 +185,26 @@ class PNPC_PSD_Notifications {
 		$headers = self::get_from_headers();
 		$headers[] = 'Content-Type: text/html; charset=UTF-8';
 
+		self::trace(
+			'wp_mail_attempt',
+			array(
+				'to'      => $to,
+				'subject' => $subject,
+				'headers' => $headers,
+			)
+		);
+
 		// wp_mail accepts array recipients.
 		$sent = wp_mail( $to, $subject, $message, $headers );
+
+		self::trace(
+			'wp_mail_result',
+			array(
+				'to'      => $to,
+				'subject' => $subject,
+				'sent'    => $sent ? 1 : 0,
+			)
+		);
 
 		if ( ! $sent && function_exists( 'pnpc_psd_debug_log' ) ) {
 			pnpc_psd_debug_log(
@@ -258,8 +297,31 @@ class PNPC_PSD_Notifications {
 		}
 
 		$is_staff = ! empty( $response->is_staff_response );
+		self::trace(
+			'response_created_start',
+			array(
+				'response_id'       => (int) $response_id,
+				'ticket_id'         => isset( $ticket->id ) ? (int) $ticket->id : (int) $response->ticket_id,
+				'ticket_number'     => isset( $ticket->ticket_number ) ? (string) $ticket->ticket_number : '',
+				'response_user_id'  => isset( $response->user_id ) ? (int) $response->user_id : 0,
+				'ticket_user_id'    => isset( $ticket->user_id ) ? (int) $ticket->user_id : 0,
+				'is_staff_response' => $is_staff ? 1 : 0,
+			)
+		);
 		$customer = get_userdata( (int) $ticket->user_id );
 		if ( ! $customer ) {
+			if ( function_exists( 'pnpc_psd_log_error' ) ) {
+				pnpc_psd_log_error(
+					'email',
+					__( 'Response notification skipped because the ticket customer could not be loaded.', 'pnpc-pocket-service-desk' ),
+					array(
+						'ticket_id' => isset( $ticket->id ) ? (int) $ticket->id : (int) $response->ticket_id,
+						'response_id' => (int) $response_id,
+						'ticket_user_id' => isset( $ticket->user_id ) ? (int) $ticket->user_id : 0,
+					),
+					'warning'
+				);
+			}
 			return;
 		}
 
@@ -270,6 +332,14 @@ class PNPC_PSD_Notifications {
 		$admin_ticket_url   = admin_url( 'admin.php?page=pnpc-service-desk-ticket&ticket_id=' . absint( $resolved_ticket_id ) );
 
 		if ( $is_staff ) {
+			self::trace(
+				'response_branch_staff',
+				array(
+					'response_id' => (int) $response_id,
+					'option_notify_customer_on_staff_reply' => self::opt_bool( 'pnpc_psd_notify_customer_on_staff_reply', 1 ) ? 1 : 0,
+					'customer_email' => isset( $customer->user_email ) ? (string) $customer->user_email : '',
+				)
+			);
 			if ( self::opt_bool( 'pnpc_psd_notify_customer_on_staff_reply', 1 ) ) {
 				$subj = sprintf( __( 'Update on ticket %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 				$instruction = apply_filters(
@@ -290,9 +360,29 @@ class PNPC_PSD_Notifications {
 				if ( ! empty( $ticket_view_url ) ) {
 					$msg .= "\n\n" . __( 'View this ticket:', 'pnpc-pocket-service-desk' ) . "\n" . $ticket_view_url;
 				}
-				self::send( (string) $customer->user_email, $subj, $msg );
+				$sent = self::send( (string) $customer->user_email, $subj, $msg );
+				if ( ! $sent && function_exists( 'pnpc_psd_log_error' ) ) {
+					pnpc_psd_log_error(
+						'email',
+						__( 'Customer staff-reply notification was not accepted by wp_mail.', 'pnpc-pocket-service-desk' ),
+						array(
+							'ticket_id' => $resolved_ticket_id,
+							'response_id' => (int) $response_id,
+							'customer_user_id' => (int) $customer->ID,
+							'customer_email' => (string) $customer->user_email,
+						),
+						'warning'
+					);
+				}
 			}
 		} else {
+			self::trace(
+				'response_branch_customer',
+				array(
+					'response_id' => (int) $response_id,
+					'option_notify_staff_on_customer_reply' => self::opt_bool( 'pnpc_psd_notify_staff_on_customer_reply', 1 ) ? 1 : 0,
+				)
+			);
 			if ( self::opt_bool( 'pnpc_psd_notify_staff_on_customer_reply', 1 ) ) {
 				$to = self::get_staff_recipients_for_ticket( $ticket );
 				if ( ! empty( $to ) ) {

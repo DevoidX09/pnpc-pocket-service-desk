@@ -1101,11 +1101,25 @@ ob_start();
 			}
 		}
 
+		// Frontend ticket views can be used by both customers and staff/agents.
+		// Treat a reply as staff-authored when the viewer is not the ticket owner,
+		// has a Service Desk/admin capability, or has a known Service Desk staff role.
+		// This is intentionally more robust than current_user_can() alone because
+		// some installs can have stale role caps while still allowing staff access.
+		$user_roles = is_array( $current_user->roles ) ? $current_user->roles : array();
+		$is_staff_response = ( $ticket_owner_id && $viewer_id && $ticket_owner_id !== $viewer_id )
+			|| current_user_can( 'pnpc_psd_respond_to_tickets' )
+			|| current_user_can( 'manage_options' )
+			|| in_array( 'administrator', $user_roles, true )
+			|| in_array( 'pnpc_psd_agent', $user_roles, true )
+			|| in_array( 'pnpc_psd_manager', $user_roles, true );
+
 		$response_id = PNPC_PSD_Ticket_Response::create(array(
-			'ticket_id' => $ticket_id,
-			'user_id' => $viewer_id,
-			'response' => $response,
-			'attachments' => $attachments,
+			'ticket_id'         => $ticket_id,
+			'user_id'           => $viewer_id,
+			'response'          => $response,
+			'is_staff_response' => $is_staff_response ? 1 : 0,
+			'attachments'       => $attachments,
 		));
 
 		if ($response_id) {

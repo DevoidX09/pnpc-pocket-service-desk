@@ -2943,10 +2943,11 @@ public function display_tickets_page()
 
 		$response_id = PNPC_PSD_Ticket_Response::create(
 			array(
-				'ticket_id'   => $ticket_id,
-				'user_id'     => get_current_user_id(),
-				'response'    => $response,
-				'attachments' => $attachments,
+				'ticket_id'         => $ticket_id,
+				'user_id'           => get_current_user_id(),
+				'response'          => $response,
+				'is_staff_response' => 1,
+				'attachments'       => $attachments,
 			)
 		);
 
