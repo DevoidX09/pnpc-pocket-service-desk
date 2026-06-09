@@ -654,6 +654,73 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 
 		// Ticket detail page functionality
 		if (ticketId) {
+
+			function pnpcPsdNormalizeTicketControlValue(value) {
+				return String(value || '').toLowerCase().replace(/_/g, '-').replace(/[^a-z0-9-]/g, '');
+			}
+
+			function pnpcPsdUpdateTicketControlClass($field, prefix, value) {
+				var normalized = pnpcPsdNormalizeTicketControlValue(value);
+				if (!$field || !$field.length || !prefix || !normalized) {
+					return;
+				}
+
+				$field.removeClass(function(i, cls) {
+					var matches = cls.match(new RegExp('(^|\\s)' + prefix + '-\\S+', 'g')) || [];
+					return matches.join(' ');
+				});
+				$field.addClass(prefix + '-' + normalized);
+
+				var $select = $field.find('select');
+				if ($select.length) {
+					if (prefix.indexOf('status') !== -1) {
+						$select.removeClass(function(i, cls) {
+							var matches = cls.match(/(^|\s)pnpc-psd-status-\S+/g) || [];
+							return matches.join(' ');
+						});
+						$select.addClass('pnpc-psd-status-' + normalized);
+					}
+
+					if (prefix.indexOf('priority') !== -1) {
+						$select.removeClass(function(i, cls) {
+							var matches = cls.match(/(^|\s)pnpc-psd-priority-\S+/g) || [];
+							return matches.join(' ');
+						});
+						$select.addClass('pnpc-psd-priority-' + normalized);
+					}
+				}
+			}
+
+
+			function pnpcPsdSyncTicketControlSelect($select, type) {
+				if (!$select || !$select.length) {
+					return;
+				}
+				var normalized = pnpcPsdNormalizeTicketControlValue($select.val());
+				if (!normalized) {
+					return;
+				}
+				if ('status' === type) {
+					$select.removeClass(function(i, cls) {
+						var matches = cls.match(/(^|\s)pnpc-psd-status-\S+/g) || [];
+						return matches.join(' ');
+					});
+					$select.addClass('pnpc-psd-status-' + normalized);
+					pnpcPsdUpdateTicketControlClass($select.closest('.pnpc-psd-status-pill-field'), 'pnpc-psd-current-status', normalized);
+				}
+				if ('priority' === type) {
+					$select.removeClass(function(i, cls) {
+						var matches = cls.match(/(^|\s)pnpc-psd-priority-\S+/g) || [];
+						return matches.join(' ');
+					});
+					$select.addClass('pnpc-psd-priority-' + normalized);
+					pnpcPsdUpdateTicketControlClass($select.closest('.pnpc-psd-priority-pill-field'), 'pnpc-psd-current-priority', normalized);
+				}
+			}
+
+			pnpcPsdSyncTicketControlSelect($('#pnpc-psd-status-select'), 'status');
+			pnpcPsdSyncTicketControlSelect($('#pnpc-psd-priority-select'), 'priority');
+
 			$('#pnpc-psd-assign-button').on('click', function(e) {
 				e.preventDefault();
 				var assignedTo = $('#pnpc-psd-assign-agent').val() || 0;
@@ -669,10 +736,19 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 					},
 					success: function(result) {
 						if (result && result.success) {
+							var statusKey = (result.data && result.data.status) ? result.data.status : status;
+							var statusLabel = (result.data && result.data.label) ? result.data.label : $('#pnpc-psd-status-select option:selected').text();
 							showMessage('success', result.data.message, 'pnpc-psd-admin-action-message');
-							setTimeout(function() {
-								location.reload();
-							}, 600);
+							pnpcPsdUpdateTicketControlClass($('#pnpc-psd-status-select').closest('.pnpc-psd-status-pill-field'), 'pnpc-psd-current-status', statusKey);
+							var $statusBadge = $('.pnpc-psd-status').not('#pnpc-psd-status-select').first();
+							if ($statusBadge.length) {
+								$statusBadge.text(statusLabel);
+								$statusBadge.removeClass(function(i, cls) {
+									var matches = cls.match(/(^|\s)pnpc-psd-status-\S+/g) || [];
+									return matches.join(' ');
+								});
+								$statusBadge.addClass('pnpc-psd-status-' + pnpcPsdNormalizeTicketControlValue(statusKey));
+							}
 						} else if (result && result.data && result.data.message) {
 							showMessage('error', result.data.message, 'pnpc-psd-admin-action-message');
 						} else {
@@ -706,6 +782,10 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 					success: function(result) {
 						if (result && result.success) {
 							showMessage('success', result.data.message, 'pnpc-psd-admin-action-message');
+							if (result.data && result.data.status) {
+								$('#pnpc-psd-status-select').val(result.data.status);
+							}
+							pnpcPsdSyncTicketControlSelect($('#pnpc-psd-status-select'), 'status');
 							setTimeout(function() {
 								location.reload();
 							}, 600);
@@ -723,6 +803,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 			});
 
 			$('#pnpc-psd-status-select').on('change', function() {
+				pnpcPsdSyncTicketControlSelect($(this), 'status');
 				$('#pnpc-psd-status-button').trigger('click');
 			});
 
@@ -745,17 +826,21 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 					},
 					success: function(result) {
 						if (result && result.success) {
+							var priorityKey = (result.data && result.data.priority) ? result.data.priority : pr;
+							var priorityLabel = (result.data && result.data.label) ? result.data.label : $('#pnpc-psd-priority-select option:selected').text();
 							showMessage('success', result.data.message || 'Priority updated.', 'pnpc-psd-admin-action-message');
+							$('#pnpc-psd-priority-select').val(priorityKey);
+							pnpcPsdSyncTicketControlSelect($('#pnpc-psd-priority-select'), 'priority');
 
 							// Update the on-screen priority indicator without forcing a full page reload.
-							var $pri = $('.pnpc-psd-priority');
+							var $pri = $('.pnpc-psd-priority').not('#pnpc-psd-priority-select').first();
 							if ($pri.length) {
-								$pri.text(pr.charAt(0).toUpperCase() + pr.slice(1));
+								$pri.text(priorityLabel);
 								$pri.removeClass(function(i, cls) {
 									var matches = cls.match(/(^|\s)pnpc-psd-priority-\S+/g) || [];
 									return matches.join(' ');
 								});
-								$pri.addClass('pnpc-psd-priority-' + pr);
+								$pri.addClass('pnpc-psd-priority-' + pnpcPsdNormalizeTicketControlValue(priorityKey));
 							}
 						} else if (result && result.data && result.data.message) {
 							showMessage('error', result.data.message, 'pnpc-psd-admin-action-message');
@@ -771,6 +856,7 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 			}
 
 			$(document).on('change', '#pnpc-psd-priority-select', function() {
+				pnpcPsdSyncTicketControlSelect($(this), 'priority');
 				pnpcPsdSavePriority($(this).val());
 			});
 

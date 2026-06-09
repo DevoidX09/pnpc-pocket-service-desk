@@ -1321,6 +1321,40 @@ if ( ! function_exists( 'pnpc_psd_log_error' ) ) {
 	}
 }
 
+
+/**
+ * Reclassify successful launch-hardening email trace rows as info records.
+ *
+ * Older launch builds stored successful notification trace diagnostics as
+ * warning rows, which could make a healthy install look unhealthy. This keeps
+ * historical troubleshooting detail while preventing successful traces from
+ * being treated as attention items.
+ *
+ * @return void
+ */
+if ( ! function_exists( 'pnpc_psd_normalize_email_trace_log_severity' ) ) {
+	function pnpc_psd_normalize_email_trace_log_severity() {
+		global $wpdb;
+
+		$table  = $wpdb->prefix . 'pnpc_psd_error_log';
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		if ( $exists !== $table ) {
+			return;
+		}
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$table} SET severity = %s WHERE severity = %s AND type = %s AND ( message LIKE %s OR message LIKE %s )",
+				'info',
+				'warning',
+				'email',
+				'Notification trace:%',
+				'Pro email bridge trace:%'
+			)
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Intentional one-time cleanup of known non-error trace rows.
+	}
+}
+
 /**
  * Basic operational health summary for Core diagnostics.
  *
@@ -1330,39 +1364,45 @@ if ( ! function_exists( 'pnpc_psd_get_operational_health_summary' ) ) {
 	function pnpc_psd_get_operational_health_summary() {
 		global $wpdb;
 
-		$table = $wpdb->prefix . 'pnpc_psd_error_log';
-		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		if ( $exists !== $table ) {
-			return array(
-				'status' => 'needs_attention',
-				'label'  => __( 'Needs Attention', 'pnpc-pocket-service-desk' ),
-				'issues' => array( __( 'Error log table is missing.', 'pnpc-pocket-service-desk' ) ),
-			);
+		if ( function_exists( 'pnpc_psd_normalize_email_trace_log_severity' ) ) {
+			pnpc_psd_normalize_email_trace_log_severity();
 		}
 
-		$critical = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table} WHERE severity = %s", 'critical' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$recent   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table} WHERE created_at >= %s", gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
-
-		if ( $critical > 0 ) {
-			return array(
-				'status' => 'critical',
-				'label'  => __( 'Critical Issues Detected', 'pnpc-pocket-service-desk' ),
-				'issues' => array( sprintf( _n( '%d critical error is recorded.', '%d critical errors are recorded.', $critical, 'pnpc-pocket-service-desk' ), $critical ) ),
-			);
-		}
-
-		if ( $recent >= 5 ) {
-			return array(
-				'status' => 'needs_attention',
-				'label'  => __( 'Needs Attention', 'pnpc-pocket-service-desk' ),
-				'issues' => array( sprintf( _n( '%d error was recorded in the last 24 hours.', '%d errors were recorded in the last 24 hours.', $recent, 'pnpc-pocket-service-desk' ), $recent ) ),
-			);
-		}
-
-		return array(
+		$table   = $wpdb->prefix . 'pnpc_psd_error_log';
+		$exists  = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$summary = array(
 			'status' => 'healthy',
 			'label'  => __( 'Healthy', 'pnpc-pocket-service-desk' ),
 			'issues' => array(),
 		);
+
+		if ( $exists !== $table ) {
+			$summary = array(
+				'status' => 'needs_attention',
+				'label'  => __( 'Needs Attention', 'pnpc-pocket-service-desk' ),
+				'issues' => array( __( 'Error log table is missing.', 'pnpc-pocket-service-desk' ) ),
+			);
+
+			return apply_filters( 'pnpc_psd_operational_health_summary', $summary );
+		}
+
+		$critical = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table} WHERE severity = %s", 'critical' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$recent   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table} WHERE severity IN ('error','critical') AND created_at >= %s", gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,PluginCheck.CodeAnalysis.PreparedSQL.NotPrepared -- Table name is safely constructed and severity values are fixed literals.
+
+		if ( $critical > 0 ) {
+			$summary = array(
+				'status' => 'critical',
+				'label'  => __( 'Critical Issues Detected', 'pnpc-pocket-service-desk' ),
+				'issues' => array( sprintf( _n( '%d critical error is recorded.', '%d critical errors are recorded.', $critical, 'pnpc-pocket-service-desk' ), $critical ) ),
+			);
+		} elseif ( $recent >= 5 ) {
+			$summary = array(
+				'status' => 'needs_attention',
+				'label'  => __( 'Needs Attention', 'pnpc-pocket-service-desk' ),
+				'issues' => array( sprintf( _n( '%d actionable error was recorded in the last 24 hours.', '%d actionable errors were recorded in the last 24 hours.', $recent, 'pnpc-pocket-service-desk' ), $recent ) ),
+			);
+		}
+
+		return apply_filters( 'pnpc_psd_operational_health_summary', $summary );
 	}
 }

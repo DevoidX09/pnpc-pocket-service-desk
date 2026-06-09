@@ -16,7 +16,7 @@ if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
 $current_user        = wp_get_current_user();
 $receiver_name       = get_option( 'pnpc_psd_support_receiver_name', 'PNPC Support' );
 $receiver_url        = get_option( 'pnpc_psd_support_receiver_url', 'https://plugnplayconsultants.com/dashboard/' );
-$support_access_url  = get_option( 'pnpc_psd_support_access_url', 'https://plugnplayconsultants.com/pnpc-service-desk-support/' );
+$support_access_url  = get_option( 'pnpc_psd_support_access_url', 'https://plugnplayconsultants.com/dashboard/' );
 $bundle_url          = wp_nonce_url( admin_url( 'admin-post.php?action=pnpc_psd_download_support_bundle' ), 'pnpc_psd_download_support_bundle' );
 $health              = function_exists( 'pnpc_psd_get_operational_health_summary' ) ? pnpc_psd_get_operational_health_summary() : array();
 $status              = isset( $health['status'] ) ? sanitize_key( $health['status'] ) : 'healthy';

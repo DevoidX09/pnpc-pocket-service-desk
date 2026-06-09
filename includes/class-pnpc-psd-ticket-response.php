@@ -80,7 +80,7 @@ class PNPC_PSD_Ticket_Response
 					'explicit_is_staff_response_value' => ! empty( $data['is_staff_response'] ) ? 1 : 0,
 					'computed_is_staff' => $is_staff ? 1 : 0,
 				),
-				'warning'
+				'info'
 			);
 		}
 

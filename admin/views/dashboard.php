@@ -72,11 +72,18 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 			<a class="button" href="<?php echo esc_url( $menu_audit_url ); ?>"><?php echo esc_html__( 'Audit Log', 'pnpc-pocket-service-desk' ); ?></a>
 			<a class="button" href="<?php echo esc_url( $menu_settings_url ); ?>"><?php echo esc_html__( 'Settings', 'pnpc-pocket-service-desk' ); ?></a>
 
+			<?php
+			/**
+			 * Allows add-ons to render compact status indicators in the Service Desk header.
+			 */
+			do_action( 'pnpc_psd_dashboard_header_actions' );
+			?>
+
 			<a class="button psd-support-button" href="<?php echo esc_url( $support_url ); ?>">
 				<?php echo esc_html__( 'Support', 'pnpc-pocket-service-desk' ); ?>
 			</a>
 
-			<?php /* No upgrade/promotional CTAs in the Free build. */ ?>
+			<?php /* Intentionally no promotional CTAs in this build. */ ?>
 		</div>
 	</div>
 

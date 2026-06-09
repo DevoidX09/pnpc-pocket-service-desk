@@ -471,8 +471,6 @@
 				}, config.newTicketAnimationDuration);
 			});
 
-			// ALSO flash entire screen border
-			flashScreenBorder(newTicketIds.length);
 		}
 	}
 
@@ -634,31 +632,41 @@
 			success: function(response) {
 				if (response.success && response.data.html) {
 					var $tbody = $('#pnpc-psd-tickets-table tbody');
-					$tbody.fadeOut(200, function() {
-						$tbody.html(response.data.html).fadeIn(200, function() {
-								// Ensure "New" badge indicators are correct after refresh.
-								// The refresh endpoint returns badge_counts; apply them defensively
-								// in case row markup varies by view.
-								if (response.data.badge_counts) {
-									applyNewBadgeCounts(response.data.badge_counts);
-								}
-							// Detect and highlight new tickets
-							detectAndHighlightNewTickets();
 
-							// Restore previous state
-							restoreCurrentState();
+					/*
+					 * Keep table layout stable during refresh. jQuery fadeIn/fadeOut can
+					 * temporarily force tbody display values that make new rows appear one
+					 * column out of alignment before the browser recalculates the table.
+					 */
+					$tbody.addClass('pnpc-psd-ticket-list-refreshing');
+					$tbody.html(response.data.html);
 
-							// Update tab counts if provided
-							if (response.data.counts) {
-								updateTabCounts(response.data.counts);
-							}
+					// Ensure "New" badge indicators are correct after refresh.
+					// The refresh endpoint returns badge_counts; apply them defensively
+					// in case row markup varies by view.
+					if (response.data.badge_counts) {
+						applyNewBadgeCounts(response.data.badge_counts);
+					}
 
-							updateLastRefreshTime();
+					// Restore previous state before highlighting so new rows animate in place.
+					restoreCurrentState();
 
-							// Trigger custom event for other scripts
-							$(document).trigger('pnpc_psd_tickets_refreshed');
-						});
-					});
+					// Detect and highlight new tickets.
+					detectAndHighlightNewTickets();
+
+					// Update tab counts if provided.
+					if (response.data.counts) {
+						updateTabCounts(response.data.counts);
+					}
+
+					updateLastRefreshTime();
+
+					window.setTimeout(function() {
+						$tbody.removeClass('pnpc-psd-ticket-list-refreshing');
+					}, 150);
+
+					// Trigger custom event for other scripts.
+					$(document).trigger('pnpc_psd_tickets_refreshed');
 				}
 			},
 			error: function() {

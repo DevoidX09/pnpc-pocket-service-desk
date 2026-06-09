@@ -102,6 +102,10 @@ class PNPC_PSD_Activator {
 
 		// Set default options.
 		add_option( 'pnpc_psd_version', PNPC_PSD_VERSION );
+		// Destructive uninstall cleanup must always be an explicit manual opt-in.
+		// Reset this on activation so it is never accidentally carried forward from tests, imports, or previous installs.
+		update_option( 'pnpc_psd_delete_data_on_uninstall', 0, false );
+		delete_option( 'pnpc_psd_delete_data_on_uninstall_confirmed_at' );
 		// Fresh installs start at 1.0.0 so migrations run consistently.
 		add_option( 'pnpc_psd_db_version', '1.0.0' );
 		add_option( 'pnpc_psd_ticket_counter', 1000 );
@@ -161,12 +165,19 @@ class PNPC_PSD_Activator {
 // The wizard will detect/repair existing pages as needed.
 $setup_completed_at = (int) get_option( 'pnpc_psd_setup_completed_at', 0 );
 
-if ( ! $has_tickets && $setup_completed_at <= 0 ) {
+if ( ! $has_tickets && ! $has_dashboard ) {
+	// If setup marker exists but the configured dashboard is gone/not valid, treat this as incomplete setup.
+	delete_option( 'pnpc_psd_setup_completed_at' );
+	$setup_completed_at = 0;
+}
+
+if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 	update_option( 'pnpc_psd_needs_setup_wizard', 1 );
 	update_option( 'pnpc_psd_setup_notice_dismissed', 0 );
-	// Redirect into the wizard once after activation (clean installs only).
-	// Use an option (not a transient) so this survives object cache variance.
+	// Redirect into the wizard once after activation on clean or incomplete installs.
+	// A stale setup-complete option must not suppress onboarding when dashboard pages are gone.
 	update_option( 'pnpc_psd_do_setup_redirect', 1 );
+	set_transient( 'pnpc_psd_activation_setup_redirect', 1, 5 * MINUTE_IN_SECONDS );
 }
 
 

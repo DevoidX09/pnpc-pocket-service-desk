@@ -14,9 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 $active_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'core'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only tab selection.
 $page_slug  = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : 'pnpc-service-desk-settings'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page slug.
 $tabs       = array(
-	'core'      => __( 'Core Setup', 'pnpc-pocket-service-desk' ),
-	'experience'=> __( 'Experience', 'pnpc-pocket-service-desk' ),
-	'customize' => __( 'Customize', 'pnpc-pocket-service-desk' ),
+	'core'       => __( 'Operations', 'pnpc-pocket-service-desk' ),
+	'experience' => __( 'Portal', 'pnpc-pocket-service-desk' ),
+	'customize'  => __( 'Appearance', 'pnpc-pocket-service-desk' ),
 	'shortcodes' => __( 'Shortcodes', 'pnpc-pocket-service-desk' ),
 	'support'    => __( 'Support', 'pnpc-pocket-service-desk' ),
 );
@@ -27,10 +27,137 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 ?>
 <div class="wrap pnpc-psd-settings">
 	<h1><?php esc_html_e( 'PNPC Pocket Service Desk Settings', 'pnpc-pocket-service-desk' ); ?></h1>
+
+	<style>
+		.pnpc-psd-settings .pnpc-psd-settings-overview {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+			gap: 12px;
+			margin: 16px 0 18px;
+		}
+		.pnpc-psd-settings .pnpc-psd-settings-card {
+			background: #fff;
+			border: 1px solid #dcdcde;
+			border-radius: 10px;
+			box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+			padding: 14px 16px;
+		}
+		.pnpc-psd-settings .pnpc-psd-settings-card h2 {
+			font-size: 15px;
+			margin: 0 0 6px;
+		}
+		.pnpc-psd-settings .pnpc-psd-settings-card p {
+			margin: 0;
+			color: #50575e;
+		}
+		.pnpc-psd-settings .pnpc-psd-settings-panel > h2,
+		.pnpc-psd-settings .pnpc-psd-settings-panel > h3 {
+			background: #fff;
+			border: 1px solid #dcdcde;
+			border-bottom: 0;
+			border-radius: 10px 10px 0 0;
+			box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+			margin: 22px 0 0;
+			padding: 16px 18px 6px;
+		}
+		.pnpc-psd-settings .pnpc-psd-settings-panel > h3 {
+			font-size: 14px;
+		}
+		.pnpc-psd-settings .pnpc-psd-settings-panel > h2 + .description,
+		.pnpc-psd-settings .pnpc-psd-settings-panel > h3 + .description {
+			background: #fff;
+			border-left: 1px solid #dcdcde;
+			border-right: 1px solid #dcdcde;
+			color: #50575e;
+			margin: 0;
+			padding: 0 18px 14px;
+		}
+		.pnpc-psd-settings .form-table {
+			background: #fff;
+			border: 1px solid #dcdcde;
+			border-radius: 0 0 10px 10px;
+			box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+			margin: 0 0 18px;
+			overflow: hidden;
+		}
+		.pnpc-psd-settings .pnpc-psd-settings-panel > h2 + .form-table,
+		.pnpc-psd-settings .pnpc-psd-settings-panel > h3 + .form-table,
+		.pnpc-psd-settings .pnpc-psd-settings-panel > h2 + .description + .form-table,
+		.pnpc-psd-settings .pnpc-psd-settings-panel > h3 + .description + .form-table {
+			border-top: 0;
+		}
+		.pnpc-psd-settings .form-table th,
+		.pnpc-psd-settings .form-table td {
+			padding: 16px 18px;
+		}
+		.pnpc-psd-settings .form-table tr + tr th,
+		.pnpc-psd-settings .form-table tr + tr td {
+			border-top: 1px solid #f0f0f1;
+		}
+		.pnpc-psd-settings .form-table .description {
+			color: #646970;
+			max-width: 820px;
+		}
+
+		.pnpc-psd-settings .pnpc-psd-assignment-card {
+			background: #fff;
+			border: 1px solid #dcdcde;
+			border-radius: 10px;
+			box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+			margin: 22px 0 18px;
+			padding: 16px 18px 18px;
+		}
+		.pnpc-psd-settings .pnpc-psd-assignment-card h2,
+		.pnpc-psd-settings .pnpc-psd-assignment-card h3 {
+			background: transparent;
+			border: 0;
+			box-shadow: none;
+			margin: 0 0 8px;
+			padding: 0;
+		}
+		.pnpc-psd-settings .pnpc-psd-assignment-card h3 {
+			font-size: 14px;
+			margin-top: 18px;
+		}
+		.pnpc-psd-settings .pnpc-psd-assignment-card > .description,
+		.pnpc-psd-settings .pnpc-psd-assignment-card .pnpc-psd-assignment-help {
+			color: #50575e;
+			margin: 0 0 12px;
+		}
+		.pnpc-psd-settings .pnpc-psd-assignment-card .form-table {
+			border: 0;
+			border-radius: 0;
+			box-shadow: none;
+			margin: 0 0 16px;
+		}
+		.pnpc-psd-settings .pnpc-psd-assignment-card .form-table th,
+		.pnpc-psd-settings .pnpc-psd-assignment-card .form-table td {
+			padding-left: 0;
+		}
+		.pnpc-psd-settings .pnpc-psd-agent-settings-card {
+			background: transparent;
+			border: 0;
+			box-shadow: none;
+			margin: 0;
+			padding: 0;
+		}
+		.pnpc-psd-settings .pnpc-psd-agent-settings-card .widefat {
+			max-width: 900px;
+		}
+	</style>
+
 	<?php if ( get_transient( 'pnpc_psd_agents_trimmed' ) ) : ?>
 		<?php delete_transient( 'pnpc_psd_agents_trimmed' ); ?>
 		<div class="notice notice-warning"><p><?php esc_html_e( 'Some enabled agents were automatically disabled. Choose 2 agents from the list below to activate.', 'pnpc-pocket-service-desk' ); ?></p></div>
 	<?php endif; ?>
+
+
+	<div class="pnpc-psd-settings-overview" aria-label="<?php esc_attr_e( 'Settings overview', 'pnpc-pocket-service-desk' ); ?>">
+		<div class="pnpc-psd-settings-card"><h2><?php esc_html_e( 'Operations', 'pnpc-pocket-service-desk' ); ?></h2><p><?php esc_html_e( 'Notifications, ticket assignment, attachments, logout behavior, and data retention.', 'pnpc-pocket-service-desk' ); ?></p></div>
+		<div class="pnpc-psd-settings-card"><h2><?php esc_html_e( 'Portal', 'pnpc-pocket-service-desk' ); ?></h2><p><?php esc_html_e( 'Customer-facing welcome messages, public login behavior, ticket list refresh, and portal display settings.', 'pnpc-pocket-service-desk' ); ?></p></div>
+		<div class="pnpc-psd-settings-card"><h2><?php esc_html_e( 'Appearance', 'pnpc-pocket-service-desk' ); ?></h2><p><?php esc_html_e( 'Client-facing dashboard colors, buttons, and visual preferences for the Service Desk shortcodes.', 'pnpc-pocket-service-desk' ); ?></p></div>
+		<div class="pnpc-psd-settings-card"><h2><?php esc_html_e( 'Support', 'pnpc-pocket-service-desk' ); ?></h2><p><?php esc_html_e( 'Shortcodes, setup references, support bundle tools, and operational support resources.', 'pnpc-pocket-service-desk' ); ?></p></div>
+	</div>
 
 	<h2 class="nav-tab-wrapper" style="margin-bottom: 16px;">
 		<?php foreach ( $tabs as $tab_key => $tab_label ) : ?>
@@ -100,7 +227,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				</tr>
 			</table>
 
-			<h3 style="margin-top:18px;"><?php esc_html_e( 'Notification Triggers', 'pnpc-pocket-service-desk' ); ?></h3>
+			<h3><?php esc_html_e( 'Notification Triggers', 'pnpc-pocket-service-desk' ); ?></h3>
 			<table class="form-table">
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Customer notifications', 'pnpc-pocket-service-desk' ); ?></th>
@@ -170,16 +297,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 					<td>
 					<?php $effective_mb = function_exists( 'pnpc_psd_get_max_attachment_mb' ) ? (int) pnpc_psd_get_max_attachment_mb() : (int) get_option( 'pnpc_psd_max_attachment_mb', 5 ); ?>
 					<input type="number" min="1" step="1" name="pnpc_psd_max_attachment_mb" id="pnpc_psd_max_attachment_mb" value="<?php echo esc_attr( $effective_mb ); ?>" class="small-text" />
-						<p class="description">
-							<?php
-							$free_cap = 5;
-							$pro_cap  = 20;
-							printf(
-								(int) $free_cap,
-								(int) $pro_cap
-							);
-							?>
-						</p>
+						<p class="description"><?php esc_html_e( 'Set the maximum upload size customers and staff may attach to tickets. The effective limit may also be constrained by your server upload settings.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 					<tr>
@@ -239,8 +357,9 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 					</tr>
 			</table>
 
+			<div class="pnpc-psd-assignment-card">
 			<h2><?php esc_html_e( 'Ticket Assignment', 'pnpc-pocket-service-desk' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Configure default assignment behavior for newly created tickets.', 'pnpc-pocket-service-desk' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Configure default assignment behavior for newly created tickets, who can work on tickets, and how staff notifications are routed.', 'pnpc-pocket-service-desk' ); ?></p>
 			<table class="form-table">
 				<tr>
 					<th scope="row"><label for="pnpc_psd_default_agent_user_id"><?php esc_html_e( 'Default Agent', 'pnpc-pocket-service-desk' ); ?></label></th>
@@ -269,7 +388,8 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				</tr>
 			</table>
 
-			<h3 style="margin-top:18px;"><?php esc_html_e( 'Eligible Agents', 'pnpc-pocket-service-desk' ); ?></h3>
+			<div class="pnpc-psd-agent-settings-card">
+			<h3><?php esc_html_e( 'Eligible Agents', 'pnpc-pocket-service-desk' ); ?></h3>
 			<p class="description" style="margin:6px 0 10px;">
 				<?php esc_html_e( 'Choose which internal users can be assigned tickets and how staff emails are routed.', 'pnpc-pocket-service-desk' ); ?>
 			</p>
@@ -290,7 +410,14 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				<?php esc_html_e( 'Disable per-agent notification email overrides (use the agent\'s WordPress account email)', 'pnpc-pocket-service-desk' ); ?>
 			</label>
 			<p class="description" style="margin-top:4px;">
-				<?php esc_html_e( 'Choose 2 agents from the list below to activate. Unchecked agents will be unable to work on tickets.', 'pnpc-pocket-service-desk' ); ?>
+				<?php
+				$max_enabled_agents = (int) apply_filters( 'pnpc_psd_max_enabled_agents', 2 );
+				printf(
+					/* translators: %d is the maximum number of enabled agents. */
+					esc_html__( 'Choose up to %d active agents from the list below. Unchecked users keep their WordPress accounts but will not be active Service Desk agents.', 'pnpc-pocket-service-desk' ),
+					absint( $max_enabled_agents )
+				);
+				?>
 			</p>
 
 
@@ -360,6 +487,8 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 					<?php endforeach; ?>
 				</tbody>
 			</table>
+			</div>
+			</div>
 
 			<h2><?php esc_html_e( 'Logout Redirect', 'pnpc-pocket-service-desk' ); ?></h2>
 			<table class="form-table">
@@ -393,10 +522,11 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 					<td>
 						<label>
 							<input type="hidden" name="pnpc_psd_delete_data_on_uninstall" value="0" />
-							<input type="checkbox" name="pnpc_psd_delete_data_on_uninstall" value="1" <?php checked( 1, get_option( 'pnpc_psd_delete_data_on_uninstall', 0 ) ); ?> />
+							<input type="checkbox" name="pnpc_psd_delete_data_on_uninstall" value="1" <?php checked( 1, ( (int) get_option( 'pnpc_psd_delete_data_on_uninstall', 0 ) && get_option( 'pnpc_psd_delete_data_on_uninstall_confirmed_at', false ) ) ? 1 : 0 ); ?> />
 							<?php esc_html_e( 'Permanently delete plugin settings, ticket data, and profile uploads when uninstalling the plugin.', 'pnpc-pocket-service-desk' ); ?>
 						</label>
-						<p class="description"><?php esc_html_e( 'Recommended OFF. Turn ON only for full cleanup when removing the plugin from a site.', 'pnpc-pocket-service-desk' ); ?></p>
+						<p class="description"><strong><?php esc_html_e( 'Recommended OFF.', 'pnpc-pocket-service-desk' ); ?></strong> <?php esc_html_e( 'Turn this on only immediately before uninstalling when you intentionally want a full cleanup. It is reset to OFF on plugin activation as a safety measure.', 'pnpc-pocket-service-desk' ); ?></p>
+						<p class="notice notice-warning inline" style="padding:10px 12px;margin:10px 0 0;"><strong><?php esc_html_e( 'Warning:', 'pnpc-pocket-service-desk' ); ?></strong> <?php esc_html_e( 'When enabled, uninstall will permanently remove Service Desk settings, tickets, logs, diagnostics, generated pages, and related data.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 			</table>
@@ -412,6 +542,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 			<p class="description"><?php esc_html_e( 'Control optional welcome headings shown in public shortcodes. Disable these if you are providing your own headings via a page builder.', 'pnpc-pocket-service-desk' ); ?></p>
 			<table class="form-table">
 				<tr>
+					<th scope="row"><?php esc_html_e( 'Profile Settings', 'pnpc-pocket-service-desk' ); ?></th>
 					<td>
 						<label>
 							<input type="hidden" name="pnpc_psd_show_welcome_profile" value="0" />
@@ -496,19 +627,6 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				</tr>
 			</table>
 
-			<p class="description"><?php esc_html_e( 'Controls which products are shown in the Services area (when WooCommerce is active).', 'pnpc-pocket-service-desk' ); ?></p>
-			<table class="form-table">
-				<tr>
-					<td>
-						<label>
-							<input type="hidden" name="pnpc_psd_show_products" value="0" />
-							<input type="checkbox" name="pnpc_psd_show_products" value="1" <?php checked( 1, get_option( 'pnpc_psd_show_products', 1 ) ); ?> />
-							<?php esc_html_e( 'Show a public product catalog in the Services block (free feature).', 'pnpc-pocket-service-desk' ); ?>
-						</label>
-						<p class="description"><?php esc_html_e( 'If enabled, the Services shortcode will show general published products to viewers (unless user-specific products are enabled).', 'pnpc-pocket-service-desk' ); ?></p>
-					</td>
-				</tr>
-			</table>
 
 		</div>
 
@@ -516,8 +634,12 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 		     TAB: CUSTOMIZE
 		===================== -->
 		<div class="pnpc-psd-settings-panel" id="pnpc-psd-tab-customize" style="<?php echo esc_attr( $panel_style( 'customize' ) ); ?>">
-			<h2><?php esc_html_e( 'Colors & Buttons', 'pnpc-pocket-service-desk' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Customize colors used across shortcodes and cards. Values are stored as hex colors (e.g., #2b9f6a).', 'pnpc-pocket-service-desk' ); ?></p>
+			<h2><?php esc_html_e( 'Client Dashboard Appearance', 'pnpc-pocket-service-desk' ); ?></h2>
+			<p class="description">
+				<?php esc_html_e( 'These settings control the customer-facing Service Desk dashboard and related customer shortcode screens. They do not change the WordPress admin ticket screens.', 'pnpc-pocket-service-desk' ); ?>
+				<br />
+				<?php esc_html_e( 'Primary shortcode affected: [pnpc_service_desk]. Related customer shortcodes such as [pnpc_create_ticket], [pnpc_my_tickets], and [pnpc_ticket_view] may also inherit these button and card colors.', 'pnpc-pocket-service-desk' ); ?>
+			</p>
 			<table class="form-table">
 				<tr>
 					<th scope="row"><label for="pnpc_psd_primary_button_color"><?php esc_html_e( 'Primary Button color', 'pnpc-pocket-service-desk' ); ?></label></th>
@@ -727,7 +849,7 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				<tr>
 					<th scope="row"><label for="pnpc_psd_support_access_url"><?php esc_html_e( 'Support Access URL', 'pnpc-pocket-service-desk' ); ?></label></th>
 					<td>
-						<input type="url" name="pnpc_psd_support_access_url" id="pnpc_psd_support_access_url" value="<?php echo esc_attr( get_option( 'pnpc_psd_support_access_url', 'https://plugnplayconsultants.com/pnpc-service-desk-support/' ) ); ?>" class="regular-text" />
+						<input type="url" name="pnpc_psd_support_access_url" id="pnpc_psd_support_access_url" value="<?php echo esc_attr( get_option( 'pnpc_psd_support_access_url', 'https://plugnplayconsultants.com/dashboard/' ) ); ?>" class="regular-text" />
 						<p class="description"><?php esc_html_e( 'The lightweight account access page used by the Support Hub. This should collect name, email, and website URL before sending users to the support dashboard.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>

@@ -3,8 +3,8 @@
 /**
  * Plugin Name: PNPC Pocket Service Desk
  * Plugin URI: https://github.com/DevoidX09/pnpc-pocket-service-desk
- * Description: A comprehensive service desk plugin for managing customer support tickets with WooCommerce integration.
- * Version: 1.2.6
+ * Description: A WordPress-native service desk plugin for managing customer support tickets, customer conversations, attachments, and staff workflows.
+ * Version: 1.4.1.17
  * Author: PNPC
  * Author URI: https://github.com/DevoidX09
  * License: GPL v2 or later
@@ -26,7 +26,7 @@ if (! defined('ABSPATH')) {
  * Current plugin version.
  */
 if ( ! defined( 'PNPC_PSD_VERSION' ) ) {
-	define( 'PNPC_PSD_VERSION', '1.2.7' );
+	define( 'PNPC_PSD_VERSION', '1.4.1.17' );
 }
 
 /**
@@ -150,9 +150,10 @@ add_action(
 			return;
 		}
 		$do_redirect = (int) get_option( 'pnpc_psd_do_setup_redirect', 0 );
-		$setup_completed_at = (int) get_option( 'pnpc_psd_setup_completed_at', 0 );
-		if ( $do_redirect && $setup_completed_at <= 0 ) {
+		$transient_redirect = (int) get_transient( 'pnpc_psd_activation_setup_redirect' );
+		if ( $do_redirect || $transient_redirect ) {
 			update_option( 'pnpc_psd_do_setup_redirect', 0 );
+			delete_transient( 'pnpc_psd_activation_setup_redirect' );
 			wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup' ) );
 			exit;
 		}

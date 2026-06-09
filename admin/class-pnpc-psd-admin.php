@@ -57,6 +57,9 @@ class PNPC_PSD_Admin
 			// Provide baseline dashboard alerts (filterable).
 			add_filter( 'pnpc_psd_dashboard_alerts', array( $this, 'get_default_dashboard_alerts' ) );
 
+			// Keep the ticket detail screen focused on ticket/customer context.
+			add_action( 'admin_init', array( $this, 'suppress_ticket_detail_admin_notices' ), 0 );
+
 			// One-time setup wizard prompt if the customer dashboard page is not configured.
 			add_action( 'admin_notices', array( $this, 'maybe_show_setup_wizard_notice' ) );
 
@@ -82,6 +85,7 @@ class PNPC_PSD_Admin
 			add_action('admin_init', array($this, 'process_admin_create_ticket'));
 			add_action('admin_init', array($this, 'process_admin_update_ticket_priority'));
 			add_action( 'admin_notices', array( $this, 'maybe_show_operational_health_notice' ) );
+			add_action( 'admin_init', array( $this, 'normalize_email_trace_log_severity' ), 5 );
 		}
 	}
 
@@ -106,13 +110,16 @@ class PNPC_PSD_Admin
 		}
 
 		$do_redirect = (int) get_option( 'pnpc_psd_do_setup_redirect', 0 );
-		if ( ! $do_redirect ) {
+		$transient_redirect = (int) get_transient( 'pnpc_psd_activation_setup_redirect' );
+		if ( ! $do_redirect && ! $transient_redirect ) {
 			return;
 		}
 
-		$dash_id = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
-		if ( $this->is_dashboard_configured( $dash_id ) ) {
+		$dash_id            = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
+		$setup_completed_at = (int) get_option( 'pnpc_psd_setup_completed_at', 0 );
+		if ( $setup_completed_at > 0 && $this->is_dashboard_configured( $dash_id ) ) {
 			update_option( 'pnpc_psd_do_setup_redirect', 0 );
+			delete_transient( 'pnpc_psd_activation_setup_redirect' );
 			return;
 		}
 // If there is existing ticket history, do not auto-redirect (reinstatement).
@@ -130,10 +137,12 @@ class PNPC_PSD_Admin
 
 		if ( $ticket_count > 0 ) {
 			update_option( 'pnpc_psd_do_setup_redirect', 0 );
+			delete_transient( 'pnpc_psd_activation_setup_redirect' );
 			return;
 		}
 
 		update_option( 'pnpc_psd_do_setup_redirect', 0 );
+		delete_transient( 'pnpc_psd_activation_setup_redirect' );
 		wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup' ) );
 		exit;
 	}
@@ -257,14 +266,16 @@ class PNPC_PSD_Admin
 				);
 			}
 
-			// Enqueue setup wizard CSS on setup wizard page
+			// Enqueue setup wizard CSS on setup wizard page. Use filemtime to avoid stale onboarding CSS during launch updates.
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
 			if ( isset( $_GET['page'] ) && in_array( sanitize_text_field( wp_unslash( $_GET['page'] ) ), array( 'pnpc-service-desk-setup', 'pnpc-service-desk-shortcodes' ), true ) ) {
+				$setup_css_path = PNPC_PSD_PLUGIN_DIR . 'admin/css/setup-wizard.css';
+				$setup_css_ver  = file_exists( $setup_css_path ) ? (string) filemtime( $setup_css_path ) : $this->version;
 				wp_enqueue_style(
 					$this->plugin_name . '-setup-wizard',
 					PNPC_PSD_PLUGIN_URL . 'admin/css/setup-wizard.css',
 					array(),
-					$this->version,
+					$setup_css_ver,
 					'all'
 				);
 			}
@@ -563,6 +574,15 @@ class PNPC_PSD_Admin
 
 		add_submenu_page(
 			'pnpc-service-desk',
+			__( 'Settings', 'pnpc-pocket-service-desk' ),
+			__( 'Settings', 'pnpc-pocket-service-desk' ),
+			'pnpc_psd_manage_settings',
+			'pnpc-service-desk-settings',
+			array( $this, 'display_settings_page' )
+		);
+
+		add_submenu_page(
+			'pnpc-service-desk',
 			esc_html__( 'Support', 'pnpc-pocket-service-desk' ),
 			'<span class="pnpc-psd-support-menu-link">' . esc_html__( 'Support', 'pnpc-pocket-service-desk' ) . '</span>',
 			'pnpc_psd_view_tickets',
@@ -570,14 +590,6 @@ class PNPC_PSD_Admin
 			array( $this, 'display_support_page' )
 		);
 
-		add_submenu_page(
-			'pnpc-service-desk',
-			__( 'Settings', 'pnpc-pocket-service-desk' ),
-			__( 'Settings', 'pnpc-pocket-service-desk' ),
-			'pnpc_psd_manage_settings',
-			'pnpc-service-desk-settings',
-			array( $this, 'display_settings_page' )
-		);
 	}
 
 	/**
@@ -802,6 +814,53 @@ class PNPC_PSD_Admin
 				exit;
 			}
 
+
+			if ( 'save_launch_basics' === $mode ) {
+				$global_email    = isset( $_POST['pnpc_psd_email_notifications'] ) ? sanitize_email( wp_unslash( $_POST['pnpc_psd_email_notifications'] ) ) : '';
+				$from_name       = isset( $_POST['pnpc_psd_notify_from_name'] ) ? sanitize_text_field( wp_unslash( $_POST['pnpc_psd_notify_from_name'] ) ) : '';
+				$from_email      = isset( $_POST['pnpc_psd_notify_from_email'] ) ? sanitize_email( wp_unslash( $_POST['pnpc_psd_notify_from_email'] ) ) : '';
+				$group_signature = isset( $_POST['pnpc_psd_group_signature'] ) ? sanitize_textarea_field( wp_unslash( $_POST['pnpc_psd_group_signature'] ) ) : '';
+
+				update_option( 'pnpc_psd_email_notifications', $global_email, false );
+				update_option( 'pnpc_psd_notify_from_name', $from_name, false );
+				update_option( 'pnpc_psd_notify_from_email', $from_email, false );
+				update_option( self::OPTION_GROUP_SIGNATURE, $group_signature, false );
+
+				$primary_agent_id   = isset( $_POST['pnpc_psd_primary_agent_user_id'] ) ? absint( wp_unslash( $_POST['pnpc_psd_primary_agent_user_id'] ) ) : 0;
+				$primary_agent_mail = isset( $_POST['pnpc_psd_primary_agent_email'] ) ? sanitize_email( wp_unslash( $_POST['pnpc_psd_primary_agent_email'] ) ) : '';
+				$extra_agent_id     = isset( $_POST['pnpc_psd_secondary_agent_user_id'] ) ? absint( wp_unslash( $_POST['pnpc_psd_secondary_agent_user_id'] ) ) : 0;
+				$extra_agent_mail   = isset( $_POST['pnpc_psd_secondary_agent_email'] ) ? sanitize_email( wp_unslash( $_POST['pnpc_psd_secondary_agent_email'] ) ) : '';
+
+				$agents = get_option( 'pnpc_psd_agents', array() );
+				$agents = is_array( $agents ) ? $agents : array();
+
+				if ( $primary_agent_id > 0 ) {
+					$agents[ $primary_agent_id ] = array(
+						'enabled'      => 1,
+						'notify_email' => $primary_agent_mail,
+						'notify'       => 1,
+					);
+					update_option( 'pnpc_psd_default_agent_user_id', $primary_agent_id, false );
+				}
+
+				if ( $extra_agent_id > 0 && $extra_agent_id !== $primary_agent_id ) {
+					$agents[ $extra_agent_id ] = array(
+						'enabled'      => 1,
+						'notify_email' => $extra_agent_mail,
+						'notify'       => 1,
+					);
+				}
+
+				if ( ! empty( $agents ) ) {
+					$agents = function_exists( 'pnpc_psd_sanitize_agents_option' ) ? pnpc_psd_sanitize_agents_option( $agents ) : $agents;
+					update_option( 'pnpc_psd_agents', $agents, false );
+					update_option( 'pnpc_psd_disable_agent_notify_overrides', 0, false );
+				}
+
+				update_option( 'pnpc_psd_setup_completed_at', time(), false );
+				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=complete&path=' . rawurlencode( $path ) ) );
+				exit;
+			}
 			if ( 'use_existing' === $mode ) {
 				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=choose_existing&path=existing' ) );
 				exit;
@@ -812,7 +871,7 @@ class PNPC_PSD_Admin
 				if ( $page_id > 0 && 'trash' !== get_post_status( $page_id ) ) {
 					update_option( 'pnpc_psd_dashboard_page_id', $page_id, false );
 					update_option( 'pnpc_psd_setup_completed_at', time(), false );
-					wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=shortcodes&path=existing' ) );
+					wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=notifications&path=existing' ) );
 					exit;
 				}
 
@@ -823,7 +882,7 @@ class PNPC_PSD_Admin
 
 			if ( 'confirm_shortcodes' === $mode ) {
 				$redirect_path = in_array( $path, array( 'existing', 'custom' ), true ) ? $path : 'existing';
-				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=complete&path=' . rawurlencode( $redirect_path ) ) );
+				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=notifications&path=' . rawurlencode( $redirect_path ) ) );
 				exit;
 			}
 
@@ -858,7 +917,7 @@ class PNPC_PSD_Admin
 
 				update_option( 'pnpc_psd_dashboard_page_id', (int) $page_id, false );
 				update_option( 'pnpc_psd_setup_completed_at', time(), false );
-				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=complete&path=builder' ) );
+				wp_safe_redirect( admin_url( 'admin.php?page=pnpc-service-desk-setup&step=notifications&path=builder' ) );
 				exit;
 			}
 		}
@@ -1269,6 +1328,9 @@ private function is_ticket_view_configured( $page_id ) {
 					);
 
 					if ( is_wp_error( $created ) ) {
+						if ( class_exists( 'PNPC_PSD_Error_Log' ) ) {
+							PNPC_PSD_Error_Log::log( 'setup_repair', $created->get_error_message(), array( 'item' => 'dashboard_page' ), 'error' );
+						}
 						$summary[] = esc_html__( 'Dashboard page could not be created (WP error).', 'pnpc-pocket-service-desk' );
 					} else {
 						update_option( 'pnpc_psd_dashboard_page_id', (int) $created );
@@ -1352,6 +1414,9 @@ private function is_ticket_view_configured( $page_id ) {
 					);
 
 					if ( is_wp_error( $created ) ) {
+						if ( class_exists( 'PNPC_PSD_Error_Log' ) ) {
+							PNPC_PSD_Error_Log::log( 'setup_repair', $created->get_error_message(), array( 'item' => 'ticket_view_page' ), 'error' );
+						}
 						$summary[] = esc_html__( 'Ticket View page could not be created (WP error).', 'pnpc-pocket-service-desk' );
 					} else {
 						update_option( 'pnpc_psd_ticket_view_page_id', (int) $created );
@@ -1365,6 +1430,40 @@ private function is_ticket_view_configured( $page_id ) {
 			} else {
 				$summary[] = esc_html__( 'Ticket View page already configured; no changes made.', 'pnpc-pocket-service-desk' );
 			}
+
+
+			// Roles/capabilities generated during install can drift on migrated sites or after role plugins change permissions.
+			if ( class_exists( 'PNPC_PSD_Activator' ) && method_exists( 'PNPC_PSD_Activator', 'sync_custom_roles_caps' ) ) {
+				PNPC_PSD_Activator::sync_custom_roles_caps();
+				$summary[] = esc_html__( 'Service Desk roles and capabilities were checked and repaired where needed.', 'pnpc-pocket-service-desk' );
+			}
+
+			// Defaults created during install/setup. Keep this conservative and non-destructive.
+			$default_options = array(
+				'pnpc_psd_ticket_counter'          => 1000,
+				'pnpc_psd_audit_log_cap'         => 250,
+				'pnpc_psd_error_log_cap'         => 250,
+				'pnpc_psd_max_attachment_mb'     => 5,
+				'pnpc_psd_setup_notice_dismissed'=> 0,
+			);
+
+			foreach ( $default_options as $option_name => $default_value ) {
+				if ( false === get_option( $option_name, false ) ) {
+					add_option( $option_name, $default_value, '', false );
+					$summary[] = sprintf(
+						/* translators: %s: option name */
+						esc_html__( 'Missing setup option restored: %s.', 'pnpc-pocket-service-desk' ),
+						esc_html( $option_name )
+					);
+				}
+			}
+
+			// Rewrite rules are generated setup/runtime state; flushing safely fixes stale public page routes.
+			flush_rewrite_rules( false );
+			$summary[] = esc_html__( 'Service Desk routes and rewrite rules were refreshed.', 'pnpc-pocket-service-desk' );
+
+			// Clear stale setup errors after repair completes successfully.
+			delete_option( 'pnpc_psd_setup_error' );
 
 			set_transient( 'pnpc_psd_setup_repair_summary', $summary, 2 * MINUTE_IN_SECONDS );
 
@@ -2043,6 +2142,37 @@ public function display_tickets_page()
 		return $clean;
 	}
 
+
+	/**
+	 * Suppress unrelated system/plugin notices on the ticket detail screen.
+	 *
+	 * The ticket detail screen is operational/customer context. Diagnostics,
+	 * setup, development, and unrelated admin notices belong on dashboard,
+	 * settings, diagnostics, or support screens instead.
+	 *
+	 * @return void
+	 */
+	public function suppress_ticket_detail_admin_notices() {
+		if ( ! isset( $_GET['page'] ) || 'pnpc-service-desk-ticket' !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin screen routing.
+			return;
+		}
+
+		remove_all_actions( 'admin_notices' );
+		remove_all_actions( 'all_admin_notices' );
+	}
+
+
+	/**
+	 * Normalize legacy successful email trace rows that older launch builds logged as warnings.
+	 *
+	 * @return void
+	 */
+	public function normalize_email_trace_log_severity() {
+		if ( function_exists( 'pnpc_psd_normalize_email_trace_log_severity' ) ) {
+			pnpc_psd_normalize_email_trace_log_severity();
+		}
+	}
+
 	/**
 	 * Surface critical Service Desk health notices on the WP dashboard/admin.
 	 *
@@ -2054,6 +2184,11 @@ public function display_tickets_page()
 		}
 
 		if ( ! function_exists( 'pnpc_psd_get_operational_health_summary' ) ) {
+			return;
+		}
+
+		// Do not surface system health notices on the ticket detail screen; that screen is for ticket/customer context.
+		if ( isset( $_GET['page'] ) && 'pnpc-service-desk-ticket' === sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen routing.
 			return;
 		}
 
@@ -2316,7 +2451,7 @@ public function display_tickets_page()
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => 'esc_url_raw',
-				'default'           => 'https://plugnplayconsultants.com/pnpc-service-desk-support/',
+				'default'           => 'https://plugnplayconsultants.com/dashboard/',
 			)
 		);
 
@@ -2577,10 +2712,33 @@ public function display_tickets_page()
 			'pnpc_psd_delete_data_on_uninstall',
 			array(
 				'type'              => 'boolean',
-				'sanitize_callback' => 'absint',
+				'sanitize_callback' => array( $this, 'sanitize_delete_data_on_uninstall' ),
 				'default'           => 0,
 			)
 		);
+	}
+
+
+	/**
+	 * Sanitize the destructive uninstall setting.
+	 *
+	 * This setting is intentionally opt-in and defaults to off on activation.
+	 * If an administrator checks the box and saves settings, uninstall cleanup
+	 * should run without requiring any secondary hidden marker.
+	 *
+	 * @param mixed $value Submitted setting value.
+	 * @return int
+	 */
+	public function sanitize_delete_data_on_uninstall( $value ) {
+		$enabled = (int) $value ? 1 : 0;
+
+		if ( $enabled ) {
+			update_option( 'pnpc_psd_delete_data_on_uninstall_confirmed_at', time(), false );
+		} else {
+			delete_option( 'pnpc_psd_delete_data_on_uninstall_confirmed_at' );
+		}
+
+		return $enabled;
 	}
 
 	/**
@@ -3050,14 +3208,16 @@ public function display_tickets_page()
 		}
 
 		$ticket_id = isset($_POST['ticket_id']) ? absint( wp_unslash( $_POST['ticket_id'] ) ) : 0;
-		$status    = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : '';
+		$status    = isset( $_POST['status'] ) ? sanitize_key( wp_unslash( $_POST['status'] ) ) : '';
+		$status    = strtolower( str_replace( '_', '-', $status ) );
+		$allowed_statuses = array( 'open', 'in-progress', 'waiting', 'closed' );
 
-		if (! $ticket_id || empty($status)) {
+		if ( ! $ticket_id || empty( $status ) || ! in_array( $status, $allowed_statuses, true ) ) {
 			wp_send_json_error(array('message' => __('Invalid data. ', 'pnpc-pocket-service-desk')));
 		}
 
 		$old_ticket = PNPC_PSD_Ticket::get( $ticket_id );
-		$old_status = ( $old_ticket && isset( $old_ticket->status ) ) ? (string) $old_ticket->status : '';
+		$old_status = ( $old_ticket && isset( $old_ticket->status ) ) ? strtolower( str_replace( '_', '-', (string) $old_ticket->status ) ) : '';
 
 		$result = PNPC_PSD_Ticket::update(
 			$ticket_id,
@@ -3075,7 +3235,20 @@ public function display_tickets_page()
 				PNPC_PSD_Notifications::ticket_closed( (int) $ticket_id, get_current_user_id() );
 			}
 
-			wp_send_json_success(array('message' => __('Ticket status updated successfully. ', 'pnpc-pocket-service-desk')));
+			$status_labels = array(
+				'open'        => __( 'Open', 'pnpc-pocket-service-desk' ),
+				'in-progress' => __( 'In Progress', 'pnpc-pocket-service-desk' ),
+				'waiting'     => __( 'Waiting', 'pnpc-pocket-service-desk' ),
+				'closed'      => __( 'Closed', 'pnpc-pocket-service-desk' ),
+			);
+
+			wp_send_json_success(
+				array(
+					'message' => __( 'Ticket status updated successfully.', 'pnpc-pocket-service-desk' ),
+					'status'  => $status,
+					'label'   => isset( $status_labels[ $status ] ) ? $status_labels[ $status ] : ucfirst( $status ),
+				)
+			);
 		} else {
 			wp_send_json_error(array('message' => __('Failed to update status.', 'pnpc-pocket-service-desk')));
 		}
@@ -3111,7 +3284,20 @@ public function display_tickets_page()
 		);
 
 		if ( $result ) {
-			wp_send_json_success(array('message' => __('Priority updated successfully.', 'pnpc-pocket-service-desk')));
+			$priority_labels = array(
+				'low'    => __( 'Low', 'pnpc-pocket-service-desk' ),
+				'normal' => __( 'Normal', 'pnpc-pocket-service-desk' ),
+				'high'   => __( 'High', 'pnpc-pocket-service-desk' ),
+				'urgent' => __( 'Urgent', 'pnpc-pocket-service-desk' ),
+			);
+
+			wp_send_json_success(
+				array(
+					'message'  => __( 'Priority updated successfully.', 'pnpc-pocket-service-desk' ),
+					'priority' => $priority,
+					'label'    => isset( $priority_labels[ $priority ] ) ? $priority_labels[ $priority ] : ucfirst( $priority ),
+				)
+			);
 		} else {
 			wp_send_json_error(array('message' => __('Failed to update priority.', 'pnpc-pocket-service-desk')));
 		}
@@ -3879,7 +4065,7 @@ public function display_tickets_page()
 			}
 		}
 		?>
-		<tr<?php echo $is_closed ? ' class="pnpc-psd-ticket-closed"' : ''; ?>>
+		<tr class="pnpc-psd-ticket-row<?php echo $is_closed ? ' pnpc-psd-ticket-closed' : ''; ?>">
 			<?php if ( $can_bulk ) : ?>
 			<th scope="row" class="check-column">
 				<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>">
@@ -4486,6 +4672,11 @@ public function display_tickets_page()
 			return;
 		}
 
+		// Do not surface system/setup notices on the ticket detail screen; that screen is for ticket/customer context.
+		if ( isset( $_GET['page'] ) && 'pnpc-service-desk-ticket' === sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen routing.
+			return;
+		}
+
 		// Admin hygiene: avoid showing the setup notice across unrelated wp-admin pages.
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 		if ( $screen ) {
@@ -4531,11 +4722,7 @@ public function display_tickets_page()
 			return;
 		}
 
-		echo '<div class="notice notice-info is-dismissible">';
-		echo '<p><strong>' . esc_html__( 'Service Desk setup is almost done.', 'pnpc-pocket-service-desk' ) . '</strong> ' . esc_html__( 'Run the Setup Wizard to create or link your customer dashboard page.', 'pnpc-pocket-service-desk' ) . '</p>';
-		echo '<p><a class="button button-primary" href="' . esc_url( $wizard_url ) . '">' . esc_html__( 'Run Setup Wizard', 'pnpc-pocket-service-desk' ) . '</a> ';
-		echo '<a class="button" href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss', 'pnpc-pocket-service-desk' ) . '</a></p>';
-		echo '</div>';
+		return;
 	}
 
 	/**
@@ -4555,6 +4742,11 @@ public function display_tickets_page()
 		}
 		// Only show when permalinks are Plain.
 		if ( '' !== (string) get_option( 'permalink_structure', '' ) ) {
+			return;
+		}
+
+		// Do not surface system/setup notices on the ticket detail screen; that screen is for ticket/customer context.
+		if ( isset( $_GET['page'] ) && 'pnpc-service-desk-ticket' === sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen routing.
 			return;
 		}
 
@@ -4602,6 +4794,10 @@ public function display_tickets_page()
 	 */
 	public function maybe_notice_last_create_ticket_fatal() {
 		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		// Do not surface system/plugin diagnostic notices on the ticket detail screen.
+		if ( isset( $_GET['page'] ) && 'pnpc-service-desk-ticket' === sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only screen routing.
 			return;
 		}
 		$last = get_option( 'pnpc_psd_last_create_ticket_fatal' );

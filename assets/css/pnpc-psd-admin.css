@@ -659,15 +659,17 @@
 	position: relative;
 }
 
+/* Do not use a ::before pseudo element on table rows: browsers may treat it as an
+ * anonymous table cell, making newly inserted rows appear one column out of alignment.
+ * Apply the visual accent inside the first real cell instead. */
 .pnpc-psd-ticket-row-new::before {
-	content: '';
-	position: absolute;
-	left: -10px;
-	top: 0;
-	bottom: 0;
-	width: 4px;
-	background: #48bb78;
-	animation: pnpc-psd-border-fade 3s ease-in-out;
+	display: none !important;
+	content: none !important;
+}
+
+.pnpc-psd-ticket-row-new > th:first-child,
+.pnpc-psd-ticket-row-new > td:first-child {
+	box-shadow: inset 4px 0 0 #48bb78;
 }
 
 @keyframes pnpc-psd-border-fade {
@@ -819,6 +821,20 @@ body.pnpc-psd-flash-active {
 }
 
 
+
+#pnpc-psd-tickets-table tbody.pnpc-psd-ticket-list-refreshing {
+	opacity: 0.98;
+}
+
+#response-message:empty,
+#response-message:not(.notice):not(.notice-success):not(.notice-error):not(.notice-info):not(.notice-warning):not(.success):not(.error):not(.info) {
+	display: none;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+}
+
 /* Ticket list row hover (all statuses) */
 .pnpc-psd-ticket-row:hover {
 	background: #f6f7f7;
@@ -951,4 +967,2073 @@ body.pnpc-psd-flash-active {
 
 .pnpc-psd-attachment-count {
 	font-weight: 600;
+}
+
+
+/* PNPC launch polish pass: clearer admin hierarchy without layout rewrites. */
+.pnpc-psd-admin-wrap .wp-list-table,
+.pnpc-psd-ticket-list,
+.pnpc-psd-ticket-detail,
+.pnpc-psd-card,
+.pnpc-psd-panel,
+.pnpc-psd-settings-panel,
+.pnpc-psd-dashboard-card {
+	border-radius: 12px;
+	box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.pnpc-psd-admin-wrap .wp-list-table thead th,
+.pnpc-psd-admin-wrap .wp-list-table tfoot th {
+	background: #f8fafc;
+	color: #1f2937;
+	font-weight: 700;
+}
+
+.pnpc-psd-admin-wrap .wp-list-table tbody tr:hover {
+	background: #f8fbff;
+}
+
+.pnpc-psd-status-badge,
+.pnpc-psd-priority-badge,
+.pnpc-psd-ticket-status,
+.pnpc-psd-ticket-priority {
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.01em;
+	padding: 3px 9px;
+}
+
+.pnpc-psd-settings-panel h2,
+.pnpc-psd-settings-panel h3 {
+	color: #111827;
+}
+
+.pnpc-psd-settings-panel .description,
+.pnpc-psd-help-text {
+	color: #50575e;
+}
+
+.pnpc-psd-guide-box,
+.pnpc-psd-info-box,
+.pnpc-psd-settings-guide {
+	background: #f0f6fc;
+	border: 1px solid #c3d9ef;
+	border-left: 4px solid #2271b1;
+	border-radius: 12px;
+	padding: 14px 16px;
+}
+
+.pnpc-psd-instruction-box,
+.pnpc-psd-action-box {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-left: 4px solid #72aee6;
+	border-radius: 12px;
+	padding: 14px 16px;
+}
+
+.pnpc-psd-warning-box,
+.pnpc-psd-risk-box {
+	background: #fff8e5;
+	border: 1px solid #f0c33c;
+	border-left: 4px solid #dba617;
+	border-radius: 12px;
+	padding: 14px 16px;
+}
+
+.pnpc-psd-error-box,
+.pnpc-psd-critical-box {
+	background: #fcf0f1;
+	border: 1px solid #f1aeb5;
+	border-left: 4px solid #d63638;
+	border-radius: 12px;
+	padding: 14px 16px;
+}
+
+/* PNPC ticket screen modernization pass: list/filter/detail UI only. */
+.wrap:has(#pnpc-psd-tickets-table),
+.wrap.pnpc-psd-ticket-detail {
+	max-width: 1400px;
+}
+
+.wrap:has(#pnpc-psd-tickets-table) > h1,
+.wrap.pnpc-psd-ticket-detail h1 {
+	letter-spacing: -0.02em;
+}
+
+.subsubsub {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	float: none;
+	margin: 14px 0 16px;
+	padding: 0;
+}
+
+.subsubsub li {
+	margin: 0;
+	padding: 0;
+	white-space: normal;
+}
+
+.subsubsub li a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 30px;
+	padding: 4px 11px;
+	border: 1px solid #dcdcde;
+	border-radius: 999px;
+	background: #fff;
+	color: #1d2327;
+	font-weight: 600;
+	text-decoration: none;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.subsubsub li a.current,
+.subsubsub li a:hover,
+.subsubsub li a:focus {
+	border-color: #72aee6;
+	background: #f0f6fc;
+	color: #135e96;
+	box-shadow: 0 0 0 1px rgba(34, 113, 177, 0.08);
+}
+
+.tablenav.top {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	box-sizing: border-box;
+	height: auto;
+	margin: 0 0 12px;
+	padding: 12px 14px;
+	border: 1px solid #e2e8f0;
+	border-radius: 14px;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.tablenav.top .actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 0;
+}
+
+.tablenav.top select,
+.tablenav.top .button {
+	min-height: 34px;
+}
+
+#pnpc-psd-tickets-table {
+	overflow: hidden;
+	border: 1px solid #e2e8f0;
+	border-radius: 16px;
+	background: #fff;
+	border-collapse: separate;
+	border-spacing: 0;
+	box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+#pnpc-psd-tickets-table.widefat {
+	border-spacing: 0;
+}
+
+#pnpc-psd-tickets-table thead th,
+#pnpc-psd-tickets-table thead td,
+#pnpc-psd-tickets-table tfoot th,
+#pnpc-psd-tickets-table tfoot td {
+	padding: 13px 12px;
+	border-bottom: 1px solid #e2e8f0;
+	background: #f8fafc;
+	color: #334155;
+	font-size: 12px;
+	font-weight: 800;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+
+#pnpc-psd-tickets-table tbody td,
+#pnpc-psd-tickets-table tbody th {
+	padding: 14px 12px;
+	border-bottom: 1px solid #eef2f7;
+	vertical-align: middle;
+}
+
+#pnpc-psd-tickets-table tbody tr:last-child td,
+#pnpc-psd-tickets-table tbody tr:last-child th {
+	border-bottom: 0;
+}
+
+#pnpc-psd-tickets-table tbody tr {
+	background: #fff;
+	transition: background-color 0.12s ease-in-out, box-shadow 0.12s ease-in-out;
+}
+
+#pnpc-psd-tickets-table tbody tr:hover {
+	background: #f8fbff;
+	box-shadow: inset 3px 0 0 #72aee6;
+}
+
+#pnpc-psd-tickets-table tbody td a,
+#pnpc-psd-tickets-table tbody th a {
+	font-weight: 650;
+	text-decoration: none;
+}
+
+#pnpc-psd-tickets-table tbody td a:hover,
+#pnpc-psd-tickets-table tbody th a:hover {
+	text-decoration: underline;
+}
+
+#pnpc-psd-tickets-table .pnpc-psd-sortable {
+	cursor: pointer;
+}
+
+#pnpc-psd-tickets-table .pnpc-psd-sortable:hover {
+	color: #135e96;
+}
+
+.pnpc-psd-status,
+.pnpc-psd-priority,
+.pnpc-psd-ticket-status,
+.pnpc-psd-ticket-priority {
+	display: inline-flex;
+	align-items: center;
+	min-height: 22px;
+	padding: 3px 9px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 750;
+	line-height: 1.2;
+}
+
+.pnpc-psd-status-open,
+.pnpc-psd-status-new {
+	background: #eaf5ff;
+	color: #0a4b78;
+}
+
+.pnpc-psd-status-waiting,
+.pnpc-psd-status-in-progress,
+.pnpc-psd-status-in_progress {
+	background: #fff8e5;
+	color: #704600;
+}
+
+.pnpc-psd-status-closed,
+.pnpc-psd-ticket-closed .pnpc-psd-status {
+	background: #edf7ed;
+	color: #155724;
+}
+
+.pnpc-psd-priority-low {
+	background: #f0f6fc;
+	color: #35556d;
+}
+
+.pnpc-psd-priority-normal {
+	background: #f3f4f6;
+	color: #374151;
+}
+
+.pnpc-psd-priority-high {
+	background: #fff3cd;
+	color: #6f4e00;
+}
+
+.pnpc-psd-priority-urgent {
+	background: #fcf0f1;
+	color: #8a2424;
+}
+
+.pnpc-psd-ticket-detail {
+	box-sizing: border-box;
+	padding: 0 20px 24px;
+	background: transparent;
+	box-shadow: none;
+}
+
+.pnpc-psd-ticket-detail-header {
+	gap: 14px;
+	margin: 14px 0 18px;
+	padding: 14px 16px;
+	border: 1px solid #e2e8f0;
+	border-radius: 16px;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.pnpc-psd-breadcrumb {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 2px;
+	font-weight: 600;
+}
+
+.pnpc-psd-quick-nav {
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+.pnpc-psd-quick-nav .button {
+	border-radius: 999px;
+}
+
+.pnpc-psd-ticket-header {
+	gap: 22px;
+	margin-bottom: 18px;
+	padding: 22px;
+	border: 1px solid #dbeafe;
+	border-radius: 18px;
+	background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+	box-shadow: 0 12px 34px rgba(15, 23, 42, 0.08);
+}
+
+.pnpc-psd-ticket-header h1 {
+	margin: 0 0 12px;
+	font-size: 28px;
+	line-height: 1.18;
+}
+
+.pnpc-psd-ticket-header h1 small {
+	display: inline-flex;
+	align-items: center;
+	margin-left: 8px;
+	padding: 4px 9px;
+	border-radius: 999px;
+	background: #f0f6fc;
+	color: #135e96;
+	font-size: 13px;
+	font-weight: 800;
+	vertical-align: middle;
+}
+
+.pnpc-psd-ticket-meta {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px 18px;
+	margin-top: 10px;
+}
+
+.pnpc-psd-ticket-meta p {
+	margin: 0;
+	color: #475569;
+}
+
+.pnpc-psd-ticket-meta p > a,
+.pnpc-psd-ticket-meta p > span {
+	margin-left: 4px;
+}
+
+.pnpc-psd-ticket-actions {
+	align-content: flex-start;
+	gap: 12px;
+	min-width: min(360px, 100%);
+}
+
+.pnpc-psd-ticket-actions .pnpc-psd-field,
+.pnpc-psd-ticket-actions form.pnpc-psd-field,
+.pnpc-psd-autosave-tip-wrap {
+	box-sizing: border-box;
+	min-width: 210px;
+	padding: 12px;
+	border: 1px solid #e2e8f0;
+	border-radius: 14px;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.pnpc-psd-field label {
+	margin-bottom: 2px;
+	color: #1f2937;
+	font-size: 12px;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.pnpc-psd-field select,
+.pnpc-psd-field input[type="text"],
+.pnpc-psd-field input[type="email"] {
+	width: 100%;
+	min-height: 34px;
+	border-color: #cbd5e1;
+	border-radius: 8px;
+}
+
+.pnpc-psd-field .button,
+.pnpc-psd-field button {
+	margin-top: 6px;
+	border-radius: 8px;
+}
+
+.pnpc-psd-ticket-body,
+.pnpc-psd-ticket-description,
+.pnpc-psd-ticket-responses,
+.pnpc-psd-add-response,
+.pnpc-psd-attachments,
+#pnpc-psd-internal-collab-anchor + h3,
+.pnpc-psd-response,
+.pnpc-psd-pro-comm-tabs,
+.pnpc-psd-pro-internal-notes-panel,
+.pnpc-psd-pro-internal-chat-panel {
+	border-radius: 16px;
+}
+
+.pnpc-psd-ticket-body {
+	margin: 18px 0 !important;
+	padding: 18px 20px !important;
+	border: 1px solid #e2e8f0 !important;
+	border-left: 4px solid #2271b1 !important;
+	background: #fff !important;
+	box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.pnpc-psd-ticket-body h3,
+.pnpc-psd-attachments h3,
+.pnpc-psd-add-response h3,
+.pnpc-psd-ticket-detail > h3 {
+	margin-top: 0;
+	color: #111827;
+	letter-spacing: -0.01em;
+}
+
+.pnpc-psd-ticket-content {
+	padding: 16px 18px;
+	border: 1px solid #e2e8f0;
+	border-left: 0;
+	border-radius: 14px;
+	background: #f8fafc;
+	color: #1f2937;
+	line-height: 1.65;
+}
+
+.pnpc-psd-attachments,
+.pnpc-psd-add-response,
+.pnpc-psd-ticket-detail > h3 + .pnpc-psd-response,
+.pnpc-psd-ticket-detail > h3 {
+	margin-top: 18px;
+}
+
+.pnpc-psd-attachment {
+	border-radius: 12px;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.pnpc-psd-response {
+	padding: 16px 18px;
+	border: 1px solid #e2e8f0;
+	background: #fff;
+	box-shadow: 0 3px 10px rgba(15, 23, 42, 0.04);
+}
+
+.pnpc-psd-response-staff {
+	border-left: 4px solid #2271b1;
+	background: #f8fbff;
+}
+
+.pnpc-psd-response-customer {
+	border-left: 4px solid #64748b;
+	background: #fff;
+}
+
+.pnpc-psd-response-header {
+	align-items: center;
+	padding-bottom: 8px;
+	border-bottom: 1px solid #e2e8f0;
+	color: #475569;
+}
+
+.pnpc-psd-response-header strong {
+	color: #111827;
+}
+
+.pnpc-psd-response-content {
+	padding-top: 8px;
+}
+
+.pnpc-psd-add-response {
+	padding: 18px 20px;
+	border: 1px solid #e2e8f0;
+	background: #fff;
+	box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+#pnpc-psd-response-form textarea {
+	box-sizing: border-box;
+	min-height: 150px;
+	border-color: #cbd5e1;
+	border-radius: 12px;
+	background: #fff;
+}
+
+#pnpc-psd-response-form textarea:focus {
+	border-color: #72aee6;
+	box-shadow: 0 0 0 1px #72aee6;
+}
+
+#pnpc-psd-response-form .button-primary,
+.pnpc-psd-add-response .button-primary {
+	border-radius: 999px;
+	font-weight: 700;
+}
+
+@media screen and (max-width: 1100px) {
+	.pnpc-psd-ticket-header {
+		display: block;
+	}
+
+	.pnpc-psd-ticket-actions {
+		margin-top: 16px;
+	}
+}
+
+@media screen and (max-width: 782px) {
+	.pnpc-psd-ticket-detail {
+		padding-right: 10px;
+		padding-left: 10px;
+	}
+
+	.pnpc-psd-ticket-detail-header,
+	.pnpc-psd-ticket-header,
+	.tablenav.top {
+		display: block;
+	}
+
+	.pnpc-psd-quick-nav,
+	.pnpc-psd-ticket-actions,
+	.tablenav.top .actions {
+		margin-top: 12px;
+	}
+
+	.pnpc-psd-ticket-meta {
+		grid-template-columns: 1fr;
+	}
+
+	#pnpc-psd-tickets-table thead th,
+	#pnpc-psd-tickets-table tbody td,
+	#pnpc-psd-tickets-table tbody th {
+		padding: 11px 9px;
+	}
+}
+
+/* Ticket screen modernization pass 2: apply the generated direction to current admin markup without replacing WordPress/Pro navigation. */
+body.wp-admin .pnpc-psd-ticket-detail {
+	box-sizing: border-box;
+	max-width: 1500px;
+	margin: 20px 20px 0 0;
+	padding: 24px;
+	background: #f6f8fb;
+	border: 1px solid #e6edf5;
+	border-radius: 22px;
+	color: #0f172a;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-header {
+	align-items: center;
+	margin-bottom: 20px;
+	padding: 0 0 16px;
+	border-bottom: 1px solid #e2e8f0;
+}
+
+body.wp-admin .pnpc-psd-breadcrumb {
+	font-size: 13px;
+	font-weight: 600;
+	color: #64748b;
+}
+
+body.wp-admin .pnpc-psd-breadcrumb a {
+	color: #2563eb;
+	text-decoration: none;
+}
+
+body.wp-admin .pnpc-psd-quick-nav .button,
+body.wp-admin .pnpc-psd-ticket-detail .button {
+	border-color: #d8e1ed;
+	border-radius: 10px;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+body.wp-admin .pnpc-psd-ticket-detail .button-primary {
+	border-color: #1d4ed8;
+	background: #1d4ed8;
+	color: #fff;
+}
+
+body.wp-admin .pnpc-psd-ticket-header {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+	gap: 22px;
+	align-items: stretch;
+	margin: 0 0 22px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+}
+
+body.wp-admin .pnpc-psd-ticket-header > div:first-child,
+body.wp-admin .pnpc-psd-ticket-actions,
+body.wp-admin .pnpc-psd-ticket-body,
+body.wp-admin .pnpc-psd-attachments,
+body.wp-admin .pnpc-psd-conversation-modern-card,
+body.wp-admin .pnpc-psd-danger-zone {
+	box-sizing: border-box;
+	border: 1px solid #e2e8f0 !important;
+	border-radius: 18px !important;
+	background: #fff !important;
+	box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+
+body.wp-admin .pnpc-psd-ticket-header > div:first-child {
+	position: relative;
+	min-height: 112px;
+	padding: 28px 28px 24px 112px;
+}
+
+body.wp-admin .pnpc-psd-ticket-header > div:first-child::before {
+	content: "";
+	position: absolute;
+	left: 28px;
+	top: 28px;
+	width: 60px;
+	height: 60px;
+	border-radius: 18px;
+	background: linear-gradient(135deg, #6d28d9, #2563eb);
+	box-shadow: 0 14px 24px rgba(37, 99, 235, 0.22);
+}
+
+body.wp-admin .pnpc-psd-ticket-header > div:first-child::after {
+	content: "\f145";
+	position: absolute;
+	left: 46px;
+	top: 45px;
+	font-family: dashicons;
+	font-size: 25px;
+	line-height: 1;
+	color: #fff;
+}
+
+body.wp-admin .pnpc-psd-ticket-header h1 {
+	margin: 0;
+	font-size: 28px;
+	line-height: 1.15;
+	letter-spacing: -0.03em;
+	color: #0f172a;
+}
+
+body.wp-admin .pnpc-psd-ticket-header h1 small {
+	margin-left: 10px;
+	padding: 5px 10px;
+	border-radius: 999px;
+	background: #ede9fe;
+	color: #6d28d9;
+	font-size: 12px;
+	font-weight: 800;
+}
+
+body.wp-admin .pnpc-psd-ticket-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 18px;
+	margin-top: 14px;
+	color: #64748b;
+}
+
+body.wp-admin .pnpc-psd-ticket-meta p {
+	margin: 0;
+	font-size: 13px;
+}
+
+body.wp-admin .pnpc-psd-status,
+body.wp-admin .pnpc-psd-priority {
+	padding: 4px 10px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0;
+	text-transform: none;
+}
+
+body.wp-admin .pnpc-psd-ticket-actions {
+	display: block;
+	min-width: 0;
+	padding: 20px;
+}
+
+body.wp-admin .pnpc-psd-ticket-actions::before {
+	content: "Ticket Controls";
+	display: block;
+	margin: 0 0 14px;
+	font-size: 16px;
+	font-weight: 800;
+	letter-spacing: -0.01em;
+	color: #111827;
+}
+
+body.wp-admin .pnpc-psd-ticket-actions .pnpc-psd-field,
+body.wp-admin .pnpc-psd-ticket-actions form.pnpc-psd-field,
+body.wp-admin .pnpc-psd-autosave-tip-wrap {
+	margin: 0 0 12px;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+body.wp-admin .pnpc-psd-field label {
+	margin-bottom: 5px;
+	color: #475569;
+	font-size: 12px;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+body.wp-admin .pnpc-psd-field select,
+body.wp-admin .pnpc-psd-field input[type="text"],
+body.wp-admin .pnpc-psd-field input[type="email"] {
+	min-height: 38px;
+	border-color: #d8e1ed;
+	border-radius: 10px;
+}
+
+body.wp-admin .pnpc-psd-ticket-body {
+	margin: 0 0 22px !important;
+	padding: 22px !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-body h3,
+body.wp-admin .pnpc-psd-attachments h3,
+body.wp-admin .pnpc-psd-conversation-modern-header h3,
+body.wp-admin .pnpc-psd-add-response h3 {
+	margin: 0 0 14px;
+	font-size: 18px;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	color: #0f172a;
+}
+
+body.wp-admin .pnpc-psd-ticket-requestor {
+	margin: -6px 0 14px;
+	color: #64748b;
+	font-size: 13px;
+}
+
+body.wp-admin .pnpc-psd-ticket-content {
+	padding: 18px 20px;
+	border: 1px solid #e2e8f0;
+	border-left: 4px solid #7c3aed;
+	border-radius: 15px;
+	background: #fbfdff;
+	color: #1f2937;
+	line-height: 1.65;
+}
+
+body.wp-admin .pnpc-psd-attachments {
+	margin: 0 0 22px;
+	padding: 20px;
+}
+
+body.wp-admin .pnpc-psd-attachment {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 12px 14px;
+	border: 1px solid #e2e8f0;
+	border-radius: 14px;
+	background: #f8fafc;
+	box-shadow: none;
+}
+
+body.wp-admin .pnpc-psd-conversation-modern-card {
+	margin: 0 0 22px;
+	padding: 22px;
+}
+
+body.wp-admin .pnpc-psd-conversation-modern-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin: 0 0 12px;
+}
+
+body.wp-admin .pnpc-psd-response {
+	position: relative;
+	margin: 0 0 14px;
+	padding: 18px 20px 18px 66px;
+	border: 1px solid #e2e8f0;
+	border-radius: 16px;
+	background: #fff;
+	box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+body.wp-admin .pnpc-psd-response::before {
+	content: "";
+	position: absolute;
+	left: 20px;
+	top: 18px;
+	width: 34px;
+	height: 34px;
+	border-radius: 999px;
+	background: #e5e7eb;
+}
+
+body.wp-admin .pnpc-psd-response-staff {
+	border-left: 4px solid #2563eb;
+	background: linear-gradient(90deg, #f3f8ff 0, #fff 72%);
+}
+
+body.wp-admin .pnpc-psd-response-staff::before {
+	background: #dbeafe;
+}
+
+body.wp-admin .pnpc-psd-response-customer {
+	border-left: 4px solid #7c3aed;
+	background: #fff;
+}
+
+body.wp-admin .pnpc-psd-response-customer::before {
+	background: #ede9fe;
+}
+
+body.wp-admin .pnpc-psd-response-header {
+	justify-content: flex-start;
+	gap: 12px;
+	padding: 0 0 8px;
+	border-bottom: 0;
+}
+
+body.wp-admin .pnpc-psd-response-header strong {
+	color: #0f172a;
+	font-weight: 800;
+}
+
+body.wp-admin .pnpc-psd-response-date {
+	color: #64748b;
+	font-size: 12px;
+}
+
+body.wp-admin .pnpc-psd-response-content {
+	padding-top: 0;
+	color: #1f2937;
+	line-height: 1.65;
+}
+
+body.wp-admin .pnpc-psd-add-response {
+	margin: 22px 0 0;
+	padding: 18px;
+	border: 1px solid #e2e8f0;
+	border-radius: 16px;
+	background: #fff;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+body.wp-admin #pnpc-psd-response-form-admin textarea,
+body.wp-admin #pnpc-psd-response-form textarea {
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 132px;
+	padding: 14px;
+	border: 1px solid #d8e1ed;
+	border-radius: 12px;
+	background: #fff;
+}
+
+body.wp-admin .pnpc-psd-signature-controls {
+	padding: 10px 12px;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	background: #f8fafc;
+}
+
+body.wp-admin #pnpc-psd-response-form-admin .button-primary {
+	min-height: 38px;
+	padding: 0 16px;
+	border-radius: 999px;
+	font-weight: 800;
+}
+
+body.wp-admin .pnpc-psd-danger-zone {
+	box-sizing: border-box;
+	width: calc(100% - 20px);
+	max-width: 1500px;
+	margin: 18px 20px 0 0;
+	padding: 18px 20px;
+	border-color: #fecaca !important;
+	background: #fff7f7 !important;
+}
+
+@media screen and (max-width: 1100px) {
+	body.wp-admin .pnpc-psd-ticket-header {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media screen and (max-width: 782px) {
+	body.wp-admin .pnpc-psd-ticket-detail {
+		margin-right: 10px;
+		padding: 16px;
+		border-radius: 16px;
+	}
+
+	body.wp-admin .pnpc-psd-ticket-header > div:first-child {
+		padding: 94px 18px 18px;
+	}
+
+	body.wp-admin .pnpc-psd-ticket-header > div:first-child::before {
+		left: 18px;
+		top: 18px;
+	}
+
+	body.wp-admin .pnpc-psd-ticket-header > div:first-child::after {
+		left: 36px;
+		top: 35px;
+	}
+}
+
+/* Ticket detail structural modernization pass. */
+body.wp-admin .pnpc-psd-ticket-detail-modern {
+	max-width: 1600px;
+	background: #f6f8fb;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-modern-topbar {
+	margin-bottom: 18px;
+}
+
+body.wp-admin .pnpc-psd-ticket-shell {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 360px;
+	gap: 22px;
+	align-items: start;
+}
+
+body.wp-admin .pnpc-psd-ticket-main-column,
+body.wp-admin .pnpc-psd-ticket-sidebar-column {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+body.wp-admin .pnpc-psd-modern-card,
+body.wp-admin .pnpc-psd-ticket-hero-card,
+body.wp-admin .pnpc-psd-sidebar-card {
+	box-sizing: border-box;
+	border: 1px solid #e1e7ef;
+	border-radius: 18px;
+	background: #fff;
+	box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+body.wp-admin .pnpc-psd-ticket-hero-card {
+	display: flex;
+	gap: 18px;
+	padding: 22px;
+}
+
+body.wp-admin .pnpc-psd-ticket-hero-icon {
+	flex: 0 0 58px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 58px;
+	height: 58px;
+	border-radius: 16px;
+	background: linear-gradient(135deg, #7c3aed, #2563eb);
+	color: #fff;
+	box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+body.wp-admin .pnpc-psd-ticket-hero-icon .dashicons {
+	width: 30px;
+	height: 30px;
+	font-size: 30px;
+}
+
+body.wp-admin .pnpc-psd-ticket-hero-content {
+	min-width: 0;
+	width: 100%;
+}
+
+body.wp-admin .pnpc-psd-ticket-title-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+body.wp-admin .pnpc-psd-ticket-title-row h1 {
+	margin: 0;
+	padding: 0;
+	font-size: 24px;
+	line-height: 1.2;
+	font-weight: 800;
+	letter-spacing: -0.025em;
+	color: #0f172a;
+}
+
+body.wp-admin .pnpc-psd-ticket-hero-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 14px;
+	margin-top: 6px;
+	color: #64748b;
+	font-size: 13px;
+}
+
+body.wp-admin .pnpc-psd-ticket-request-body {
+	margin-top: 16px;
+	padding: 0;
+	color: #1f2937;
+	font-size: 14px;
+	line-height: 1.65;
+}
+
+body.wp-admin .pnpc-psd-ticket-request-body p:first-child {
+	margin-top: 0;
+}
+
+body.wp-admin .pnpc-psd-ticket-request-body p:last-child {
+	margin-bottom: 0;
+}
+
+body.wp-admin .pnpc-psd-sidebar-card {
+	padding: 18px;
+}
+
+body.wp-admin .pnpc-psd-sidebar-card h2,
+body.wp-admin .pnpc-psd-modern-card h3,
+body.wp-admin .pnpc-psd-conversation-modern-header h3 {
+	margin: 0 0 12px;
+	font-size: 17px;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	color: #0f172a;
+}
+
+body.wp-admin .pnpc-psd-card-help {
+	margin: -4px 0 14px;
+	color: #64748b;
+	font-size: 13px;
+	line-height: 1.45;
+}
+
+body.wp-admin .pnpc-psd-ticket-sidebar-column .pnpc-psd-ticket-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+body.wp-admin .pnpc-psd-pill-field {
+	display: grid;
+	grid-template-columns: 96px minmax(0, 1fr);
+	gap: 10px;
+	align-items: center;
+	margin: 0 !important;
+}
+
+body.wp-admin .pnpc-psd-pill-field label {
+	margin: 0;
+	color: #475569;
+	font-size: 12px;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+body.wp-admin .pnpc-psd-pill-field select {
+	width: 100%;
+	min-height: 38px;
+	border: 1px solid #d8e1ed;
+	border-radius: 999px;
+	background: #f8fafc;
+	font-weight: 700;
+	color: #0f172a;
+}
+
+body.wp-admin .pnpc-psd-hidden-action-button {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+body.wp-admin .pnpc-psd-customer-profile-row {
+	display: flex;
+	gap: 12px;
+	align-items: flex-start;
+}
+
+body.wp-admin .pnpc-psd-customer-profile-row > div:last-child {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+body.wp-admin .pnpc-psd-customer-profile-row strong {
+	color: #0f172a;
+	font-weight: 800;
+}
+
+body.wp-admin .pnpc-psd-customer-profile-row span {
+	color: #64748b;
+	font-size: 13px;
+	word-break: break-word;
+}
+
+body.wp-admin .pnpc-psd-customer-avatar,
+body.wp-admin .pnpc-psd-message-avatar {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	background: #e5e7eb;
+	color: #334155;
+	font-weight: 800;
+}
+
+body.wp-admin .pnpc-psd-customer-avatar {
+	width: 44px;
+	height: 44px;
+	flex: 0 0 44px;
+}
+
+body.wp-admin .pnpc-psd-details-list {
+	display: grid;
+	grid-template-columns: 96px minmax(0, 1fr);
+	gap: 12px;
+	margin: 0;
+}
+
+body.wp-admin .pnpc-psd-details-list dt {
+	color: #64748b;
+	font-size: 12px;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+body.wp-admin .pnpc-psd-details-list dd {
+	margin: 0;
+	color: #0f172a;
+	font-weight: 700;
+}
+
+body.wp-admin .pnpc-psd-conversation-modern-card {
+	padding: 20px;
+}
+
+body.wp-admin .pnpc-psd-conversation-modern-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 16px;
+}
+
+body.wp-admin .pnpc-psd-subtle-pill,
+body.wp-admin .pnpc-psd-count-pill {
+	display: inline-flex;
+	align-items: center;
+	border-radius: 999px;
+	background: #f1f5f9;
+	color: #475569;
+	font-size: 12px;
+	font-weight: 800;
+	padding: 5px 10px;
+}
+
+body.wp-admin .pnpc-psd-message-thread {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+body.wp-admin .pnpc-psd-message-thread .pnpc-psd-response {
+	display: flex;
+	gap: 12px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+body.wp-admin .pnpc-psd-message-thread .pnpc-psd-response::before {
+	display: none;
+}
+
+body.wp-admin .pnpc-psd-message-avatar {
+	width: 42px;
+	height: 42px;
+	flex: 0 0 42px;
+	font-size: 13px;
+}
+
+body.wp-admin .pnpc-psd-response-customer .pnpc-psd-message-avatar {
+	background: #ede9fe;
+	color: #5b21b6;
+}
+
+body.wp-admin .pnpc-psd-response-staff .pnpc-psd-message-avatar {
+	background: #dbeafe;
+	color: #1d4ed8;
+}
+
+body.wp-admin .pnpc-psd-message-bubble {
+	position: relative;
+	flex: 1;
+	min-width: 0;
+	padding: 16px 18px;
+	border: 1px solid #e2e8f0;
+	border-radius: 16px;
+	background: #fff;
+}
+
+body.wp-admin .pnpc-psd-response-customer .pnpc-psd-message-bubble {
+	border-left: 4px solid #7c3aed;
+}
+
+body.wp-admin .pnpc-psd-response-staff .pnpc-psd-message-bubble {
+	border-left: 4px solid #2563eb;
+	background: linear-gradient(90deg, #f3f8ff 0, #fff 84%);
+}
+
+body.wp-admin .pnpc-psd-response-header {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	flex-wrap: wrap;
+	padding: 0;
+	margin: 0 0 8px;
+	border: 0;
+}
+
+body.wp-admin .pnpc-psd-agent-chip {
+	display: inline-flex;
+	align-items: center;
+	border-radius: 999px;
+	background: #dbeafe;
+	color: #1d4ed8;
+	font-size: 11px;
+	font-weight: 800;
+	padding: 3px 8px;
+}
+
+body.wp-admin .pnpc-psd-response-content {
+	padding: 0;
+	line-height: 1.62;
+	color: #1f2937;
+}
+
+body.wp-admin .pnpc-psd-message-attachment {
+	display: inline-flex;
+	gap: 8px;
+	align-items: center;
+	margin-top: 8px;
+	padding: 7px 10px;
+	border: 1px solid #dbeafe;
+	border-radius: 999px;
+	background: #f8fbff;
+	text-decoration: none;
+	font-weight: 700;
+}
+
+body.wp-admin .pnpc-psd-message-attachment span {
+	color: #64748b;
+	font-weight: 600;
+}
+
+body.wp-admin .pnpc-psd-add-response {
+	margin-top: 18px;
+	padding: 0;
+	border: 1px solid #e2e8f0;
+	border-radius: 16px;
+	background: #fff;
+	overflow: hidden;
+}
+
+body.wp-admin .pnpc-psd-reply-tabs {
+	display: flex;
+	gap: 16px;
+	padding: 12px 14px 0;
+	border-bottom: 1px solid #e2e8f0;
+}
+
+body.wp-admin .pnpc-psd-reply-tab {
+	appearance: none;
+	border: 0;
+	background: transparent;
+	padding: 0 0 10px;
+	cursor: pointer;
+	color: #475569;
+	font-weight: 800;
+}
+
+body.wp-admin .pnpc-psd-reply-tab.is-active {
+	color: #2563eb;
+	border-bottom: 2px solid #2563eb;
+}
+
+body.wp-admin .pnpc-psd-reply-tab-secondary {
+	color: #64748b;
+}
+
+body.wp-admin #pnpc-psd-response-form-admin textarea {
+	min-height: 124px;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	resize: vertical;
+}
+
+body.wp-admin .pnpc-psd-reply-actions-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px;
+	border-top: 1px solid #e2e8f0;
+	background: #fbfdff;
+}
+
+body.wp-admin #admin-response-attachments {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+}
+
+body.wp-admin .pnpc-psd-file-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 7px 10px;
+	border-radius: 999px;
+	color: #334155;
+	font-weight: 800;
+	cursor: pointer;
+}
+
+body.wp-admin .pnpc-psd-send-reply-button {
+	margin-left: auto !important;
+	border-radius: 999px !important;
+	font-weight: 800 !important;
+}
+
+body.wp-admin .pnpc-psd-send-reply-button .dashicons {
+	margin-right: 5px;
+}
+
+body.wp-admin .pnpc-psd-client-notes-panel,
+body.wp-admin #pnpc-psd-client-notes-anchor .pnpc-psd-client-notes-panel {
+	margin: 16px 0 0;
+	padding: 12px;
+	border: 1px solid #fde68a;
+	border-radius: 14px;
+	background: #fffbeb;
+}
+
+body.wp-admin .pnpc-psd-client-notes-list {
+	border-color: #fde68a;
+	background: #fffdf5;
+}
+
+body.wp-admin .pnpc-psd-client-notes-item {
+	border-color: #fde68a;
+	background: #fff;
+}
+
+@media screen and (max-width: 1180px) {
+	body.wp-admin .pnpc-psd-ticket-shell {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media screen and (max-width: 782px) {
+	body.wp-admin .pnpc-psd-ticket-hero-card,
+	body.wp-admin .pnpc-psd-message-thread .pnpc-psd-response {
+		flex-direction: column;
+	}
+
+	body.wp-admin .pnpc-psd-pill-field,
+	body.wp-admin .pnpc-psd-details-list {
+		grid-template-columns: 1fr;
+	}
+
+	body.wp-admin .pnpc-psd-reply-actions-row {
+		flex-wrap: wrap;
+	}
+
+	body.wp-admin .pnpc-psd-send-reply-button {
+		margin-left: 0 !important;
+		width: 100%;
+		justify-content: center;
+	}
+}
+
+/* Ticket detail polish pass 4: compact two-column detail refinement. */
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-modern-topbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	padding: 12px 18px;
+	border: 1px solid #e2e8f0;
+	border-radius: 16px;
+	background: #fff;
+	box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-breadcrumb {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 34px;
+	padding: 0 4px;
+	line-height: 1.2;
+	flex-wrap: wrap;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-quick-nav {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-quick-nav .button {
+	border-radius: 999px;
+	min-height: 32px;
+	line-height: 30px;
+	padding: 0 12px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-ticket-hero-card {
+	background: linear-gradient(90deg, #ecfdf5 0%, #f7fff9 62%, #ffffff 100%);
+	border-color: #bbf7d0;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-ticket-hero-icon {
+	background: linear-gradient(135deg, #16a34a, #2563eb);
+	box-shadow: 0 12px 24px rgba(22, 163, 74, 0.18);
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-conversation-modern-card {
+	padding: 18px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-message-thread {
+	gap: 12px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-message-thread .pnpc-psd-response {
+	align-items: flex-start;
+	max-width: 92%;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-response-staff {
+	align-self: flex-end;
+	flex-direction: row-reverse;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-response-customer {
+	align-self: flex-start;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-message-avatar {
+	width: 34px;
+	height: 34px;
+	flex: 0 0 34px;
+	font-size: 12px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-message-bubble {
+	padding: 13px 15px;
+	border-radius: 16px;
+	box-shadow: 0 6px 18px rgba(15, 23, 42, 0.045);
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-response-customer .pnpc-psd-message-bubble {
+	border-left: 4px solid #7c3aed;
+	background: linear-gradient(90deg, #faf5ff 0%, #fff 82%);
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-response-staff .pnpc-psd-message-bubble {
+	border-left: 0;
+	border-right: 4px solid #2563eb;
+	background: linear-gradient(270deg, #eff6ff 0%, #fff 84%);
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-add-response {
+	margin-top: 16px;
+	border-color: #fde68a;
+	background: #fffbeb;
+	box-shadow: 0 8px 22px rgba(202, 138, 4, 0.06);
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-reply-tabs {
+	padding: 10px 14px 0;
+	border-bottom-color: #f3e8bd;
+	background: rgba(255, 251, 235, 0.9);
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-response-form-admin textarea {
+	min-height: 96px;
+	background: #fffef8;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-reply-actions-row {
+	background: #fff7d6;
+	border-top-color: #f3e8bd;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-send-reply-button .dashicons {
+	color: #fff;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-pro-reply-toolbar {
+	margin: 0;
+	padding: 8px 12px;
+	border: 0;
+	border-bottom: 1px solid #f3e8bd;
+	border-radius: 0;
+	background: #fffdf1;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card {
+	padding: 16px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-card-help {
+	margin-bottom: 12px;
+	font-size: 12px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-ticket-sidebar-column .pnpc-psd-ticket-actions {
+	gap: 8px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-pill-field {
+	grid-template-columns: 82px minmax(0, 1fr);
+	gap: 8px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-pill-field label {
+	font-size: 10px;
+	letter-spacing: 0.055em;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-pill-field select {
+	min-height: 30px;
+	padding: 2px 28px 2px 12px;
+	font-size: 12px;
+	line-height: 1.2;
+	box-shadow: none;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-status-pill-field select,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-status-open select {
+	border-color: #c4b5fd;
+	background: #f5f3ff;
+	color: #5b21b6;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-status-in-progress select {
+	border-color: #bfdbfe;
+	background: #eff6ff;
+	color: #1d4ed8;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-status-waiting select {
+	border-color: #fde68a;
+	background: #fffbeb;
+	color: #92400e;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-status-closed select {
+	border-color: #bbf7d0;
+	background: #f0fdf4;
+	color: #166534;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-priority-low select {
+	border-color: #cbd5e1;
+	background: #f8fafc;
+	color: #475569;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-priority-normal select {
+	border-color: #bfdbfe;
+	background: #eff6ff;
+	color: #1d4ed8;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-priority-high select {
+	border-color: #fed7aa;
+	background: #fff7ed;
+	color: #c2410c;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-priority-urgent select {
+	border-color: #fecaca;
+	background: #fef2f2;
+	color: #b91c1c;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-info-card {
+	padding: 16px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-profile-row {
+	gap: 10px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-avatar {
+	width: 36px;
+	height: 36px;
+	flex-basis: 36px;
+	font-size: 12px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-info-tools {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-top: 12px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-info-tools .button,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-info-tools button {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 28px;
+	padding: 3px 10px !important;
+	border-radius: 999px !important;
+	font-size: 12px !important;
+	font-weight: 800 !important;
+	line-height: 1.2 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-client-notes-anchor .pnpc-psd-client-notes-panel,
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-client-notes-anchor .pnpc-psd-pro-internal-notes-panel {
+	margin-top: 12px;
+}
+
+@media screen and (max-width: 782px) {
+	body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-modern-topbar {
+		align-items: flex-start;
+	}
+
+	body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-message-thread .pnpc-psd-response {
+		max-width: 100%;
+	}
+
+	body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-response-staff {
+		flex-direction: column;
+	}
+}
+
+/* Ticket detail polish pass 5: final composer/sidebar refinement. */
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-message-thread .pnpc-psd-response {
+	max-width: 100%;
+	width: 100%;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-message-bubble {
+	width: 100%;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-add-response {
+	background: #fffbeb;
+	padding: 12px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-reply-tabs,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-reply-actions-row {
+	background: transparent;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-response-form-admin {
+	background: #fff;
+	border: 1px solid #f3e8bd;
+	border-radius: 14px;
+	overflow: hidden;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-response-form-admin textarea {
+	background: #fff;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card {
+	padding: 14px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-ticket-actions {
+	gap: 9px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-info-fields {
+	display: grid;
+	gap: 7px;
+	min-width: 0;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-info-field {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-info-label {
+	color: #64748b;
+	font-size: 10px;
+	font-weight: 800;
+	letter-spacing: 0.055em;
+	line-height: 1.2;
+	text-transform: uppercase;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-info-field a,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-info-field span,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-info-field strong {
+	font-size: 13px;
+	line-height: 1.35;
+	word-break: break-word;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-info-field strong {
+	font-size: 14px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-client-notes-anchor .pnpc-psd-pro-internal-notes-panel {
+	margin-top: 10px;
+	padding: 10px;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-client-notes-anchor .pnpc-psd-pro-internal-notes-header strong {
+	font-size: 13px;
+}
+
+
+/* Ticket detail polish pass 6: sidebar controls should be one card, not a card inside a card. */
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-ticket-actions {
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-ticket-actions::before {
+	margin-bottom: 12px;
+}
+
+/* Ticket detail polish pass 6: Client Notes panel uses pale staff-note framing with white working areas. */
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-client-notes-anchor .pnpc-psd-client-notes-panel {
+	border: 1px solid #fde68a;
+	border-radius: 14px;
+	background: #fffbeb;
+	box-shadow: 0 8px 20px rgba(202, 138, 4, 0.08);
+	overflow: hidden;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-client-notes-anchor .pnpc-psd-client-notes-header {
+	background: #fffbeb;
+	border-bottom: 1px solid #fde68a;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-client-notes-anchor .pnpc-psd-client-notes-body {
+	background: #fffbeb;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-client-notes-anchor .pnpc-psd-client-notes-list,
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-client-notes-anchor .pnpc-psd-client-notes-form,
+body.wp-admin .pnpc-psd-ticket-detail-modern #pnpc-psd-client-notes-anchor .pnpc-psd-client-notes-input {
+	background: #fff;
+}
+
+/* Launch polish: keep Danger Zone aligned with the modern ticket view width. */
+body.wp-admin .pnpc-psd-ticket-detail-modern ~ .pnpc-psd-danger-zone,
+body.wp-admin .pnpc-psd-danger-zone {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 1500px;
+	margin: 24px 0 0;
+}
+
+
+/* Launch polish: make ticket-control select pills visibly interactive. */
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-pill-field {
+	position: relative;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-select-pill-field select {
+	-webkit-appearance: none;
+	appearance: none;
+	padding-right: 34px;
+	cursor: pointer;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-select-pill-field::after {
+	content: "\f347";
+	position: absolute;
+	right: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-family: dashicons;
+	font-size: 14px;
+	line-height: 1;
+	color: #64748b;
+	pointer-events: none;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-select-pill-field:hover::after,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-select-pill-field:focus-within::after {
+	color: #2563eb;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-select-pill-field:hover select,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-select-pill-field:focus-within select {
+	border-color: #93c5fd;
+	box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.08);
+}
+
+/* Launch polish: align Danger Zone with the full ticket detail width. */
+body.wp-admin .pnpc-psd-danger-zone {
+	box-sizing: border-box;
+	width: 100% !important;
+	max-width: none !important;
+	margin: 22px 0 0 !important;
+}
+
+
+/* Launch correction: Danger Zone belongs inside the ticket detail wrapper and should align with the ticket grid, not stretch across the admin page. */
+body.wp-admin .pnpc-psd-ticket-detail-modern > .pnpc-psd-danger-zone {
+	box-sizing: border-box !important;
+	width: 100% !important;
+	max-width: 100% !important;
+	margin: 22px 0 0 !important;
+	grid-column: 1 / -1;
+}
+
+
+/* Launch UI correction: only real select controls receive dropdown arrows; action buttons do not. */
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-pill-field:not(.pnpc-psd-select-pill-field)::after,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-pro-back-to-all-tickets-control::after,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-pro-ticket-merge-wrap::after {
+	content: none !important;
+	display: none !important;
+}
+
+/* Launch UI correction: restore value-based Ticket Controls colours after generic hover/select rules. */
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-status-open select,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-status-new select {
+	border-color: #c4b5fd !important;
+	background: #f5f3ff !important;
+	color: #5b21b6 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-status-in-progress select,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-status-in_progress select {
+	border-color: #bfdbfe !important;
+	background: #eff6ff !important;
+	color: #1d4ed8 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-status-waiting select {
+	border-color: #fde68a !important;
+	background: #fffbeb !important;
+	color: #92400e !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-status-closed select {
+	border-color: #bbf7d0 !important;
+	background: #f0fdf4 !important;
+	color: #166534 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-priority-low select {
+	border-color: #cbd5e1 !important;
+	background: #f8fafc !important;
+	color: #475569 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-priority-normal select {
+	border-color: #bfdbfe !important;
+	background: #eff6ff !important;
+	color: #1d4ed8 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-priority-high select {
+	border-color: #fed7aa !important;
+	background: #fff7ed !important;
+	color: #c2410c !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-current-priority-urgent select {
+	border-color: #fecaca !important;
+	background: #fef2f2 !important;
+	color: #b91c1c !important;
+}
+
+
+/* Launch correction: final value-based ticket-control pill colours. Keep these after generic select/hover rules. */
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-pill-field select {
+	border-color: #d8e1ed !important;
+	background-color: #f8fafc !important;
+	color: #0f172a !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-current-status-open select,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-current-status-new select,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-current-priority-normal select {
+	border-color: #d8e1ed !important;
+	background-color: #f8fafc !important;
+	color: #334155 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-current-status-in-progress select,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-current-status-in_progress select,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-current-status-waiting select {
+	border-color: #fde68a !important;
+	background-color: #fffbeb !important;
+	color: #92400e !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-current-status-closed select {
+	border-color: #bbf7d0 !important;
+	background-color: #f0fdf4 !important;
+	color: #166534 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-current-priority-low select {
+	border-color: #cbd5e1 !important;
+	background-color: #f8fafc !important;
+	color: #475569 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-current-priority-high select {
+	border-color: #fed7aa !important;
+	background-color: #fff7ed !important;
+	color: #c2410c !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card .pnpc-psd-current-priority-urgent select {
+	border-color: #fecaca !important;
+	background-color: #fef2f2 !important;
+	color: #b91c1c !important;
+}
+
+/* Launch correction: deterministic ticket-control selector colours and state classes. */
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-ticket-control-select {
+	box-shadow: none !important;
+	font-weight: 700 !important;
+}
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-open,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-new,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-priority-normal {
+	border-color: #d8e1ed !important;
+	background: #f8fafc !important;
+	color: #334155 !important;
+}
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-in-progress,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-in_progress,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-waiting {
+	border-color: #fde68a !important;
+	background: #fffbeb !important;
+	color: #92400e !important;
+}
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-closed {
+	border-color: #bbf7d0 !important;
+	background: #f0fdf4 !important;
+	color: #166534 !important;
+}
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-priority-low {
+	border-color: #cbd5e1 !important;
+	background: #f8fafc !important;
+	color: #475569 !important;
+}
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-priority-high {
+	border-color: #fed7aa !important;
+	background: #fff7ed !important;
+	color: #c2410c !important;
+}
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-priority-urgent {
+	border-color: #fecaca !important;
+	background: #fef2f2 !important;
+	color: #b91c1c !important;
+}
+
+
+/* v1.4.1.8: Ticket detail controls use the exact same value colours as the ticket list badges. */
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-ticket-control-select {
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	border-width: 1px !important;
+	border-style: solid !important;
+	border-radius: 999px !important;
+	box-shadow: none !important;
+	font-size: 12px !important;
+	font-weight: 750 !important;
+	line-height: 1.2 !important;
+	min-height: 30px !important;
+	padding: 4px 30px 4px 12px !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-open,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-new {
+	background-color: #eaf5ff !important;
+	border-color: #b8daf2 !important;
+	color: #0a4b78 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-in-progress,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-in_progress,
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-waiting {
+	background-color: #fff8e5 !important;
+	border-color: #f4d06f !important;
+	color: #704600 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-status-closed {
+	background-color: #edf7ed !important;
+	border-color: #b7dfb7 !important;
+	color: #155724 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-priority-low {
+	background-color: #f0f6fc !important;
+	border-color: #c9dcef !important;
+	color: #35556d !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-priority-normal {
+	background-color: #f3f4f6 !important;
+	border-color: #d1d5db !important;
+	color: #374151 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-priority-high {
+	background-color: #fff3cd !important;
+	border-color: #f3cf63 !important;
+	color: #6f4e00 !important;
+}
+
+body.wp-admin .pnpc-psd-ticket-detail-modern .pnpc-psd-customer-control-card select.pnpc-psd-priority-urgent {
+	background-color: #fcf0f1 !important;
+	border-color: #f2b8bf !important;
+	color: #8a2424 !important;
 }

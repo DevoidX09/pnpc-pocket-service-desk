@@ -12,12 +12,218 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 global $wpdb;
 
+/**
+ * Delete options by prefix during full uninstall cleanup.
+ *
+ * @param string $prefix Option prefix.
+ * @return void
+ */
+function pnpc_psd_uninstall_delete_options_by_prefix( $prefix ) {
+	global $wpdb;
+
+	$like = $wpdb->esc_like( $prefix ) . '%';
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+			$like
+		)
+	);
+}
+
+/**
+ * Delete user meta by prefix during full uninstall cleanup.
+ *
+ * @param string $prefix User meta prefix.
+ * @return void
+ */
+function pnpc_psd_uninstall_delete_user_meta_by_prefix( $prefix ) {
+	global $wpdb;
+
+	$like = $wpdb->esc_like( $prefix ) . '%';
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
+			$like
+		)
+	);
+}
+
+/**
+ * Delete post meta by prefix during full uninstall cleanup.
+ *
+ * @param string $prefix Post meta prefix.
+ * @return void
+ */
+function pnpc_psd_uninstall_delete_post_meta_by_prefix( $prefix ) {
+	global $wpdb;
+
+	$like = $wpdb->esc_like( $prefix ) . '%';
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s",
+			$like
+		)
+	);
+}
+
+/**
+ * Remove Pro add-on data created by PNPC Pocket Service Desk Pro.
+ *
+ * This is intentionally duplicated in the base plugin uninstall handler so the
+ * base plugin's "Delete data on uninstall" setting can clean the add-on data
+ * even when WordPress only runs the base plugin uninstaller.
+ *
+ * @return void
+ */
+function pnpc_psd_pro_uninstall_cleanup_all_data() {
+	global $wpdb;
+
+	// Stop scheduled email polling/license checks.
+	wp_clear_scheduled_hook( 'pnpc_psd_pro_poll_email_replies' );
+	wp_clear_scheduled_hook( 'pnpc_psd_pro_daily_license_check' );
+
+	// Delete Pro options, diagnostics, setup status, and Pro transients/timeouts.
+	$option_prefixes = array(
+		'pnpc_psd_pro_',
+		'pnpc_psd_diag_',
+		'pnpc_psd_license_',
+		'_transient_pnpc_psd_pro_',
+		'_transient_timeout_pnpc_psd_pro_',
+		'_transient_pnpc_psd_internal_chat_active_',
+		'_transient_timeout_pnpc_psd_internal_chat_active_',
+	);
+
+	foreach ( $option_prefixes as $prefix ) {
+		$like = $wpdb->esc_like( $prefix ) . '%';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+				$like
+			)
+		);
+	}
+
+	delete_option( 'pnpc_psd_diag_log' );
+
+	// Delete saved replies CPT content.
+	$saved_reply_ids = get_posts(
+		array(
+			'post_type'      => 'pnpc_saved_reply',
+			'post_status'    => 'any',
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+			'no_found_rows'  => true,
+		)
+	);
+
+	if ( is_array( $saved_reply_ids ) ) {
+		foreach ( $saved_reply_ids as $saved_reply_id ) {
+			wp_delete_post( absint( $saved_reply_id ), true );
+		}
+	}
+
+	// Delete Pro user meta: allocations, client notes, and per-ticket chat seen markers.
+	$user_meta_keys = array(
+		'pnpc_psd_allocated_products',
+		'pnpc_psd_client_internal_notes',
+	);
+
+	foreach ( $user_meta_keys as $meta_key ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+		$wpdb->delete( $wpdb->usermeta, array( 'meta_key' => $meta_key ), array( '%s' ) );
+	}
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
+			$wpdb->esc_like( 'pnpc_psd_internal_chat_last_seen_' ) . '%'
+		)
+	);
+
+	// Delete Pro product/post meta.
+	$post_meta_keys = array(
+		'_pnpc_psd_pro_private_service_product',
+	);
+
+	foreach ( $post_meta_keys as $meta_key ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+		$wpdb->delete( $wpdb->postmeta, array( 'meta_key' => $meta_key ), array( '%s' ) );
+	}
+
+	// Delete Pro ticket meta if the base ticket meta table still exists.
+	$ticket_meta_table = $wpdb->prefix . 'pnpc_psd_ticket_meta';
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+	$table_exists = $wpdb->get_var(
+		$wpdb->prepare(
+			'SHOW TABLES LIKE %s',
+			$ticket_meta_table
+		)
+	);
+
+	if ( $table_exists ) {
+		$ticket_meta_keys = array(
+			'pnpc_psd_internal_staff_chat',
+			'pnpc_psd_internal_notes',
+			'pnpc_psd_email_reply_token',
+			'pnpc_psd_email_processed_message_ids',
+			'pnpc_psd_created_at',
+			'pnpc_psd_first_response_at',
+			'pnpc_psd_closed_at',
+			'pnpc_psd_assigned_agent_id',
+			'pnpc_psd_source',
+			'pnpc_psd_merged_into',
+			'pnpc_psd_merged_at',
+			'pnpc_psd_merged_by',
+			'pnpc_psd_last_merged_ticket',
+			'pnpc_psd_last_customer_activity_ts',
+			'pnpc_psd_last_staff_activity_ts',
+		);
+
+		foreach ( $ticket_meta_keys as $meta_key ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+			$wpdb->delete( $ticket_meta_table, array( 'meta_key' => $meta_key ), array( '%s' ) );
+		}
+	}
+
+	// Remove Pro-only capabilities and role.
+	$pro_caps = array(
+		'pnpc_psd_use_internal_chat',
+		'pnpc_psd_manage_saved_replies',
+		'pnpc_psd_use_saved_replies',
+		'pnpc_psd_view_services',
+		'pnpc_psd_merge_tickets',
+		'pnpc_psd_view_advanced_stats',
+	);
+
+	foreach ( wp_roles()->roles as $role_name => $role_data ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Role data is not needed.
+		$role = get_role( $role_name );
+		if ( ! $role ) {
+			continue;
+		}
+
+		foreach ( $pro_caps as $cap ) {
+			$role->remove_cap( $cap );
+		}
+	}
+
+	remove_role( 'pnpc_psd_manager' );
+}
+
+
 // Data retention policy:
 // By default, preserve settings and user profile uploads across uninstall/reinstall.
 // To fully remove plugin data, enable the "Delete data on uninstall" toggle in settings.
-$delete_data = (bool) get_option( 'pnpc_psd_delete_data_on_uninstall', 0 );
+$delete_data = (bool) get_option( 'pnpc_psd_delete_data_on_uninstall', 0 ) && (bool) get_option( 'pnpc_psd_delete_data_on_uninstall_confirmed_at', false );
 
 if ( $delete_data ) {
+
+	// Remove Pro add-on data first, if the add-on has ever been installed.
+	pnpc_psd_pro_uninstall_cleanup_all_data();
 
 	// Delete only pages created by the plugin setup wizard/builder.
 	$generated_page_ids = array();
@@ -91,7 +297,13 @@ if ( $delete_data ) {
 	delete_option( 'pnpc_psd_my_tickets_card_bg_hover_color' );
 	delete_option( 'pnpc_psd_my_tickets_view_button_color' );
 	delete_option( 'pnpc_psd_my_tickets_view_button_hover_color' );
+
+	// Final sweep: remove all current and legacy Service Desk options that may not be listed above.
+	pnpc_psd_uninstall_delete_options_by_prefix( 'pnpc_psd_' );
+	pnpc_psd_uninstall_delete_options_by_prefix( '_transient_pnpc_psd_' );
+	pnpc_psd_uninstall_delete_options_by_prefix( '_transient_timeout_pnpc_psd_' );
 	delete_option( 'pnpc_psd_delete_data_on_uninstall' );
+	delete_option( 'pnpc_psd_delete_data_on_uninstall_confirmed_at' );
 }
 
 // Drop custom tables only when delete_data is enabled.
@@ -106,6 +318,8 @@ if ( $delete_data ) {
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_audit_log" );
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_error_log" );
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_ticket_meta" );
 }
 
 // Remove custom capabilities from roles.
@@ -133,4 +347,9 @@ if ( $delete_data ) {
 	$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key = 'pnpc_psd_profile_image'" );
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 	$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key = 'pnpc_psd_profile_image_id'" );
+
+	// Final sweep: remove current and legacy Service Desk metadata.
+	pnpc_psd_uninstall_delete_user_meta_by_prefix( 'pnpc_psd_' );
+	pnpc_psd_uninstall_delete_post_meta_by_prefix( 'pnpc_psd_' );
+	pnpc_psd_uninstall_delete_post_meta_by_prefix( '_pnpc_psd_' );
 }

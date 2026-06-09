@@ -23,8 +23,8 @@ class PNPC_PSD_Notifications {
 	/**
 	 * Temporary launch-hardening trace for outbound notification routing.
 	 *
-	 * Stored in the Service Desk error log as warning-level records so failed
-	 * customer notification paths are visible even without WP Mail SMTP Pro logs.
+	 * Stored in the Service Desk error log as info-level records so launch
+	 * notification routing remains visible without creating health warnings.
 	 *
 	 * @param string $event   Event key.
 	 * @param array  $context Context data.
@@ -36,7 +36,7 @@ class PNPC_PSD_Notifications {
 				'email',
 				'Notification trace: ' . sanitize_key( (string) $event ),
 				is_array( $context ) ? $context : array(),
-				'warning'
+				'info'
 			);
 		}
 	}

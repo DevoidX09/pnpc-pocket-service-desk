@@ -25,10 +25,21 @@ $customers = get_users(array(
 ));
 ?>
 
-<div class="wrap">
+<div class="wrap pnpc-psd-admin-create-ticket-wrap">
+	<style>
+		.pnpc-psd-admin-create-ticket-wrap{max-width:980px;}
+		.pnpc-psd-create-ticket-card{background:#fff;border:1px solid #dcdcde;border-radius:16px;box-shadow:0 2px 8px rgba(15,23,42,.05);margin-top:18px;padding:22px;}
+		.pnpc-psd-create-ticket-card .form-table th{width:180px;padding-top:18px;}
+		.pnpc-psd-create-ticket-card .form-table td{padding-top:14px;padding-bottom:14px;}
+		.pnpc-psd-create-ticket-card select,.pnpc-psd-create-ticket-card input.regular-text{max-width:420px;width:100%;}
+		.pnpc-psd-create-ticket-card textarea.large-text{max-width:680px;width:100%;}
+		.pnpc-psd-create-ticket-card .description{max-width:680px;}
+		@media (max-width:782px){.pnpc-psd-create-ticket-card .form-table th{width:auto}.pnpc-psd-create-ticket-card select,.pnpc-psd-create-ticket-card input.regular-text,.pnpc-psd-create-ticket-card textarea.large-text{max-width:100%;}}
+	</style>
 	<h1><?php esc_html_e('Create Ticket for Customer', 'pnpc-pocket-service-desk'); ?></h1>
+	<p class="description"><?php esc_html_e('Create a customer ticket from the admin area. Use this when staff need to open a ticket on behalf of a customer.', 'pnpc-pocket-service-desk'); ?></p>
 
-	<form id="pnpc-psd-admin-create-ticket-form" method="post" action="" enctype="multipart/form-data">
+	<form id="pnpc-psd-admin-create-ticket-form" class="pnpc-psd-create-ticket-card" method="post" action="" enctype="multipart/form-data">
 		<?php wp_nonce_field('pnpc_psd_create_ticket_admin', 'pnpc_psd_create_ticket_nonce'); ?>
 
 		<table class="form-table">
@@ -37,7 +48,7 @@ $customers = get_users(array(
 					<label for="customer_id"><?php esc_html_e('Customer', 'pnpc-pocket-service-desk'); ?> <span class="required">*</span></label>
 				</th>
 				<td>
-					<select id="customer_id" name="customer_id" required style="width: 400px;">
+					<select id="customer_id" name="customer_id" required>
 						<option value=""><?php esc_html_e('Select a customer...', 'pnpc-pocket-service-desk'); ?></option>
 						<?php
 						foreach ($customers as $customer) {
@@ -84,7 +95,7 @@ $customers = get_users(array(
 				</th>
 				<td>
 					<textarea id="description" name="description" rows="10" class="large-text" required></textarea>
-					<p class="description"><?php esc_html_e('Detailed description of the issue.', 'pnpc-pocket-service-desk'); ?></p>
+					<p class="description"><?php esc_html_e('Add the details the agent needs to start work. This field is intentionally kept readable and does not need to span the full admin page.', 'pnpc-pocket-service-desk'); ?></p>
 				</td>
 			</tr>
 

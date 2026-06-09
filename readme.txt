@@ -1,6 +1,6 @@
 === PNPC Pocket Service Desk ===
 Contributors: pnpc
-Tags: helpdesk, service desk, support, tickets, customer support, woocommerce
+Tags: helpdesk, service desk, support, tickets, customer support
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
@@ -8,7 +8,7 @@ Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A comprehensive service desk plugin for managing customer support tickets with WooCommerce integration.
+A WordPress-native service desk plugin for managing customer support tickets, customer conversations, attachments, and staff workflows.
 
 == Description ==
 
@@ -17,7 +17,7 @@ PNPC Pocket Service Desk provides a lightweight, WordPress-native ticketing work
 Key capabilities:
 * Customers can create tickets, add attachments, and respond to ticket threads.
 * Agents/Admins can manage tickets across status tabs (Open, In Progress, Waiting, Closed, Review, Trash).
-* Optional WooCommerce integration via extension hooks (the [pnpc_services] shortcode is a placeholder by default).
+* Optional services area via extension hooks; the [pnpc_services] shortcode is a placeholder by default.
 
 
 == Third Party Libraries ==
@@ -62,7 +62,7 @@ If you use a separate “Logout” link/button, point it back to the dashboard (
 2. Open a Incognito Browser session.
 3. Navigate directly to the dashboard URL or use your websites external login link if it exists and links to the dashboard.
 4. Login to test making and tracking tickets.
-5. You can share products to users in their public dashboard via their user admin screen if this option is enabled.
+5. Optional extension hooks can render a services area in the customer dashboard.
 
 == Privacy ==
 
@@ -78,8 +78,8 @@ Data retention on uninstall: by default, plugin data is preserved when the plugi
 = Do customers see other customers’ tickets? =
 No. The front-end queries are scoped so customers only see tickets they created (and replies on those tickets).
 
-= Does the plugin work without WooCommerce? =
-Yes. WooCommerce is only required for the `[pnpc_services]` shortcode and related service/product displays.
+= Does the plugin work without other commerce plugins? =
+Yes. The core ticketing workflow works independently. The `[pnpc_services]` shortcode is a placeholder by default and can be extended by compatible add-ons.
 
 == Screenshots ==
 
