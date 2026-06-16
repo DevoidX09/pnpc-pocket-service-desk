@@ -15,11 +15,13 @@ $current_view = isset( $_GET['view'] ) ? sanitize_text_field( wp_unslash( $_GET[
 $is_trash_view = ('trash' === $current_view);
 $is_review_view = ('review' === $current_view);
 $is_archived_view = ('archived' === $current_view);
+$current_user      = wp_get_current_user();
+$can_manage_review_queue = current_user_can( 'manage_options' ) || ( $current_user && ! empty( $current_user->roles ) && in_array( 'pnpc_psd_manager', (array) $current_user->roles, true ) );
 
 // Bulk Actions:
 // - Main list + Trash are Admin-only.
-// - Review queue can be actioned by Admins/Managers (pnpc_psd_delete_tickets).
-$can_bulk_actions = $is_review_view ? current_user_can('pnpc_psd_delete_tickets') : current_user_can('manage_options');
+// - Review queue can be actioned by Admins/Managers only.
+$can_bulk_actions = $is_review_view ? $can_manage_review_queue : current_user_can('manage_options');
 
 // Initialize badge_counts if not set (initial page load)
 if (!isset($badge_counts)) {
@@ -54,7 +56,7 @@ if ( ! empty( $tickets ) ) {
 	if ( ! empty( $pnpc_psd_ticket_ids ) ) {
 		$pnpc_psd_att_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 		$pnpc_psd_placeholders = implode( ',', array_fill( 0, count( $pnpc_psd_ticket_ids ), '%d' ) );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is plugin-owned and IDs are absint-normalized.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is plugin-owned and IDs are absint-normalized.
 		$pnpc_psd_att_rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT ticket_id, COUNT(*) AS attachment_count FROM {$pnpc_psd_att_table} WHERE deleted_at IS NULL AND ticket_id IN ({$pnpc_psd_placeholders}) GROUP BY ticket_id",
@@ -80,8 +82,10 @@ if ( ! function_exists( 'pnpc_psd_render_attachment_indicator' ) ) {
 		if ( ! $count ) {
 			return;
 		}
+		/* translators: %d: number of attachments. */
+		$attachment_label = sprintf( _n( '%d attachment', '%d attachments', $count, 'pnpc-pocket-service-desk' ), $count );
 		?>
-		<span class="pnpc-psd-attachment-indicator" title="<?php echo esc_attr( sprintf( _n( '%d attachment', '%d attachments', $count, 'pnpc-pocket-service-desk' ), $count ) ); ?>" aria-label="<?php echo esc_attr( sprintf( _n( '%d attachment', '%d attachments', $count, 'pnpc-pocket-service-desk' ), $count ) ); ?>">
+		<span class="pnpc-psd-attachment-indicator" title="<?php echo esc_attr( $attachment_label ); ?>" aria-label="<?php echo esc_attr( $attachment_label ); ?>">
 			<span class="dashicons dashicons-paperclip"></span>
 			<span class="pnpc-psd-attachment-count"><?php echo esc_html( $count ); ?></span>
 		</span>
@@ -108,25 +112,33 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 }
 ?>
 
-<div class="wrap">
-	<h1><?php esc_html_e('Service Desk Tickets', 'pnpc-pocket-service-desk'); ?></h1>
-	<div style="margin: 10px 0 15px;">
-		<?php
-		$csv_export_url = wp_nonce_url(
-			add_query_arg(
-				array(
-					'action' => 'pnpc_psd_export_tickets',
-					'view'   => $current_view,
-					'status' => isset( $status ) ? $status : '',
-				),
-				admin_url( 'admin-post.php' )
+<div class="wrap pnpc-psd-ticket-list-page">
+	<?php
+	$csv_export_url = wp_nonce_url(
+		add_query_arg(
+			array(
+				'action' => 'pnpc_psd_export_tickets',
+				'view'   => $current_view,
+				'status' => isset( $status ) ? $status : '',
 			),
-			'pnpc_psd_export_tickets'
-		);
-		?>
-		<a class="button button-secondary" href="<?php echo esc_url( $csv_export_url ); ?>">
-			<?php esc_html_e( 'Export CSV', 'pnpc-pocket-service-desk' ); ?>
-		</a>
+			admin_url( 'admin-post.php' )
+		),
+		'pnpc_psd_export_tickets'
+	);
+	?>
+	<div class="pnpc-psd-ticket-list-hero">
+		<div>
+			<h1><?php esc_html_e('Service Desk Tickets', 'pnpc-pocket-service-desk'); ?></h1>
+			<p><?php esc_html_e( 'Review, triage, and manage customer conversations from one queue.', 'pnpc-pocket-service-desk' ); ?></p>
+		</div>
+		<div class="pnpc-psd-ticket-list-actions">
+			<a class="button button-secondary" href="<?php echo esc_url( $csv_export_url ); ?>">
+				<?php esc_html_e( 'Export CSV', 'pnpc-pocket-service-desk' ); ?>
+			</a>
+			<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-create-ticket' ) ); ?>">
+				<?php esc_html_e( 'Create Ticket', 'pnpc-pocket-service-desk' ); ?>
+			</a>
+		</div>
 	</div>
 
 
@@ -186,6 +198,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 				?>
 			</a> |
 		</li>
+		<?php if ( $can_manage_review_queue ) : ?>
 		<li class="review">
 			<a href="<?php echo esc_url( $review_url ); ?>" <?php echo $is_review_view ? 'class="current"' : ''; ?>>
 				<?php
@@ -194,6 +207,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 				?>
 			</a> |
 		</li>
+		<?php endif; ?>
 		<li class="trash">
 			<a href="<?php echo esc_url( $trash_url ); ?>" <?php echo $is_trash_view ? 'class="current"' : ''; ?>>
 				<?php
@@ -371,7 +385,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 					<tr class="pnpc-psd-ticket-row" data-sort-ticket-number="<?php echo esc_attr( $ticket_num_for_sort ); ?>" data-sort-text="<?php echo esc_attr( strtolower( (string) $ticket->subject ) ); ?>" data-sort-date="<?php echo esc_attr( $archived_ts ); ?>">
 						<?php if ( $can_bulk_actions ) : ?>
 						<th scope="row" class="check-column">
-							<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>"><?php printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?></label>
+							<label class="screen-reader-text" for="cb-select-<?php echo absint($ticket->id); ?>"><?php /* translators: %s: ticket number. */ printf(esc_html__('Select %s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?></label>
 							<input type="checkbox" name="ticket[]" id="cb-select-<?php echo esc_attr( absint( $ticket->id ) ); ?>" value="<?php echo esc_attr( absint( $ticket->id ) ); ?>">
 						</th>
 						<?php endif; ?>
@@ -684,6 +698,7 @@ if (!function_exists('pnpc_psd_get_pagination_link')) {
 							<span class="pnpc-psd-divider-text">
 								<?php
 								printf(
+									/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 									esc_html__('Closed Tickets (%d)', 'pnpc-pocket-service-desk'),
 									count($closed_tickets)
 								);

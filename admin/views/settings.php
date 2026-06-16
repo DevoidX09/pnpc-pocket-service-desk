@@ -16,7 +16,6 @@ $page_slug  = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] )
 $tabs       = array(
 	'core'       => __( 'Operations', 'pnpc-pocket-service-desk' ),
 	'experience' => __( 'Portal', 'pnpc-pocket-service-desk' ),
-	'customize'  => __( 'Appearance', 'pnpc-pocket-service-desk' ),
 	'shortcodes' => __( 'Shortcodes', 'pnpc-pocket-service-desk' ),
 	'support'    => __( 'Support', 'pnpc-pocket-service-desk' ),
 );
@@ -153,9 +152,8 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 
 
 	<div class="pnpc-psd-settings-overview" aria-label="<?php esc_attr_e( 'Settings overview', 'pnpc-pocket-service-desk' ); ?>">
-		<div class="pnpc-psd-settings-card"><h2><?php esc_html_e( 'Operations', 'pnpc-pocket-service-desk' ); ?></h2><p><?php esc_html_e( 'Notifications, ticket assignment, attachments, logout behavior, and data retention.', 'pnpc-pocket-service-desk' ); ?></p></div>
-		<div class="pnpc-psd-settings-card"><h2><?php esc_html_e( 'Portal', 'pnpc-pocket-service-desk' ); ?></h2><p><?php esc_html_e( 'Customer-facing welcome messages, public login behavior, ticket list refresh, and portal display settings.', 'pnpc-pocket-service-desk' ); ?></p></div>
-		<div class="pnpc-psd-settings-card"><h2><?php esc_html_e( 'Appearance', 'pnpc-pocket-service-desk' ); ?></h2><p><?php esc_html_e( 'Client-facing dashboard colors, buttons, and visual preferences for the Service Desk shortcodes.', 'pnpc-pocket-service-desk' ); ?></p></div>
+		<div class="pnpc-psd-settings-card"><h2><?php esc_html_e( 'Operations', 'pnpc-pocket-service-desk' ); ?></h2><p><?php esc_html_e( 'Notifications, ticket assignment, real-time ticket updates, attachments, logout behavior, and data retention.', 'pnpc-pocket-service-desk' ); ?></p></div>
+		<div class="pnpc-psd-settings-card"><h2><?php esc_html_e( 'Portal', 'pnpc-pocket-service-desk' ); ?></h2><p><?php esc_html_e( 'Customer-facing welcome messages, public login behavior, and portal display settings.', 'pnpc-pocket-service-desk' ); ?></p></div>
 		<div class="pnpc-psd-settings-card"><h2><?php esc_html_e( 'Support', 'pnpc-pocket-service-desk' ); ?></h2><p><?php esc_html_e( 'Shortcodes, setup references, support bundle tools, and operational support resources.', 'pnpc-pocket-service-desk' ); ?></p></div>
 	</div>
 
@@ -262,6 +260,71 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 							<input type="checkbox" name="pnpc_psd_notify_staff_on_customer_reply" value="1" <?php checked( 1, get_option( 'pnpc_psd_notify_staff_on_customer_reply', 1 ) ); ?> />
 							<?php esc_html_e( 'On customer reply', 'pnpc-pocket-service-desk' ); ?>
 						</label>
+					</td>
+				</tr>
+			</table>
+
+
+			<h2><?php esc_html_e( 'Real-Time Updates', 'pnpc-pocket-service-desk' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'Configure admin ticket list updates and operational menu badge notifications.', 'pnpc-pocket-service-desk' ); ?></p>
+			<table class="form-table">
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Enable Menu Badge', 'pnpc-pocket-service-desk' ); ?></th>
+					<td>
+						<label>
+							<input type="hidden" name="pnpc_psd_enable_menu_badge" value="0" />
+							<input type="checkbox" name="pnpc_psd_enable_menu_badge" value="1" <?php checked( 1, get_option( 'pnpc_psd_enable_menu_badge', 1 ) ); ?> />
+							<?php esc_html_e( 'Show ticket count badge in admin menu.', 'pnpc-pocket-service-desk' ); ?>
+						</label>
+						<p class="description"><?php esc_html_e( 'Displays a counter of open and in-progress tickets in the admin sidebar.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="pnpc_psd_menu_badge_interval"><?php esc_html_e( 'Menu Badge Update Interval', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<td>
+						<select name="pnpc_psd_menu_badge_interval" id="pnpc_psd_menu_badge_interval">
+							<option value="15" <?php selected( 15, get_option( 'pnpc_psd_menu_badge_interval', 30 ) ); ?>>15 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
+							<option value="30" <?php selected( 30, get_option( 'pnpc_psd_menu_badge_interval', 30 ) ); ?>>30 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
+							<option value="60" <?php selected( 60, get_option( 'pnpc_psd_menu_badge_interval', 30 ) ); ?>>60 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
+							<option value="120" <?php selected( 120, get_option( 'pnpc_psd_menu_badge_interval', 30 ) ); ?>>2 <?php esc_html_e( 'minutes', 'pnpc-pocket-service-desk' ); ?></option>
+						</select>
+						<p class="description"><?php esc_html_e( 'How often to check for new tickets and update the menu badge.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Enable Auto-Refresh', 'pnpc-pocket-service-desk' ); ?></th>
+					<td>
+						<label>
+							<input type="hidden" name="pnpc_psd_enable_auto_refresh" value="0" />
+							<input type="checkbox" name="pnpc_psd_enable_auto_refresh" value="1" <?php checked( 1, get_option( 'pnpc_psd_enable_auto_refresh', 1 ) ); ?> />
+							<?php esc_html_e( 'Automatically refresh admin ticket lists.', 'pnpc-pocket-service-desk' ); ?>
+						</label>
+						<p class="description"><?php esc_html_e( 'Keeps the admin Service Desk ticket lists up to date without a full page reload.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="pnpc_psd_auto_refresh_interval"><?php esc_html_e( 'Auto-Refresh Interval', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<td>
+						<select name="pnpc_psd_auto_refresh_interval" id="pnpc_psd_auto_refresh_interval">
+							<option value="15" <?php selected( 15, get_option( 'pnpc_psd_auto_refresh_interval', 30 ) ); ?>>15 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
+							<option value="30" <?php selected( 30, get_option( 'pnpc_psd_auto_refresh_interval', 30 ) ); ?>>30 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
+							<option value="60" <?php selected( 60, get_option( 'pnpc_psd_auto_refresh_interval', 30 ) ); ?>>60 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
+							<option value="120" <?php selected( 120, get_option( 'pnpc_psd_auto_refresh_interval', 30 ) ); ?>>2 <?php esc_html_e( 'minutes', 'pnpc-pocket-service-desk' ); ?></option>
+						</select>
+						<p class="description"><?php esc_html_e( 'How often to refresh admin ticket lists.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="pnpc_psd_tickets_per_page"><?php esc_html_e( 'Tickets Per Page', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<td>
+						<select id="pnpc_psd_tickets_per_page" name="pnpc_psd_tickets_per_page">
+							<option value="10" <?php selected( get_option( 'pnpc_psd_tickets_per_page', 20 ), '10' ); ?>>10</option>
+							<option value="15" <?php selected( get_option( 'pnpc_psd_tickets_per_page', 20 ), '15' ); ?>>15</option>
+							<option value="20" <?php selected( get_option( 'pnpc_psd_tickets_per_page', 20 ), '20' ); ?>>20</option>
+							<option value="25" <?php selected( get_option( 'pnpc_psd_tickets_per_page', 20 ), '25' ); ?>>25</option>
+							<option value="50" <?php selected( get_option( 'pnpc_psd_tickets_per_page', 20 ), '50' ); ?>>50</option>
+						</select>
+						<p class="description"><?php esc_html_e( 'Number of tickets to display per page in the ticket list.', 'pnpc-pocket-service-desk' ); ?></p>
 					</td>
 				</tr>
 			</table>
@@ -538,6 +601,21 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 		===================== -->
 		<div class="pnpc-psd-settings-panel" id="pnpc-psd-tab-experience" style="<?php echo esc_attr( $panel_style( 'experience' ) ); ?>">
 
+			<h2><?php esc_html_e( 'Admin Branding', 'pnpc-pocket-service-desk' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'Choose how the Service Desk icon appears in the WordPress admin menu. The dashboard, wizard, and support pages use the full color product logo.', 'pnpc-pocket-service-desk' ); ?></p>
+			<table class="form-table">
+				<tr>
+					<th scope="row"><label for="pnpc_psd_admin_menu_logo_style"><?php esc_html_e( 'WP Admin menu logo', 'pnpc-pocket-service-desk' ); ?></label></th>
+					<td>
+						<select id="pnpc_psd_admin_menu_logo_style" name="pnpc_psd_admin_menu_logo_style">
+							<option value="color" <?php selected( 'color', get_option( 'pnpc_psd_admin_menu_logo_style', 'color' ) ); ?>><?php esc_html_e( 'Color product logo', 'pnpc-pocket-service-desk' ); ?></option>
+							<option value="mono" <?php selected( 'mono', get_option( 'pnpc_psd_admin_menu_logo_style', 'color' ) ); ?>><?php esc_html_e( 'Monochrome ticket icon', 'pnpc-pocket-service-desk' ); ?></option>
+						</select>
+						<p class="description"><?php esc_html_e( 'Use the color logo for stronger product branding, or the monochrome ticket icon for a more native WordPress admin-menu appearance.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+			</table>
+
 			<h2><?php esc_html_e( 'Welcome Messages', 'pnpc-pocket-service-desk' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Control optional welcome headings shown in public shortcodes. Disable these if you are providing your own headings via a page builder.', 'pnpc-pocket-service-desk' ); ?></p>
 			<table class="form-table">
@@ -563,77 +641,13 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				</tr>
 			</table>
 
-			<h2><?php esc_html_e( 'Real-Time Updates', 'pnpc-pocket-service-desk' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Configure automatic ticket list updates and menu badge notifications.', 'pnpc-pocket-service-desk' ); ?></p>
-			<table class="form-table">
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Enable Menu Badge', 'pnpc-pocket-service-desk' ); ?></th>
-					<td>
-						<label>
-							<input type="hidden" name="pnpc_psd_enable_menu_badge" value="0" />
-							<input type="checkbox" name="pnpc_psd_enable_menu_badge" value="1" <?php checked( 1, get_option( 'pnpc_psd_enable_menu_badge', 1 ) ); ?> />
-							<?php esc_html_e( 'Show ticket count badge in admin menu.', 'pnpc-pocket-service-desk' ); ?>
-						</label>
-						<p class="description"><?php esc_html_e( 'Displays a counter of open and in-progress tickets in the admin sidebar.', 'pnpc-pocket-service-desk' ); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="pnpc_psd_menu_badge_interval"><?php esc_html_e( 'Menu Badge Update Interval', 'pnpc-pocket-service-desk' ); ?></label></th>
-					<td>
-						<select name="pnpc_psd_menu_badge_interval" id="pnpc_psd_menu_badge_interval">
-							<option value="15" <?php selected( 15, get_option( 'pnpc_psd_menu_badge_interval', 30 ) ); ?>>15 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
-							<option value="30" <?php selected( 30, get_option( 'pnpc_psd_menu_badge_interval', 30 ) ); ?>>30 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
-							<option value="60" <?php selected( 60, get_option( 'pnpc_psd_menu_badge_interval', 30 ) ); ?>>60 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
-							<option value="120" <?php selected( 120, get_option( 'pnpc_psd_menu_badge_interval', 30 ) ); ?>>2 <?php esc_html_e( 'minutes', 'pnpc-pocket-service-desk' ); ?></option>
-						</select>
-						<p class="description"><?php esc_html_e( 'How often to check for new tickets and update the menu badge.', 'pnpc-pocket-service-desk' ); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Enable Auto-Refresh', 'pnpc-pocket-service-desk' ); ?></th>
-					<td>
-						<label>
-							<input type="hidden" name="pnpc_psd_enable_auto_refresh" value="0" />
-							<input type="checkbox" name="pnpc_psd_enable_auto_refresh" value="1" <?php checked( 1, get_option( 'pnpc_psd_enable_auto_refresh', 1 ) ); ?> />
-							<?php esc_html_e( 'Automatically refresh ticket lists.', 'pnpc-pocket-service-desk' ); ?>
-						</label>
-						<p class="description"><?php esc_html_e( 'Keeps ticket lists up to date without a full page reload.', 'pnpc-pocket-service-desk' ); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="pnpc_psd_auto_refresh_interval"><?php esc_html_e( 'Auto-Refresh Interval', 'pnpc-pocket-service-desk' ); ?></label></th>
-					<td>
-						<select name="pnpc_psd_auto_refresh_interval" id="pnpc_psd_auto_refresh_interval">
-							<option value="15" <?php selected( 15, get_option( 'pnpc_psd_auto_refresh_interval', 30 ) ); ?>>15 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
-							<option value="30" <?php selected( 30, get_option( 'pnpc_psd_auto_refresh_interval', 30 ) ); ?>>30 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
-							<option value="60" <?php selected( 60, get_option( 'pnpc_psd_auto_refresh_interval', 30 ) ); ?>>60 <?php esc_html_e( 'seconds', 'pnpc-pocket-service-desk' ); ?></option>
-							<option value="120" <?php selected( 120, get_option( 'pnpc_psd_auto_refresh_interval', 30 ) ); ?>>2 <?php esc_html_e( 'minutes', 'pnpc-pocket-service-desk' ); ?></option>
-						</select>
-						<p class="description"><?php esc_html_e( 'How often to refresh ticket lists.', 'pnpc-pocket-service-desk' ); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="pnpc_psd_tickets_per_page"><?php esc_html_e( 'Tickets Per Page', 'pnpc-pocket-service-desk' ); ?></label></th>
-					<td>
-						<select id="pnpc_psd_tickets_per_page" name="pnpc_psd_tickets_per_page">
-							<option value="10" <?php selected( get_option( 'pnpc_psd_tickets_per_page', 20 ), '10' ); ?>>10</option>
-							<option value="15" <?php selected( get_option( 'pnpc_psd_tickets_per_page', 20 ), '15' ); ?>>15</option>
-							<option value="20" <?php selected( get_option( 'pnpc_psd_tickets_per_page', 20 ), '20' ); ?>>20</option>
-							<option value="25" <?php selected( get_option( 'pnpc_psd_tickets_per_page', 20 ), '25' ); ?>>25</option>
-							<option value="50" <?php selected( get_option( 'pnpc_psd_tickets_per_page', 20 ), '50' ); ?>>50</option>
-						</select>
-						<p class="description"><?php esc_html_e( 'Number of tickets to display per page in the ticket list.', 'pnpc-pocket-service-desk' ); ?></p>
-					</td>
-				</tr>
-			</table>
-
 
 		</div>
 
 		<!-- =====================
 		     TAB: CUSTOMIZE
 		===================== -->
-		<div class="pnpc-psd-settings-panel" id="pnpc-psd-tab-customize" style="<?php echo esc_attr( $panel_style( 'customize' ) ); ?>">
+		<div class="pnpc-psd-settings-panel" id="pnpc-psd-tab-experience-appearance" style="<?php echo esc_attr( $panel_style( 'experience' ) ); ?>">
 			<h2><?php esc_html_e( 'Client Dashboard Appearance', 'pnpc-pocket-service-desk' ); ?></h2>
 			<p class="description">
 				<?php esc_html_e( 'These settings control the customer-facing Service Desk dashboard and related customer shortcode screens. They do not change the WordPress admin ticket screens.', 'pnpc-pocket-service-desk' ); ?>
@@ -762,72 +776,35 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 		<!-- =====================
 		     TAB: SHORTCODES
 		===================== -->
-		<div class="pnpc-psd-settings-panel" id="pnpc-psd-tab-shortcodes" style="<?php echo esc_attr( $panel_style( 'shortcodes' ) ); ?>">
-			<h2><?php esc_html_e( 'Shortcode Reference', 'pnpc-pocket-service-desk' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Use these shortcodes when building Service Desk pages manually with Gutenberg, Elementor, another page builder, or custom theme templates.', 'pnpc-pocket-service-desk' ); ?></p>
-
-			<table class="widefat striped" style="max-width: 980px; margin-top: 16px;">
-				<thead>
-					<tr>
-						<th><?php esc_html_e( 'Shortcode', 'pnpc-pocket-service-desk' ); ?></th>
-						<th><?php esc_html_e( 'Purpose', 'pnpc-pocket-service-desk' ); ?></th>
-						<th><?php esc_html_e( 'Recommended placement', 'pnpc-pocket-service-desk' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td><code>[pnpc_profile_settings]</code></td>
-						<td><?php esc_html_e( 'Customer profile and support details.', 'pnpc-pocket-service-desk' ); ?></td>
-						<td><?php esc_html_e( 'Customer dashboard page.', 'pnpc-pocket-service-desk' ); ?></td>
-					</tr>
-					<tr>
-						<td><code>[pnpc_service_desk]</code></td>
-						<td><?php esc_html_e( 'Primary customer-facing service desk dashboard area.', 'pnpc-pocket-service-desk' ); ?></td>
-						<td><?php esc_html_e( 'Customer dashboard page.', 'pnpc-pocket-service-desk' ); ?></td>
-					</tr>
-					<tr>
-						<td><code>[pnpc_create_ticket]</code></td>
-						<td><?php esc_html_e( 'Customer ticket submission form.', 'pnpc-pocket-service-desk' ); ?></td>
-						<td><?php esc_html_e( 'Customer dashboard page or dedicated submit-ticket page.', 'pnpc-pocket-service-desk' ); ?></td>
-					</tr>
-					<tr>
-						<td><code>[pnpc_services]</code></td>
-						<td><?php esc_html_e( 'Reserved services area for connected workflows and future extensions.', 'pnpc-pocket-service-desk' ); ?></td>
-						<td><?php esc_html_e( 'Customer dashboard page.', 'pnpc-pocket-service-desk' ); ?></td>
-					</tr>
-					<tr>
-						<td><code>[pnpc_my_tickets]</code></td>
-						<td><?php esc_html_e( 'Customer ticket list and current ticket statuses.', 'pnpc-pocket-service-desk' ); ?></td>
-						<td><?php esc_html_e( 'Customer dashboard page.', 'pnpc-pocket-service-desk' ); ?></td>
-					</tr>
-					<tr>
-						<td><code>[pnpc_ticket_detail]</code></td>
-						<td><?php esc_html_e( 'Single-ticket conversation view.', 'pnpc-pocket-service-desk' ); ?></td>
-						<td><?php esc_html_e( 'Ticket View page.', 'pnpc-pocket-service-desk' ); ?></td>
-					</tr>
-				</tbody>
-			</table>
-
-			<h3><?php esc_html_e( 'Recommended all-in-one dashboard stack', 'pnpc-pocket-service-desk' ); ?></h3>
-			<textarea class="large-text code" rows="8" readonly="readonly">[pnpc_profile_settings]
-
-[pnpc_service_desk]
-
-[pnpc_create_ticket]
-
-[pnpc_services]
-
-[pnpc_my_tickets]</textarea>
-
-			<p>
-				<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-shortcodes' ) ); ?>"><?php esc_html_e( 'Open full shortcode reference page', 'pnpc-pocket-service-desk' ); ?></a>
-			</p>
+		<div class="pnpc-psd-settings-panel pnpc-psd-shortcodes-reference-panel" id="pnpc-psd-tab-shortcodes" style="<?php echo esc_attr( $panel_style( 'shortcodes' ) ); ?>">
+			<?php
+			// Reuse the full shortcode reference view so the Settings tab and reference page stay identical.
+			$pnpc_psd_shortcode_reference = dirname( __FILE__ ) . '/shortcodes.php';
+			if ( file_exists( $pnpc_psd_shortcode_reference ) ) {
+				include $pnpc_psd_shortcode_reference;
+			}
+			?>
 		</div>
-
 
 		<!-- =====================
 		     TAB: SUPPORT
 		===================== -->
+		<?php
+		$support_admins_eligible = absint( get_option( 'pnpc_psd_support_admins_eligible', 1 ) );
+		$support_contact_ids     = get_option( 'pnpc_psd_support_contact_user_ids', array() );
+		$support_contact_ids     = is_array( $support_contact_ids ) ? array_map( 'absint', $support_contact_ids ) : array();
+		$support_email_overrides = get_option( 'pnpc_psd_support_contact_email_overrides', array() );
+		$support_email_overrides = is_array( $support_email_overrides ) ? $support_email_overrides : array();
+		$support_users           = get_users(
+			array(
+				'orderby' => 'display_name',
+				'order'   => 'ASC',
+				'number'  => 200,
+			)
+		);
+		$agent_config            = get_option( 'pnpc_psd_agents', array() );
+		$agent_config            = is_array( $agent_config ) ? $agent_config : array();
+		?>
 		<div class="pnpc-psd-settings-panel" id="pnpc-psd-tab-support" style="<?php echo esc_attr( $panel_style( 'support' ) ); ?>">
 			<h2><?php esc_html_e( 'Support Hub', 'pnpc-pocket-service-desk' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Configure where the Support Hub points users when they need help. Core uses this for support links and diagnostics bundle context.', 'pnpc-pocket-service-desk' ); ?></p>
@@ -855,8 +832,78 @@ if ( ! isset( $tabs[ $active_tab ] ) ) {
 				</tr>
 			</table>
 			<p><a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=pnpc-service-desk-support' ) ); ?>"><?php esc_html_e( 'Open Support Hub', 'pnpc-pocket-service-desk' ); ?></a></p>
+
+			<h2><?php esc_html_e( 'Support Access / Support Contacts', 'pnpc-pocket-service-desk' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'Choose which site users should be treated as eligible contacts when support diagnostics or a future support handshake is sent to PNPC. Support contacts are separate from licensed agents.', 'pnpc-pocket-service-desk' ); ?></p>
+			<table class="form-table">
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Administrators', 'pnpc-pocket-service-desk' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="pnpc_psd_support_admins_eligible" value="1" <?php checked( 1, $support_admins_eligible ); ?> />
+							<?php esc_html_e( 'Treat site administrators as eligible support contacts by default.', 'pnpc-pocket-service-desk' ); ?>
+						</label>
+						<p class="description"><?php esc_html_e( 'Admins remain visible below so you can add a dedicated support email override if needed.', 'pnpc-pocket-service-desk' ); ?></p>
+					</td>
+				</tr>
+			</table>
+
+			<div class="pnpc-psd-agent-settings-card">
+				<table class="widefat striped" style="max-width: 980px;">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'Support Contact', 'pnpc-pocket-service-desk' ); ?></th>
+							<th><?php esc_html_e( 'Role / Agent Status', 'pnpc-pocket-service-desk' ); ?></th>
+							<th><?php esc_html_e( 'Support Email Override', 'pnpc-pocket-service-desk' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $support_users as $support_user ) : ?>
+							<?php
+							$user_id      = absint( $support_user->ID );
+							$user_roles   = ! empty( $support_user->roles ) && is_array( $support_user->roles ) ? $support_user->roles : array();
+							$is_admin     = in_array( 'administrator', $user_roles, true );
+							$agent_row    = isset( $agent_config[ $user_id ] ) && is_array( $agent_config[ $user_id ] ) ? $agent_config[ $user_id ] : array();
+							$is_agent     = ! empty( $agent_row['enabled'] );
+							$agent_email  = ! empty( $agent_row['notify_email'] ) ? sanitize_email( (string) $agent_row['notify_email'] ) : '';
+							$role_labels  = array();
+							if ( $is_admin ) {
+								$role_labels[] = __( 'Admin', 'pnpc-pocket-service-desk' );
+							}
+							if ( $is_agent ) {
+								$role_labels[] = __( 'Core Agent', 'pnpc-pocket-service-desk' );
+							}
+							if ( empty( $role_labels ) ) {
+								$role_labels[] = __( 'Selectable User', 'pnpc-pocket-service-desk' );
+							}
+							$override_email = isset( $support_email_overrides[ $user_id ] ) ? sanitize_email( (string) $support_email_overrides[ $user_id ] ) : '';
+							?>
+							<tr>
+								<td>
+									<label>
+										<input type="checkbox" name="pnpc_psd_support_contact_user_ids[]" value="<?php echo esc_attr( $user_id ); ?>" <?php checked( in_array( $user_id, $support_contact_ids, true ) ); ?> />
+										<strong><?php echo esc_html( $support_user->display_name ); ?></strong>
+									</label><br />
+									<code><?php echo esc_html( $support_user->user_email ); ?></code>
+								</td>
+								<td>
+									<?php echo esc_html( implode( ', ', $role_labels ) ); ?>
+									<?php if ( $agent_email ) : ?>
+										<br /><span class="description"><?php esc_html_e( 'Agent email:', 'pnpc-pocket-service-desk' ); ?> <code><?php echo esc_html( $agent_email ); ?></code></span>
+									<?php endif; ?>
+								</td>
+								<td>
+									<input type="email" name="pnpc_psd_support_contact_email_overrides[<?php echo esc_attr( $user_id ); ?>]" value="<?php echo esc_attr( $override_email ); ?>" class="regular-text" />
+									<p class="description"><?php esc_html_e( 'Optional. Used only for PNPC support contact matching.', 'pnpc-pocket-service-desk' ); ?></p>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+				<p class="description"><?php esc_html_e( 'Core agents and admin users can be used for support authorization. Pro can extend this list with managers and Pro-specific agent status.', 'pnpc-pocket-service-desk' ); ?></p>
+			</div>
 		</div>
 
-		<?php submit_button(); ?>
+		<?php if ( 'shortcodes' !== $active_tab ) { submit_button(); } ?>
 	</form>
 </div>

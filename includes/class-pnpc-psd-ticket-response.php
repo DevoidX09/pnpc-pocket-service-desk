@@ -94,7 +94,7 @@ class PNPC_PSD_Ticket_Response
 			'created_at'        => $created_at_utc,
 		);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$result = $wpdb->insert(
 			$table_name,
 			$insert_data,
@@ -126,7 +126,7 @@ class PNPC_PSD_Ticket_Response
 						'created_at'  => $created_at_utc,
 					);
 					// IMPORTANT: keep formats aligned with $att_data keys to avoid corrupting file_type/file_size.
-					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+					// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 					$attachment_result = $wpdb->insert(
 						$attachments_table,
 						$att_data,
@@ -186,7 +186,7 @@ class PNPC_PSD_Ticket_Response
 		$table_name  = $wpdb->prefix . 'pnpc_psd_ticket_responses';
 		$response_id = absint($response_id);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$response = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$table_name} WHERE id = %d",
@@ -244,7 +244,7 @@ class PNPC_PSD_Ticket_Response
 			$orderby = 'created_at ASC';
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$responses = $wpdb->get_results(
 			"SELECT * FROM {$table_name} {$where} ORDER BY {$orderby}"
 		);
@@ -344,6 +344,77 @@ class PNPC_PSD_Ticket_Response
 		return absint( $total );
 	}
 
+
+	/**
+	 * Count active customer tickets that have unread staff-facing activity for the customer.
+	 *
+	 * This intentionally matches the green-dot logic used by the public My Tickets list:
+	 * a ticket is unread for the customer only when last_staff_activity_at is newer than
+	 * last_customer_viewed_at. This prevents dashboard indicators from keying off mere
+	 * ticket existence, ticket creation, or legacy response-count fallbacks.
+	 *
+	 * @since 1.4.1.37
+	 * @param int $user_id Customer user ID.
+	 * @return int Number of active tickets with unread staff activity.
+	 */
+	public static function count_unread_tickets_for_customer( $user_id ) {
+		$user_id = absint( $user_id );
+		if ( ! $user_id || ! class_exists( 'PNPC_PSD_Ticket' ) ) {
+			return 0;
+		}
+
+		$tickets = PNPC_PSD_Ticket::get_by_user( $user_id, array( 'limit' => 1000 ) );
+		if ( empty( $tickets ) || ! is_array( $tickets ) ) {
+			return 0;
+		}
+
+		$active_statuses = apply_filters(
+			'pnpc_psd_customer_unread_active_statuses',
+			array( 'open', 'in-progress', 'in_progress', 'waiting' )
+		);
+
+		$active_statuses = array_map(
+			static function ( $status ) {
+				return strtolower( str_replace( '_', '-', sanitize_key( (string) $status ) ) );
+			},
+			(array) $active_statuses
+		);
+
+		$total = 0;
+
+		foreach ( $tickets as $ticket ) {
+			if ( empty( $ticket->id ) ) {
+				continue;
+			}
+
+			$status = isset( $ticket->status ) ? strtolower( str_replace( '_', '-', sanitize_key( (string) $ticket->status ) ) ) : '';
+			if ( ! in_array( $status, $active_statuses, true ) ) {
+				continue;
+			}
+
+			$customer_viewed_raw = ! empty( $ticket->last_customer_viewed_at ) ? (string) $ticket->last_customer_viewed_at : '';
+			$staff_activity_raw  = ! empty( $ticket->last_staff_activity_at ) ? (string) $ticket->last_staff_activity_at : '';
+
+			if ( '' === $staff_activity_raw ) {
+				continue;
+			}
+
+			if ( '' === $customer_viewed_raw ) {
+				$last_view_meta = get_user_meta( $user_id, 'pnpc_psd_ticket_last_view_' . absint( $ticket->id ), true );
+				$customer_viewed_ts = $last_view_meta ? ( is_numeric( $last_view_meta ) ? (int) $last_view_meta : (int) strtotime( (string) $last_view_meta ) ) : 0;
+			} else {
+				$customer_viewed_ts = (int) strtotime( $customer_viewed_raw . ' UTC' );
+			}
+
+			$staff_activity_ts = (int) strtotime( $staff_activity_raw . ' UTC' );
+			if ( $staff_activity_ts > $customer_viewed_ts ) {
+				$total++;
+			}
+		}
+
+		return absint( $total );
+	}
+
 	/**
 	 * Delete responses for a ticket.
 	 *
@@ -358,7 +429,7 @@ class PNPC_PSD_Ticket_Response
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
 		$ticket_id  = absint($ticket_id);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$result = $wpdb->delete(
 			$table_name,
 			array('ticket_id' => $ticket_id),
@@ -471,7 +542,7 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
 		$ticket_id  = absint($ticket_id);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$count = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$table_name} WHERE ticket_id = %d AND deleted_at IS NULL",
@@ -498,7 +569,7 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 
 		$deleted_at = function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$result = $wpdb->update(
 			$table_name,
 			array('deleted_at' => $deleted_at),
@@ -524,7 +595,7 @@ Please log in to the admin panel to view and respond.', 'pnpc-pocket-service-des
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_responses';
 		$ticket_id  = absint($ticket_id);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$result = $wpdb->update(
 			$table_name,
 			array('deleted_at' => null),

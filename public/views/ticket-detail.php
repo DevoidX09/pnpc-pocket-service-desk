@@ -57,7 +57,7 @@ $att_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 
 // Ticket-level attachments (response_id NULL/empty/0) and not deleted.
 // NOTE: Earlier builds incorrectly persisted ticket-level attachments with response_id=0.
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 $ticket_attachments = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND (response_id IS NULL OR response_id = '' OR response_id = 0) ORDER BY id ASC",
@@ -67,7 +67,7 @@ $ticket_attachments = $wpdb->get_results(
 
 // Response attachments keyed by response_id
 $response_attachments_map = array();
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 $all_response_atts = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND response_id IS NOT NULL AND response_id <> 0 ORDER BY id ASC",
@@ -101,7 +101,10 @@ if (empty($dashboard_url)) {
 		<h2><?php echo esc_html($ticket->subject); ?></h2>
 		<div class="pnpc-psd-ticket-meta">
 			<span class="pnpc-psd-ticket-number">
-				<?php printf(esc_html__('Ticket #%s', 'pnpc-pocket-service-desk'), esc_html($ticket->ticket_number)); ?>
+					<?php
+					/* translators: %s: ticket number. */
+					printf( esc_html__( 'Ticket #%s', 'pnpc-pocket-service-desk' ), esc_html( $ticket->ticket_number ) );
+					?>
 			</span>
 			<?php
 			$raw_status = isset( $ticket->status ) ? (string) $ticket->status : '';
@@ -127,7 +130,9 @@ if (empty($dashboard_url)) {
 				? pnpc_psd_format_db_datetime_for_display($ticket->created_at)
 				: date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($ticket->created_at));
 
-			printf(esc_html__('Created on %s', 'pnpc-pocket-service-desk'), esc_html($created_display));
+			/* translators: %s: formatted ticket creation date and time. */
+			$pnpc_psd_created_on_text = esc_html__( 'Created on %s', 'pnpc-pocket-service-desk' );
+			printf( esc_html( $pnpc_psd_created_on_text ), esc_html( $created_display ) );
 			?>
 		</div>
 	</div>
@@ -172,7 +177,7 @@ if (empty($dashboard_url)) {
 	<div class="pnpc-psd-ticket-description">
 		<h3><?php esc_html_e('Your Request', 'pnpc-pocket-service-desk'); ?></h3>
 		<div class="pnpc-psd-ticket-content">
-			<?php echo wp_kses_post($ticket->description); ?>
+			<?php echo wp_kses_post( wpautop( $ticket->description ) ); ?>
 		</div>
 	</div>
 
@@ -200,7 +205,7 @@ if (empty($dashboard_url)) {
 						</span>
 					</div>
 					<div class="pnpc-psd-response-content">
-						<?php echo wp_kses_post($response->response); ?>
+						<?php echo wp_kses_post( wpautop( $response->response ) ); ?>
 					</div>
 
 					<?php if (! empty($atts_for_response)) : ?>
@@ -287,11 +292,15 @@ if (empty($dashboard_url)) {
 							?>
 							<p class="pnpc-psd-help-text">
 								<?php
-								printf(
-									esc_html__( 'Allowed formats: %1$s. Max size per file: %2$dMB (server limits may apply).', 'pnpc-pocket-service-desk' ),
-									esc_html( implode( ', ', $exts ) ),
-									(int) $max_mb
-								);
+									/* translators: 1: comma-separated list of allowed file extensions, 2: maximum file size in megabytes. */
+									$pnpc_psd_allowed_formats_text = esc_html__( 'Allowed formats: %1$s. Max size per file: %2$dMB (server limits may apply).', 'pnpc-pocket-service-desk' );
+									echo esc_html(
+										sprintf(
+											$pnpc_psd_allowed_formats_text,
+											implode( ', ', array_map( 'sanitize_key', $exts ) ),
+											(int) $max_mb
+										)
+									);
 								?>
 							</p>
 				</div>

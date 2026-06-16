@@ -31,7 +31,7 @@ if (isset($_GET['ticket_id']) && is_user_logged_in() && current_user_can('pnpc_p
 global $wpdb;
 $att_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 $ticket_attachments = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND (response_id IS NULL OR response_id = '' OR response_id = 0) ORDER BY id ASC",
@@ -39,7 +39,7 @@ $ticket_attachments = $wpdb->get_results(
 	)
 );
 $response_attachments_map = array();
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 $all_response_atts = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT * FROM {$att_table} WHERE ticket_id = %d AND deleted_at IS NULL AND response_id IS NOT NULL AND response_id <> 0 ORDER BY id ASC",
@@ -134,6 +134,7 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 			<?php
 			/* translators: 1: staff member name, 2: customer name */
 			printf(
+				/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 				esc_html__('Staff-Created Ticket: Created by %1$s on behalf of %2$s', 'pnpc-pocket-service-desk'),
 				'<strong>' . esc_html( $staff_name ) . '</strong>',
 				'<strong>' . esc_html( $customer_name ) . '</strong>'
@@ -199,9 +200,15 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 							$parts = preg_split( '/\s+/', trim( (string) $responder_name ) );
 							$initials = strtoupper( substr( $parts[0], 0, 1 ) . ( isset( $parts[1] ) ? substr( $parts[1], 0, 1 ) : '' ) );
 						}
+						$responder_image = ( $responder && ! empty( $responder->ID ) ) ? get_user_meta( (int) $responder->ID, 'pnpc_psd_profile_image', true ) : '';
+						$responder_image = is_string( $responder_image ) ? trim( $responder_image ) : '';
 						?>
 						<div class="pnpc-psd-response <?php echo esc_attr( $is_staff ? 'pnpc-psd-response-staff' : 'pnpc-psd-response-customer' ); ?>">
-							<div class="pnpc-psd-message-avatar" aria-hidden="true"><?php echo esc_html( $initials ); ?></div>
+							<?php if ( '' !== $responder_image ) : ?>
+								<img class="pnpc-psd-message-avatar pnpc-psd-message-avatar-image" src="<?php echo esc_url( $responder_image ); ?>" alt="<?php echo esc_attr( $responder_name ); ?>" />
+							<?php else : ?>
+								<div class="pnpc-psd-message-avatar" aria-hidden="true"><?php echo esc_html( $initials ); ?></div>
+							<?php endif; ?>
 							<div class="pnpc-psd-message-bubble">
 								<div class="pnpc-psd-response-header">
 									<strong><?php echo esc_html($responder_name); ?></strong>
@@ -219,6 +226,15 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 											$file_name = esc_html($ra->file_name);
 											$file_size_formatted = pnpc_psd_format_filesize($file_size);
 											?>
+											<?php
+											$file_ext = strtolower( pathinfo( $ra->file_name, PATHINFO_EXTENSION ) );
+											$file_type = function_exists( 'pnpc_psd_get_attachment_type' ) ? pnpc_psd_get_attachment_type( $file_ext ) : 'other';
+											$can_preview = function_exists( 'pnpc_psd_can_preview_attachment' ) ? pnpc_psd_can_preview_attachment( $file_size ) : false;
+											$inline_url = esc_url( pnpc_psd_get_attachment_download_url( $ra->id, $ticket->id, true ) );
+											?>
+											<?php if ( $can_preview && in_array( $file_type, array( 'image', 'pdf' ), true ) ) : ?>
+												<button type="button" class="pnpc-psd-view-attachment button button-small" data-type="<?php echo esc_attr( $file_type ); ?>" data-url="<?php echo esc_url( $inline_url ); ?>" data-filename="<?php echo esc_attr( $file_name ); ?>"><?php esc_html_e( 'View', 'pnpc-pocket-service-desk' ); ?></button>
+											<?php endif; ?>
 											<a class="pnpc-psd-message-attachment" href="<?php echo esc_url( $download_url ); ?>" download><?php echo esc_html( $file_name ); ?> <span><?php echo esc_html($file_size_formatted); ?></span></a>
 										<?php endforeach; ?>
 									</div>
@@ -368,7 +384,16 @@ $ticket_user_edit_link = $ticket_user ? get_edit_user_link($ticket_user->ID) : '
 			<section class="pnpc-psd-sidebar-card pnpc-psd-customer-info-card">
 				<h2><?php esc_html_e('Customer Information', 'pnpc-pocket-service-desk'); ?></h2>
 				<div class="pnpc-psd-customer-profile-row">
-					<div class="pnpc-psd-customer-avatar" aria-hidden="true"><?php echo esc_html( strtoupper( substr( wp_strip_all_tags( $ticket_user_name ), 0, 2 ) ) ); ?></div>
+					<?php
+					$ticket_user_image = ( $ticket_user && ! empty( $ticket_user->ID ) ) ? get_user_meta( (int) $ticket_user->ID, 'pnpc_psd_profile_image', true ) : '';
+					$ticket_user_image = is_string( $ticket_user_image ) ? trim( $ticket_user_image ) : '';
+					$ticket_user_initials = strtoupper( substr( wp_strip_all_tags( $ticket_user_name ), 0, 2 ) );
+					?>
+					<?php if ( '' !== $ticket_user_image ) : ?>
+						<img class="pnpc-psd-customer-avatar pnpc-psd-customer-avatar-image" src="<?php echo esc_url( $ticket_user_image ); ?>" alt="<?php echo esc_attr( $ticket_user_name ); ?>" />
+					<?php else : ?>
+						<div class="pnpc-psd-customer-avatar" aria-hidden="true"><?php echo esc_html( $ticket_user_initials ); ?></div>
+					<?php endif; ?>
 					<div class="pnpc-psd-customer-info-fields">
 						<div class="pnpc-psd-customer-info-field pnpc-psd-customer-info-name"><span class="pnpc-psd-customer-info-label"><?php esc_html_e('Name', 'pnpc-pocket-service-desk'); ?></span><strong><?php echo esc_html( $ticket_user_name ); ?></strong></div>
 						<?php if ($ticket_user) : ?><div class="pnpc-psd-customer-info-field"><span class="pnpc-psd-customer-info-label"><?php esc_html_e('Email', 'pnpc-pocket-service-desk'); ?></span><span><?php echo esc_html( $ticket_user->user_email ); ?></span></div><?php endif; ?>

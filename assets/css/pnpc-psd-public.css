@@ -565,3 +565,484 @@
 		animation: none;
 	}
 }
+
+
+/* Launch polish: customer messages are green, agent/support messages are blue. */
+.pnpc-psd-response-customer {
+	background: #ecfdf5 !important;
+	border-left: 3px solid #2b9f6a !important;
+}
+.pnpc-psd-response-staff {
+	background: #e7f3ff !important;
+	border-left: 3px solid #2271b1 !important;
+}
+.pnpc-psd-response-customer .pnpc-psd-message-bubble {
+	border-left: 4px solid #2b9f6a !important;
+	background: linear-gradient(90deg, #ecfdf5 0%, #fff 82%) !important;
+}
+.pnpc-psd-response-staff .pnpc-psd-message-bubble {
+	border-left: 4px solid #2271b1 !important;
+	background: linear-gradient(90deg, #e7f3ff 0%, #fff 82%) !important;
+}
+
+
+/* Launch polish: customer dashboard and ticket view */
+.pnpc-psd-dashboard,
+.pnpc-psd-my-tickets,
+.pnpc-psd-ticket-detail {
+	font-family: inherit;
+}
+
+.pnpc-psd-ticket-totals {
+	position: relative;
+	max-width: 900px;
+	margin: 18px auto 28px;
+	padding: 24px;
+	border: 1px solid #dbe7f3;
+	border-radius: 18px;
+	background: linear-gradient(135deg, #ffffff 0%, #f8fbff 58%, #eef7ff 100%);
+	box-shadow: 0 14px 34px rgba(20, 50, 80, 0.08);
+	overflow: hidden;
+}
+
+.pnpc-psd-ticket-totals::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: linear-gradient(90deg, #2271b1, #2b9f6a);
+}
+
+.pnpc-psd-ticket-totals-header h3 {
+	margin: 0;
+	color: #18324a;
+	font-size: 1.25rem;
+	letter-spacing: -0.01em;
+}
+
+.pnpc-psd-ticket-totals-header p {
+	margin: 6px 0 18px;
+	color: #5d7184;
+}
+
+.pnpc-psd-ticket-total-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px;
+}
+
+.pnpc-psd-dashboard-total-card {
+	position: relative;
+	padding: 20px;
+	border: 1px solid #e1ebf4;
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.9);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 8px 18px rgba(24, 50, 74, 0.06);
+	text-align: center;
+	transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.pnpc-psd-dashboard-total-card:hover {
+	transform: translateY(-2px);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 14px 26px rgba(24, 50, 74, 0.1);
+}
+
+.pnpc-psd-total-number {
+	font-size: 2.35rem;
+	font-weight: 800;
+	line-height: 1;
+	color: #18324a;
+}
+
+.pnpc-psd-dashboard-total-card-open .pnpc-psd-total-number {
+	color: #d9574a;
+}
+
+.pnpc-psd-dashboard-total-card-closed .pnpc-psd-total-number {
+	color: #2b9f6a;
+}
+
+.pnpc-psd-total-label {
+	margin-top: 8px;
+	color: #5d7184;
+	font-size: 0.95rem;
+	font-weight: 600;
+}
+
+.pnpc-psd-dashboard-alert-badge {
+	display: none;
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: #2b9f6a;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	box-shadow: 0 6px 14px rgba(43, 159, 106, 0.24);
+}
+
+.pnpc-psd-dashboard-alert-badge.is-visible:not([hidden]) {
+	display: inline-flex;
+	align-items: center;
+}
+
+.pnpc-psd-ticket-detail {
+	max-width: 980px;
+}
+
+.pnpc-psd-ticket-detail .pnpc-psd-ticket-header,
+.pnpc-psd-ticket-detail .pnpc-psd-ticket-description,
+.pnpc-psd-ticket-detail .pnpc-psd-ticket-responses,
+.pnpc-psd-ticket-detail .pnpc-psd-add-response,
+.pnpc-psd-ticket-detail .pnpc-psd-ticket-attachments {
+	padding: 24px;
+	border: 1px solid #e1ebf4;
+	border-radius: 18px;
+	background: #fff;
+	box-shadow: 0 10px 26px rgba(24, 50, 74, 0.07);
+}
+
+.pnpc-psd-ticket-detail .pnpc-psd-ticket-header {
+	border-bottom: 1px solid #e1ebf4;
+}
+
+.pnpc-psd-ticket-detail .pnpc-psd-ticket-header h2 {
+	margin-top: 0;
+	color: #18324a;
+	font-size: clamp(1.55rem, 2vw, 2rem);
+	letter-spacing: -0.02em;
+}
+
+.pnpc-psd-ticket-content {
+	border-left: 4px solid #2271b1;
+	border-radius: 12px;
+	background: #f7fbff;
+}
+
+.pnpc-psd-response {
+	border-radius: 16px;
+	box-shadow: 0 8px 18px rgba(24, 50, 74, 0.05);
+}
+
+.pnpc-psd-response-staff {
+	background: #f2f8ff;
+	border-left: 4px solid #2271b1;
+}
+
+.pnpc-psd-response-customer {
+	background: #fbfcfd;
+	border-left: 4px solid #2b9f6a;
+}
+
+.pnpc-psd-add-response textarea {
+	border-radius: 14px;
+	border-color: #d8e4ef;
+	background: #fff;
+	box-shadow: inset 0 1px 2px rgba(24, 50, 74, 0.04);
+}
+
+.pnpc-psd-ticket-actions {
+	max-width: 980px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+@media (max-width: 640px) {
+	.pnpc-psd-ticket-total-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.pnpc-psd-ticket-totals,
+	.pnpc-psd-ticket-detail .pnpc-psd-ticket-header,
+	.pnpc-psd-ticket-detail .pnpc-psd-ticket-description,
+	.pnpc-psd-ticket-detail .pnpc-psd-ticket-responses,
+	.pnpc-psd-ticket-detail .pnpc-psd-add-response,
+	.pnpc-psd-ticket-detail .pnpc-psd-ticket-attachments {
+		padding: 18px;
+	}
+}
+
+/* Launch polish: customer ticket list */
+.pnpc-psd-my-tickets {
+	max-width: 980px;
+}
+
+.pnpc-psd-my-tickets .pnpc-psd-ticket-item {
+	position: relative;
+	padding: 22px;
+	border: 1px solid #e1ebf4;
+	border-radius: 18px;
+	background: #fff;
+	box-shadow: 0 10px 24px rgba(24, 50, 74, 0.06);
+	overflow: hidden;
+}
+
+.pnpc-psd-my-tickets .pnpc-psd-ticket-item::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	width: 4px;
+	background: linear-gradient(180deg, #2271b1, #2b9f6a);
+}
+
+.pnpc-psd-my-tickets .pnpc-psd-ticket-item:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 16px 32px rgba(24, 50, 74, 0.11);
+}
+
+.pnpc-psd-my-tickets .pnpc-psd-ticket-item h3,
+.pnpc-psd-my-tickets .pnpc-psd-ticket-item h4 {
+	margin-top: 0;
+	font-size: 1.1rem;
+}
+
+.pnpc-psd-my-tickets .pnpc-psd-ticket-footer {
+	padding-top: 14px;
+	border-top: 1px solid #edf3f8;
+}
+
+/* Dashboard compact polish: reduce shortcode/Elementor whitespace and tighten client dashboard rhythm. */
+.elementor-widget-shortcode .pnpc-psd-profile-settings,
+.elementor-widget-shortcode .pnpc-psd-dashboard,
+.elementor-widget-shortcode .pnpc-psd-create-ticket,
+.pnpc-psd-profile-settings,
+.pnpc-psd-dashboard,
+.pnpc-psd-create-ticket {
+	box-sizing: border-box;
+}
+
+.elementor-widget-shortcode .pnpc-psd-profile-settings,
+.elementor-widget-shortcode .pnpc-psd-dashboard,
+.elementor-widget-shortcode .pnpc-psd-create-ticket {
+	margin-top: 0;
+	margin-bottom: 18px;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+.pnpc-psd-dashboard h2,
+.pnpc-psd-profile-settings h2,
+.pnpc-psd-create-ticket h2 {
+	margin-top: 0;
+	margin-bottom: 12px;
+	line-height: 1.2;
+}
+
+.pnpc-psd-profile-settings {
+	max-width: 980px;
+}
+
+.pnpc-psd-profile-settings .pnpc-psd-welcome h2 {
+	margin: 0 0 12px;
+	font-size: clamp(1.45rem, 2vw, 2rem);
+	letter-spacing: -0.025em;
+	color: #18324a;
+}
+
+.pnpc-psd-profile-settings .pnpc-psd-profile-grid {
+	gap: 16px !important;
+	align-items: stretch !important;
+}
+
+.pnpc-psd-profile-settings .pnpc-psd-profile-column {
+	min-width: min(100%, 260px) !important;
+}
+
+.pnpc-psd-profile-section {
+	position: relative;
+	height: 100%;
+	padding: 18px;
+	border: 1px solid #dfeaf4;
+	border-radius: 18px;
+	background: linear-gradient(135deg, #ffffff 0%, #f9fcff 100%);
+	box-shadow: 0 10px 24px rgba(24, 50, 74, 0.07);
+	overflow: hidden;
+}
+
+.pnpc-psd-profile-section::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: linear-gradient(90deg, #2271b1, #2b9f6a);
+}
+
+.pnpc-psd-profile-section h3 {
+	margin: 0 0 12px;
+	font-size: 1.05rem;
+	line-height: 1.25;
+	color: #18324a;
+	letter-spacing: -0.01em;
+}
+
+.pnpc-psd-profile-image-wrapper {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 14px;
+	align-items: center;
+}
+
+.pnpc-psd-current-image {
+	width: 88px;
+	height: 88px;
+	padding: 4px;
+	border-radius: 20px;
+	background: #fff;
+	box-shadow: 0 8px 18px rgba(24, 50, 74, 0.11);
+}
+
+.pnpc-psd-current-image img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: 16px;
+}
+
+.pnpc-psd-profile-settings .pnpc-psd-form-group,
+.pnpc-psd-profile-settings .pnpc-psd-help-text,
+.pnpc-psd-profile-settings p {
+	margin-top: 0;
+	margin-bottom: 10px;
+}
+
+.pnpc-psd-profile-settings .pnpc-psd-button,
+.pnpc-psd-create-ticket .pnpc-psd-button {
+	border-radius: 999px;
+	font-weight: 700;
+	box-shadow: 0 7px 16px rgba(24, 50, 74, 0.1);
+}
+
+.pnpc-psd-ticket-totals {
+	margin-top: 10px;
+	margin-bottom: 18px;
+	padding: 18px;
+}
+
+.pnpc-psd-ticket-totals-header p {
+	margin-bottom: 12px;
+}
+
+.pnpc-psd-dashboard-total-card {
+	padding: 16px;
+}
+
+.pnpc-psd-total-number {
+	font-size: 2.1rem;
+}
+
+.pnpc-psd-create-ticket {
+	max-width: 980px;
+}
+
+.pnpc-psd-create-ticket form {
+	position: relative;
+	padding: 20px;
+	border: 1px solid #dfeaf4;
+	border-radius: 18px;
+	background: linear-gradient(135deg, #ffffff 0%, #fbfdff 100%);
+	box-shadow: 0 12px 28px rgba(24, 50, 74, 0.07);
+	overflow: hidden;
+}
+
+.pnpc-psd-create-ticket form::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: linear-gradient(90deg, #2271b1, #2b9f6a);
+}
+
+.pnpc-psd-create-ticket .pnpc-psd-form-group {
+	margin-bottom: 14px;
+}
+
+.pnpc-psd-create-ticket .pnpc-psd-form-group:last-of-type {
+	margin-bottom: 0;
+}
+
+.pnpc-psd-create-ticket label {
+	margin-bottom: 6px;
+	color: #18324a;
+}
+
+.pnpc-psd-create-ticket input[type="text"],
+.pnpc-psd-create-ticket select,
+.pnpc-psd-create-ticket textarea {
+	border-color: #d8e4ef;
+	border-radius: 12px;
+	background: #fff;
+	box-shadow: inset 0 1px 2px rgba(24, 50, 74, 0.04);
+}
+
+.pnpc-psd-create-ticket textarea {
+	min-height: 150px;
+}
+
+.pnpc-psd-create-ticket .pnpc-psd-help-text {
+	margin: 6px 0 0;
+	font-size: 0.9rem;
+	color: #5d7184;
+}
+
+@media (min-width: 760px) {
+	.pnpc-psd-create-ticket form {
+		display: grid;
+		grid-template-columns: minmax(0, 1.5fr) minmax(220px, 0.7fr);
+		gap: 14px 18px;
+	}
+
+	.pnpc-psd-create-ticket .pnpc-psd-form-group:nth-of-type(3),
+	.pnpc-psd-create-ticket .pnpc-psd-form-group:nth-of-type(4),
+	.pnpc-psd-create-ticket .pnpc-psd-form-group:nth-of-type(5),
+	.pnpc-psd-create-ticket .pnpc-psd-create-message {
+		grid-column: 1 / -1;
+	}
+}
+
+@media (max-width: 700px) {
+	.pnpc-psd-profile-image-wrapper {
+		grid-template-columns: 1fr;
+		justify-items: start;
+	}
+
+	.pnpc-psd-profile-settings .pnpc-psd-profile-grid {
+		gap: 14px !important;
+	}
+}
+
+/* v1.4.1.35: Respect hidden state for customer dashboard New badge.
+ * Earlier dashboard badge rules used display:inline-flex !important, which could override
+ * the HTML hidden attribute after the ticket/read state was cleared.
+ */
+.pnpc-psd-dashboard .pnpc-psd-new-indicator-badge.pnpc-psd-dashboard-alert-badge[hidden],
+.pnpc-psd-dashboard .pnpc-psd-new-indicator-badge.pnpc-psd-pro-dashboard-alert-badge[hidden],
+.pnpc-psd-dashboard .pnpc-psd-dashboard-total-card > .pnpc-psd-new-indicator-badge[hidden] {
+	display: none !important;
+	visibility: hidden !important;
+}
+
+/* Final Gutenberg dashboard/card polish: plugin template cards should not render grey outlines. */
+.pnpc-psd-dashboard .pnpc-psd-ticket-totals,
+.pnpc-psd-dashboard .pnpc-psd-dashboard-total-card,
+.pnpc-psd-profile-settings .pnpc-psd-profile-section,
+.pnpc-psd-create-ticket form {
+	border: 0 !important;
+	outline: 0 !important;
+}
+
+.pnpc-psd-dashboard .pnpc-psd-dashboard-total-card {
+	box-shadow: 0 10px 22px rgba(24, 50, 74, 0.07) !important;
+}

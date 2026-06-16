@@ -111,6 +111,7 @@ $customers = get_users(array(
 							$server_max_bytes = function_exists( 'wp_max_upload_size' ) ? (int) wp_max_upload_size() : 0;
 							$effective_bytes  = ( $server_max_bytes > 0 ) ? min( $limit_max_bytes, $server_max_bytes ) : $limit_max_bytes;
 							$effective_human  = function_exists( 'pnpc_psd_format_filesize' ) ? pnpc_psd_format_filesize( $effective_bytes ) : size_format( $effective_bytes );
+							/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 							echo esc_html( sprintf( __( 'Maximum %s per file. Multiple files allowed.', 'pnpc-pocket-service-desk' ), $effective_human ) );
 						?>
 					</p>

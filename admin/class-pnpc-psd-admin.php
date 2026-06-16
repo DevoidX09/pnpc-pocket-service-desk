@@ -86,6 +86,61 @@ class PNPC_PSD_Admin
 			add_action('admin_init', array($this, 'process_admin_update_ticket_priority'));
 			add_action( 'admin_notices', array( $this, 'maybe_show_operational_health_notice' ) );
 			add_action( 'admin_init', array( $this, 'normalize_email_trace_log_severity' ), 5 );
+			add_action( 'admin_init', array( $this, 'maybe_restore_ticket_view_shortcode_wrapper' ), 8 );
+			add_action( 'wp_ajax_pnpc_psd_dismiss_dashboard_alert', array( $this, 'ajax_dismiss_dashboard_alert' ) );
+		}
+	}
+
+
+	/**
+	 * Safely correct only the known broken Ticket View wrapper shortcode.
+	 *
+	 * This does not add dashboard content, does not inject duplicate ticket detail
+	 * shortcodes, and does not modify Elementor data. It only repairs the exact
+	 * WP Residence wrapper typo on the standalone /ticket-view/ page.
+	 *
+	 * @return void
+	 */
+	public function maybe_restore_ticket_view_shortcode_wrapper() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			return;
+		}
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'pnpc_psd_manage_settings' ) ) {
+			return;
+		}
+		$page = get_page_by_path( 'ticket-view', OBJECT, 'page' );
+		if ( ! ( $page instanceof WP_Post ) ) {
+			return;
+		}
+		$content = (string) $page->post_content;
+		$editor  = (string) get_option( 'pnpc_psd_setup_editor', 'block' );
+		if ( ! in_array( $editor, array( 'block', 'elementor', 'custom' ), true ) ) {
+			$editor = 'block';
+		}
+
+		$fixed = $content;
+
+		// Repair the known WP Residence/Elementor wrapper typo only for Elementor installs.
+		if ( 'elementor' === $editor && defined( 'ELEMENTOR_VERSION' ) && false !== stripos( $fixed, '[wpr-template' ) ) {
+			$fixed = preg_replace( '/\[wpr-template(\s+[^\]]*)\]/i', '[elementor-template$1]', $fixed );
+		}
+
+		// Gutenberg/custom installs must render the native ticket detail shortcode.
+		// Do not leave an Elementor wrapper on the canonical Ticket View page unless
+		// Elementor was explicitly selected in this plugin's setup wizard.
+		if ( 'elementor' !== $editor || ! defined( 'ELEMENTOR_VERSION' ) ) {
+			if ( false !== stripos( $fixed, '[elementor-template' ) || false !== stripos( $fixed, '[wpr-template' ) ) {
+				$fixed = '[pnpc_ticket_detail]';
+			}
+		}
+
+		if ( is_string( $fixed ) && $fixed !== $content ) {
+			wp_update_post(
+				array(
+					'ID'           => (int) $page->ID,
+					'post_content' => $fixed,
+				)
+			);
 		}
 	}
 
@@ -128,10 +183,10 @@ class PNPC_PSD_Admin
 		$ticket_count = 0;
 
 		// Determine whether the tickets table exists before counting.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$table_exists = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name );
 		if ( $table_exists ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$ticket_count = (int) $wpdb->get_var( "SELECT COUNT(1) FROM {$table_name}" );
 		}
 
@@ -266,9 +321,12 @@ class PNPC_PSD_Admin
 				);
 			}
 
-			// Enqueue setup wizard CSS on setup wizard page. Use filemtime to avoid stale onboarding CSS during launch updates.
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page check.
-			if ( isset( $_GET['page'] ) && in_array( sanitize_text_field( wp_unslash( $_GET['page'] ) ), array( 'pnpc-service-desk-setup', 'pnpc-service-desk-shortcodes' ), true ) ) {
+			// Enqueue setup wizard/reference CSS on setup wizard, shortcode reference, and the Settings > Shortcodes tab.
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page/tab check.
+			$current_page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page/tab check.
+			$current_tab  = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+			if ( in_array( $current_page, array( 'pnpc-service-desk-setup', 'pnpc-service-desk-shortcodes' ), true ) || ( 'pnpc-service-desk-settings' === $current_page && 'shortcodes' === $current_tab ) ) {
 				$setup_css_path = PNPC_PSD_PLUGIN_DIR . 'admin/css/setup-wizard.css';
 				$setup_css_ver  = file_exists( $setup_css_path ) ? (string) filemtime( $setup_css_path ) : $this->version;
 				wp_enqueue_style(
@@ -384,6 +442,18 @@ class PNPC_PSD_Admin
 					$this->version,
 					true
 				);
+				wp_localize_script(
+					$this->plugin_name . '-dashboard',
+					'pnpcPsdDashboard',
+					array(
+						'ajax_url' => admin_url( 'admin-ajax.php', 'relative' ),
+						'nonce'    => wp_create_nonce( 'pnpc_psd_dashboard_alerts' ),
+						'i18n'     => array(
+							'dismissed' => __( 'Alert removed.', 'pnpc-pocket-service-desk' ),
+							'error'     => __( 'Unable to remove alert.', 'pnpc-pocket-service-desk' ),
+						),
+					)
+				);
 			}
 
 			// Enqueue settings script on settings page
@@ -441,18 +511,20 @@ class PNPC_PSD_Admin
 	*/
 	public function add_plugin_admin_menu()
 	{
-		$open_count         = 0;
-		$in_progress_count  = 0;
-		$active_count       = 0;
-		$new_response_count = 0;
-		$menu_notice_count  = 0;
+		$open_count             = 0;
+		$in_progress_count      = 0;
+		$active_count           = 0;
+		$new_response_count     = 0;
+		$follow_up_alert_count  = 0;
+		$menu_notice_count      = 0;
 
 		if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
-			$open_count         = (int) PNPC_PSD_Ticket::get_count( 'open' );
-			$in_progress_count  = (int) PNPC_PSD_Ticket::get_count( 'in-progress' );
-			$active_count       = $open_count + $in_progress_count;
-			$new_response_count = $this->get_admin_new_response_indicator_count( get_current_user_id() );
-			$menu_notice_count  = $active_count + $new_response_count;
+			$open_count            = (int) PNPC_PSD_Ticket::get_count( 'open' );
+			$in_progress_count     = (int) PNPC_PSD_Ticket::get_count( 'in-progress' );
+			$active_count          = $open_count + $in_progress_count;
+			$new_response_count    = $this->get_admin_new_response_indicator_count( get_current_user_id() );
+			$follow_up_alert_count = $this->get_waiting_follow_up_alert_count( get_current_user_id() );
+			$menu_notice_count     = $active_count + $new_response_count + $follow_up_alert_count;
 		}
 
 		$menu_title = esc_html__( 'Service Desk', 'pnpc-pocket-service-desk' );
@@ -490,10 +562,15 @@ class PNPC_PSD_Admin
 			array( $this, 'display_tickets_page' )
 		);
 
+		$dashboard_menu_title = esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' );
+		if ( $follow_up_alert_count > 0 ) {
+			$dashboard_menu_title .= ' ' . $this->format_admin_menu_badge( $follow_up_alert_count, 'red' );
+		}
+
 		add_submenu_page(
 			'pnpc-service-desk',
 			esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' ),
-			esc_html__( 'Dashboard', 'pnpc-pocket-service-desk' ),
+			$dashboard_menu_title,
 			'pnpc_psd_view_tickets',
 			'pnpc-service-desk-dashboard',
 			array( $this, 'display_dashboard_page' )
@@ -610,6 +687,7 @@ class PNPC_PSD_Admin
 		$styles = array(
 			'yellow' => 'background:#dba617;color:#1d2327;',
 			'green'  => 'background:#00a32a;color:#fff;',
+			'red'    => 'background:#d63638;color:#fff;',
 		);
 		$style = isset( $styles[ $type ] ) ? $styles[ $type ] : $styles['green'];
 
@@ -666,8 +744,47 @@ class PNPC_PSD_Admin
 	 * @return void
 	 */
 	public function print_admin_menu_badge_styles() {
+		$menu_logo_style = get_option( 'pnpc_psd_admin_menu_logo_style', 'color' );
+		$menu_logo_style = in_array( $menu_logo_style, array( 'color', 'mono' ), true ) ? $menu_logo_style : 'color';
 		?>
 		<style id="pnpc-psd-admin-menu-badge-styles">
+
+			#adminmenu #toplevel_page_pnpc-service-desk .wp-menu-image:before {
+				content: <?php echo 'mono' === $menu_logo_style ? '\'\f524\'' : '\'\''; ?> !important;
+				display: block;
+				width: 28px;
+				height: 24px;
+				margin: 4px auto 0;
+				box-sizing: border-box;
+				opacity: 1;
+				<?php if ( 'mono' === $menu_logo_style ) : ?>
+				font-family: dashicons !important;
+				font-size: 20px;
+				line-height: 24px;
+				text-align: center;
+				color: currentColor;
+				background: transparent;
+				border: 0;
+				<?php else : ?>
+				border: 1px solid rgba(255, 255, 255, 0.72);
+				border-radius: 7px;
+				background-color: rgba(255, 255, 255, 0.045);
+				background-image: url('<?php echo esc_url( PNPC_PSD_PLUGIN_URL . 'assets/images/pnpc-pocket-service-desk.png' ); ?>');
+				background-position: center;
+				background-repeat: no-repeat;
+				background-size: 23px auto;
+				<?php endif; ?>
+			}
+			#adminmenu #toplevel_page_pnpc-service-desk.current .wp-menu-image:before,
+			#adminmenu #toplevel_page_pnpc-service-desk.wp-has-current-submenu .wp-menu-image:before,
+			#adminmenu #toplevel_page_pnpc-service-desk:hover .wp-menu-image:before {
+				<?php if ( 'mono' === $menu_logo_style ) : ?>
+				color: currentColor;
+				<?php else : ?>
+				border-color: rgba(255, 255, 255, 0.92);
+				background-color: rgba(255, 255, 255, 0.1);
+				<?php endif; ?>
+			}
 			#adminmenu .pnpc-psd-admin-menu-badge {
 				display: inline-block !important;
 				min-width: 18px;
@@ -688,6 +805,10 @@ class PNPC_PSD_Admin
 			}
 			#adminmenu .pnpc-psd-admin-menu-badge--green {
 				background: #00a32a !important;
+				color: #fff !important;
+			}
+			#adminmenu .pnpc-psd-admin-menu-badge--red {
+				background: #d63638 !important;
 				color: #fff !important;
 			}
 			#adminmenu #toplevel_page_pnpc-service-desk .pnpc-psd-admin-menu-parent-badge {
@@ -924,9 +1045,12 @@ class PNPC_PSD_Admin
 
 		$dashboard_page_id = (int) get_option( 'pnpc_psd_dashboard_page_id', 0 );
 		$dashboard_page    = ( $dashboard_page_id > 0 ) ? get_post( $dashboard_page_id ) : null;
-		$editor            = (string) get_option( 'pnpc_psd_setup_editor', defined( 'ELEMENTOR_VERSION' ) ? 'elementor' : 'block' );
+		$editor            = (string) get_option( 'pnpc_psd_setup_editor', 'block' );
 		if ( ! in_array( $editor, array( 'block', 'elementor', 'custom' ), true ) ) {
-			$editor = defined( 'ELEMENTOR_VERSION' ) ? 'elementor' : 'block';
+			$editor = 'block';
+		}
+		if ( 'elementor' === $editor && ! defined( 'ELEMENTOR_VERSION' ) ) {
+			$editor = 'block';
 		}
 
 		include plugin_dir_path( __FILE__ ) . 'views/setup-wizard.php';
@@ -1006,19 +1130,35 @@ private function is_ticket_view_configured( $page_id ) {
 		return false;
 	}
 
-	// Wizard/builder-created pages are always acceptable.
-	$created_flag = (int) get_post_meta( $page_id, '_pnpc_psd_created_by_builder', true );
-	if ( $created_flag > 0 ) {
+	$content = (string) $post->post_content;
+
+	// The customer Ticket View page may either directly contain the ticket detail
+	// shortcode (block mode) or wrap the generated Elementor template for this site.
+	if ( false !== strpos( $content, '[pnpc_ticket_detail' ) ) {
 		return true;
 	}
 
-	$content = (string) $post->post_content;
-	if ( false !== strpos( $content, '[pnpc_ticket_detail' ) ) {
+	if ( false !== strpos( $content, '[elementor-template' ) ) {
+		// Elementor wrapper pages are valid as Ticket View only when they are the
+		// canonical ticket-view page or were explicitly created/marked for that role.
+		// This prevents dashboard Elementor pages from being accepted as ticket detail pages.
+		$page_role = (string) get_post_meta( $page_id, '_pnpc_psd_page_role', true );
+		if ( 'ticket_view' === $page_role || 'ticket-view' === (string) $post->post_name ) {
+			return true;
+		}
+	}
+
+	// Wizard/builder-created pages remain valid only when Elementor data contains
+	// the ticket detail shortcode. This prevents a dashboard page from being treated
+	// as the Ticket View page merely because it has an old builder-created flag.
+	$elementor_data = (string) get_post_meta( $page_id, '_elementor_data', true );
+	if ( false !== strpos( $elementor_data, 'pnpc_ticket_detail' ) ) {
 		return true;
 	}
 
 	return false;
 }
+
 
 
 	/**
@@ -1099,8 +1239,11 @@ private function is_ticket_view_configured( $page_id ) {
 				$ticket_view_id = (int) $existing->ID;
 				update_option( 'pnpc_psd_ticket_view_page_id', $ticket_view_id, false );
 			} else {
-				$editor = (string) get_option( 'pnpc_psd_setup_editor', defined( 'ELEMENTOR_VERSION' ) ? 'elementor' : 'block' );
+				$editor = (string) get_option( 'pnpc_psd_setup_editor', 'block' );
 				if ( ! in_array( $editor, array( 'block', 'elementor' ), true ) ) {
+					$editor = 'block';
+				}
+				if ( 'elementor' === $editor && ! defined( 'ELEMENTOR_VERSION' ) ) {
 					$editor = 'block';
 				}
 
@@ -1190,7 +1333,7 @@ private function is_ticket_view_configured( $page_id ) {
 				$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 
 				// Only attempt to create the sample ticket if the tickets table exists.
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$table_exists = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name );
 
 				if ( $table_exists ) {
@@ -1233,10 +1376,10 @@ private function is_ticket_view_configured( $page_id ) {
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 
 		// Determine whether the tickets table exists before counting.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$table_exists = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name );
 		if ( $table_exists ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$ticket_count = (int) $wpdb->get_var( "SELECT COUNT(1) FROM {$table_name}" );
 			$has_tickets  = ( $ticket_count > 0 );
 		}
@@ -1409,7 +1552,7 @@ private function is_ticket_view_configured( $page_id ) {
 						array(
 							'title'  => esc_html__( 'Ticket View', 'pnpc-pocket-service-desk' ),
 							'slug'   => 'ticket-view',
-							'editor' => ( defined( 'ELEMENTOR_VERSION' ) ? 'elementor' : 'block' ),
+							'editor' => ( 'elementor' === (string) get_option( 'pnpc_psd_setup_editor', 'block' ) && defined( 'ELEMENTOR_VERSION' ) ? 'elementor' : 'block' ),
 						)
 					);
 
@@ -1579,6 +1722,7 @@ private function is_ticket_view_configured( $page_id ) {
 
 			// Hard enforce in DB as a backstop.
 			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
 			$wpdb->update(
 				$wpdb->posts,
 				array( 'post_name' => $desired_slug ),
@@ -1601,7 +1745,34 @@ private function is_ticket_view_configured( $page_id ) {
 		private function resolve_existing_ticket_view_page_id() {
 			$page = get_page_by_path( 'ticket-view', OBJECT, 'page' );
 			if ( $page instanceof WP_Post ) {
-				return (int) $page->ID;
+				$content = (string) $page->post_content;
+
+				$editor = (string) get_option( 'pnpc_psd_setup_editor', 'block' );
+				if ( ! in_array( $editor, array( 'block', 'elementor', 'custom' ), true ) ) {
+					$editor = 'block';
+				}
+
+				$fixed = $content;
+				if ( 'elementor' === $editor && defined( 'ELEMENTOR_VERSION' ) && false !== stripos( $fixed, '[wpr-template' ) ) {
+					$fixed = preg_replace( '/\[wpr-template(\s+[^\]]*)\]/i', '[elementor-template$1]', $fixed );
+				}
+				if ( 'elementor' !== $editor || ! defined( 'ELEMENTOR_VERSION' ) ) {
+					if ( false !== stripos( $fixed, '[elementor-template' ) || false !== stripos( $fixed, '[wpr-template' ) ) {
+						$fixed = '[pnpc_ticket_detail]';
+					}
+				}
+				if ( is_string( $fixed ) && $fixed !== $content ) {
+					wp_update_post(
+						array(
+							'ID'           => (int) $page->ID,
+							'post_content' => $fixed,
+						)
+					);
+				}
+
+				if ( $this->is_ticket_view_configured( (int) $page->ID ) ) {
+					return (int) $page->ID;
+				}
 			}
 
 			$candidates = get_posts(
@@ -1616,8 +1787,7 @@ private function is_ticket_view_configured( $page_id ) {
 
 			if ( ! empty( $candidates ) ) {
 				foreach ( $candidates as $candidate_id ) {
-					$post = get_post( (int) $candidate_id );
-					if ( $post instanceof WP_Post && false !== strpos( (string) $post->post_content, '[pnpc_ticket_detail' ) ) {
+					if ( $this->is_ticket_view_configured( (int) $candidate_id ) ) {
 						return (int) $candidate_id;
 					}
 				}
@@ -1625,6 +1795,7 @@ private function is_ticket_view_configured( $page_id ) {
 
 			return 0;
 		}
+
 
 
 	/**
@@ -1736,10 +1907,25 @@ private function is_ticket_view_configured( $page_id ) {
 	function create_ticket_view_page_from_wizard( $args ) {
 		$title  = isset( $args['title'] ) ? sanitize_text_field( (string) $args['title'] ) : esc_html__( 'Ticket View', 'pnpc-pocket-service-desk' );
 		$slug   = isset( $args['slug'] ) ? sanitize_title( (string) $args['slug'] ) : 'ticket-view';
-		$editor = isset( $args['editor'] ) ? sanitize_key( (string) $args['editor'] ) : 'elementor';
+		$editor = isset( $args['editor'] ) ? sanitize_key( (string) $args['editor'] ) : 'block';
 
-		// Default shortcode fallback.
-		$content = "[pnpc_ticket_detail]";
+		$content     = '[pnpc_ticket_detail]';
+		$template_id = 0;
+
+		if ( ! in_array( $editor, array( 'block', 'elementor' ), true ) ) {
+			$editor = 'block';
+		}
+
+		// Elementor mode uses a generated Elementor template wrapper. The template ID
+		// must be generated per site; never hardcode a production template ID.
+		// Block/Gutenberg mode must always use the native [pnpc_ticket_detail] shortcode.
+		if ( 'elementor' === $editor && defined( 'ELEMENTOR_VERSION' ) ) {
+			$template_id = $this->create_elementor_ticket_view_template();
+			if ( $template_id > 0 ) {
+				$content = '[elementor-template id="' . absint( $template_id ) . '"]';
+				update_option( 'pnpc_psd_ticket_view_elementor_template_id', (int) $template_id, false );
+			}
+		}
 
 		$page_data = array(
 			'post_title'   => $title,
@@ -1755,32 +1941,73 @@ private function is_ticket_view_configured( $page_id ) {
 			return $page_id;
 		}
 
-		// Mark as wizard-created for reliable detection.
 		update_post_meta( $page_id, '_pnpc_psd_created_by_builder', 1 );
+		update_post_meta( $page_id, '_pnpc_psd_page_role', 'ticket_view' );
 
-		// Apply Elementor template if available and Elementor is active.
-		if ( 'elementor' === $editor && defined( 'ELEMENTOR_VERSION' ) ) {
-			$template_path = PNPC_PSD_PLUGIN_DIR . 'admin/templates/elementor-ticket-view.json';
-			if ( file_exists( $template_path ) ) {
-				$template_json = file_get_contents( $template_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-				if ( false !== $template_json ) {
-					$template_data = json_decode( $template_json, true );
-					if ( JSON_ERROR_NONE === json_last_error() && isset( $template_data['content'] ) && is_array( $template_data['content'] ) ) {
-						update_post_meta( $page_id, '_elementor_edit_mode', 'builder' );
-						update_post_meta( $page_id, '_elementor_template_type', 'wp-page' );
-						update_post_meta( $page_id, '_elementor_version', ELEMENTOR_VERSION );
-						update_post_meta( $page_id, '_elementor_data', wp_slash( wp_json_encode( $template_data['content'] ) ) );
-
-						if ( class_exists( '\\Elementor\\Plugin' ) ) {
-							\Elementor\Plugin::$instance->files_manager->clear_cache();
-						}
-					}
-				}
-			}
+		if ( $template_id > 0 ) {
+			update_post_meta( $page_id, '_pnpc_psd_elementor_template_id', (int) $template_id );
 		}
 
 		return (int) $page_id;
 	}
+
+	/**
+	 * Create or refresh the Elementor template used by the standalone Ticket View page.
+	 *
+	 * @return int Template post ID, or 0 on fallback.
+	 */
+	private function create_elementor_ticket_view_template() {
+		$template_path = PNPC_PSD_PLUGIN_DIR . 'admin/templates/elementor-ticket-view.json';
+		if ( ! file_exists( $template_path ) ) {
+			return 0;
+		}
+
+		$template_json = file_get_contents( $template_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		if ( false === $template_json ) {
+			return 0;
+		}
+
+		$template_data = json_decode( $template_json, true );
+		if ( JSON_ERROR_NONE !== json_last_error() || empty( $template_data['content'] ) || ! is_array( $template_data['content'] ) ) {
+			return 0;
+		}
+
+		$existing_id = absint( get_option( 'pnpc_psd_ticket_view_elementor_template_id', 0 ) );
+		if ( $existing_id > 0 && 'elementor_library' === get_post_type( $existing_id ) && 'trash' !== get_post_status( $existing_id ) ) {
+			$template_id = $existing_id;
+		} else {
+			$template_id = wp_insert_post(
+				array(
+					'post_title'  => esc_html__( 'PNPC Service Desk Ticket View', 'pnpc-pocket-service-desk' ),
+					'post_status' => 'publish',
+					'post_type'   => 'elementor_library',
+					'post_author' => get_current_user_id(),
+				),
+				true
+			);
+
+			if ( is_wp_error( $template_id ) || empty( $template_id ) ) {
+				return 0;
+			}
+		}
+
+		update_post_meta( $template_id, '_elementor_edit_mode', 'builder' );
+		update_post_meta( $template_id, '_elementor_template_type', 'page' );
+		update_post_meta( $template_id, '_elementor_version', ELEMENTOR_VERSION );
+		update_post_meta( $template_id, '_elementor_data', wp_slash( wp_json_encode( $template_data['content'] ) ) );
+		update_post_meta( $template_id, '_pnpc_psd_template_role', 'ticket_view' );
+
+		if ( class_exists( '\Elementor\Plugin' ) ) {
+			try {
+				\Elementor\Plugin::$instance->files_manager->clear_cache();
+			} catch ( Exception $e ) {
+				unset( $e );
+			}
+		}
+
+		return (int) $template_id;
+	}
+
 
 
 
@@ -1799,34 +2026,34 @@ private function is_ticket_view_configured( $page_id ) {
 
 		// Period starts (local WP timezone).
 		$week_start  = strtotime( 'monday this week', $now_ts );
-		$month_start = strtotime( date( 'Y-m-01 00:00:00', $now_ts ) );
-		$year_start  = strtotime( date( 'Y-01-01 00:00:00', $now_ts ) );
+		$month_start = strtotime( gmdate( 'Y-m-01 00:00:00', $now_ts ) );
+		$year_start  = strtotime( gmdate( 'Y-01-01 00:00:00', $now_ts ) );
 
-				$week_start_dt  = date( 'Y-m-d H:i:s', $week_start );
-		$month_start_dt = date( 'Y-m-d H:i:s', $month_start );
-		$year_start_dt  = date( 'Y-m-d H:i:s', $year_start );
+				$week_start_dt  = gmdate( 'Y-m-d H:i:s', $week_start );
+		$month_start_dt = gmdate( 'Y-m-d H:i:s', $month_start );
+		$year_start_dt  = gmdate( 'Y-m-d H:i:s', $year_start );
 
 		$now_dt = current_time( 'mysql' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$opened_week  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND created_at >= %s AND created_at <= %s", $week_start_dt, $now_dt ) );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$opened_month = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND created_at >= %s AND created_at <= %s", $month_start_dt, $now_dt ) );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$opened_year  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND created_at >= %s AND created_at <= %s", $year_start_dt, $now_dt ) );
 
 		// Status values should be stored as lowercase keys, but some legacy rows may contain mixed case.
 		// Use LOWER(status) to produce correct counts without requiring data migrations.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$closed_week  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND LOWER(status) = 'closed' AND updated_at >= %s AND updated_at <= %s", $week_start_dt, $now_dt ) );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$closed_month = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND LOWER(status) = 'closed' AND updated_at >= %s AND updated_at <= %s", $month_start_dt, $now_dt ) );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$closed_year  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND LOWER(status) = 'closed' AND updated_at >= %s AND updated_at <= %s", $year_start_dt, $now_dt ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$open_total   = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND LOWER(status) <> 'closed'" );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$closed_total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE deleted_at IS NULL AND LOWER(status) = 'closed'" );
 
 		$completion_rate = 0.0;
@@ -1860,19 +2087,196 @@ private function is_ticket_view_configured( $page_id ) {
 	 * @param array $alerts Existing alerts.
 	 * @return array Alerts.
 	 */
+	/**
+	 * Build a stable dashboard-alert key for per-user dismissal.
+	 *
+	 * @param array $alert Alert payload.
+	 * @return string
+	 */
+	public function get_dashboard_alert_key( $alert ) {
+		if ( isset( $alert['key'] ) && '' !== (string) $alert['key'] ) {
+			return sanitize_key( (string) $alert['key'] );
+		}
+
+		$basis = wp_json_encode( array(
+			'title' => isset( $alert['title'] ) ? (string) $alert['title'] : '',
+			'body'  => isset( $alert['body'] ) ? (string) $alert['body'] : '',
+			'url'   => isset( $alert['url'] ) ? (string) $alert['url'] : '',
+		) );
+
+		return 'alert_' . md5( false === $basis ? '' : $basis );
+	}
+
+	/**
+	 * Remove alerts this user dismissed/deleted from the dashboard inbox.
+	 *
+	 * @param array $alerts Alert payloads.
+	 * @return array
+	 */
+	public function filter_dismissed_dashboard_alerts( $alerts ) {
+		$dismissed = get_user_meta( get_current_user_id(), 'pnpc_psd_dismissed_dashboard_alerts', true );
+		$dismissed = is_array( $dismissed ) ? array_map( 'sanitize_key', $dismissed ) : array();
+
+		if ( empty( $dismissed ) || empty( $alerts ) || ! is_array( $alerts ) ) {
+			return is_array( $alerts ) ? $alerts : array();
+		}
+
+		return array_values(
+			array_filter(
+				$alerts,
+				function ( $alert ) use ( $dismissed ) {
+					return ! in_array( $this->get_dashboard_alert_key( (array) $alert ), $dismissed, true );
+				}
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler for dismissing/deleting dashboard alert inbox messages.
+	 *
+	 * @return void
+	 */
+	public function ajax_dismiss_dashboard_alert() {
+		check_ajax_referer( 'pnpc_psd_dashboard_alerts', 'nonce' );
+
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_send_json_error( array( 'message' => 'forbidden' ), 403 );
+		}
+
+		$key = isset( $_POST['key'] ) ? sanitize_key( wp_unslash( $_POST['key'] ) ) : '';
+		if ( '' === $key ) {
+			wp_send_json_error( array( 'message' => 'bad_key' ), 400 );
+		}
+
+		$dismissed = get_user_meta( get_current_user_id(), 'pnpc_psd_dismissed_dashboard_alerts', true );
+		$dismissed = is_array( $dismissed ) ? array_map( 'sanitize_key', $dismissed ) : array();
+		$dismissed[] = $key;
+		$dismissed = array_values( array_unique( array_filter( $dismissed ) ) );
+
+		update_user_meta( get_current_user_id(), 'pnpc_psd_dismissed_dashboard_alerts', $dismissed );
+		wp_send_json_success( array( 'key' => $key ) );
+	}
+
+
+	/**
+	 * Determine whether the current user can manage the delete Review queue.
+	 *
+	 * Agents may request deletion, but only administrators and manager-role users
+	 * should see or action the Review queue.
+	 *
+	 * @return bool
+	 */
+	private function current_user_can_manage_review_queue() {
+		if ( current_user_can( 'manage_options' ) ) {
+			return true;
+		}
+
+		$user = wp_get_current_user();
+		if ( ! $user || empty( $user->roles ) || ! is_array( $user->roles ) ) {
+			return false;
+		}
+
+		return in_array( 'pnpc_psd_manager', (array) $user->roles, true );
+	}
+
+	/**
+	 * Get tickets that need a waiting-on-client follow-up for the current agent.
+	 *
+	 * Alert Inbox intentionally tracks quiet, aging Waiting tickets rather than
+	 * unread activity. Unread replies are handled by the ticket/detail indicators.
+	 *
+	 * @param int $user_id Agent user ID.
+	 * @param int $limit   Maximum tickets to return.
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function get_waiting_follow_up_alert_tickets( $user_id, $limit = 10 ) {
+		$user_id = absint( $user_id );
+		$limit   = max( 1, min( 50, absint( $limit ) ) );
+
+		if ( $user_id <= 0 || ! class_exists( 'PNPC_PSD_Ticket' ) ) {
+			return array();
+		}
+
+		$threshold_days = absint( apply_filters( 'pnpc_psd_waiting_follow_up_threshold_days', 3 ) );
+		if ( $threshold_days < 1 ) {
+			$threshold_days = 3;
+		}
+		$cutoff = time() - ( DAY_IN_SECONDS * $threshold_days );
+
+		$tickets = PNPC_PSD_Ticket::get_all(
+			array(
+				'status'      => 'waiting',
+				'assigned_to' => $user_id,
+				'orderby'     => 'updated_at',
+				'order'       => 'ASC',
+				'limit'       => 200,
+			)
+		);
+
+		$items = array();
+		foreach ( (array) $tickets as $ticket ) {
+			$ticket_id = isset( $ticket->id ) ? absint( $ticket->id ) : 0;
+			if ( $ticket_id <= 0 ) {
+				continue;
+			}
+
+			$staff_ts    = ! empty( $ticket->last_staff_activity_at ) ? strtotime( (string) $ticket->last_staff_activity_at . ' UTC' ) : 0;
+			$customer_ts = ! empty( $ticket->last_customer_activity_at ) ? strtotime( (string) $ticket->last_customer_activity_at . ' UTC' ) : 0;
+			$updated_ts  = ! empty( $ticket->updated_at ) ? strtotime( (string) $ticket->updated_at . ' UTC' ) : 0;
+
+			$waiting_since = $staff_ts > 0 ? $staff_ts : $updated_ts;
+			if ( $waiting_since <= 0 || $waiting_since > $cutoff ) {
+				continue;
+			}
+
+			// A customer response after the staff/waiting timestamp clears follow-up state.
+			if ( $customer_ts > $waiting_since ) {
+				continue;
+			}
+
+			$days_waiting = max( $threshold_days, (int) floor( ( time() - $waiting_since ) / DAY_IN_SECONDS ) );
+			$number       = ! empty( $ticket->ticket_number ) ? (string) $ticket->ticket_number : (string) $ticket_id;
+
+			$items[] = array(
+				'id'           => $ticket_id,
+				'number'       => $number,
+				'subject'      => isset( $ticket->subject ) ? (string) $ticket->subject : '',
+				'days_waiting' => $days_waiting,
+				'url'          => admin_url( 'admin.php?page=pnpc-service-desk-ticket&ticket_id=' . $ticket_id ),
+			);
+
+			if ( count( $items ) >= $limit ) {
+				break;
+			}
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Count waiting-on-client follow-up alerts for an agent.
+	 *
+	 * @param int $user_id Agent user ID.
+	 * @return int
+	 */
+	private function get_waiting_follow_up_alert_count( $user_id ) {
+		return count( $this->get_waiting_follow_up_alert_tickets( $user_id, 50 ) );
+	}
+
 	public function get_default_dashboard_alerts( $alerts ) {
 		if ( ! is_array( $alerts ) ) {
 			$alerts = array();
 		}
 
-		// Review queue: pending delete requests awaiting staff action.
-		if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
+		// Review queue: pending delete requests awaiting manager/admin action.
+		if ( $this->current_user_can_manage_review_queue() && class_exists( 'PNPC_PSD_Ticket' ) ) {
 			$review_count = (int) PNPC_PSD_Ticket::get_pending_delete_count();
 			if ( $review_count > 0 ) {
 				// Build URL to Review tab
 				$review_url = admin_url( 'admin.php?page=pnpc-service-desk-tickets&view=review' );
 
 				$alerts[] = array(
+					'key'   => 'review_queue',
 					'title' => __( 'Review queue requires attention', 'pnpc-pocket-service-desk' ),
 					/* translators: %d: count */
 					'body'  => sprintf( _n( '%d ticket is awaiting review in the Review tab.', '%d tickets are awaiting review in the Review tab.', $review_count, 'pnpc-pocket-service-desk' ), $review_count ),
@@ -1880,6 +2284,28 @@ private function is_ticket_view_configured( $page_id ) {
 					'button_text' => __( 'View Review Queue', 'pnpc-pocket-service-desk' ),
 				);
 			}
+		}
+
+		// Follow-up reminders: tickets assigned to this agent, set to Waiting, and quiet for 3+ days.
+		$follow_up_tickets = $this->get_waiting_follow_up_alert_tickets( get_current_user_id(), 5 );
+		foreach ( $follow_up_tickets as $ticket ) {
+			$ticket_id     = absint( isset( $ticket['id'] ) ? $ticket['id'] : 0 );
+			$days_waiting = absint( isset( $ticket['days_waiting'] ) ? $ticket['days_waiting'] : 0 );
+			$ticket_number = isset( $ticket['number'] ) ? (string) $ticket['number'] : (string) $ticket_id;
+			$subject       = isset( $ticket['subject'] ) ? (string) $ticket['subject'] : '';
+			$alerts[]      = array(
+				'key'         => 'waiting_follow_up_' . $ticket_id,
+				'title'       => __( 'Waiting on client response', 'pnpc-pocket-service-desk' ),
+				'body'        => sprintf(
+					/* translators: 1: ticket number, 2: days waiting, 3: ticket subject */
+					_n( 'Ticket #%1$s has been waiting %2$d day: %3$s', 'Ticket #%1$s has been waiting %2$d days: %3$s', max( 1, $days_waiting ), 'pnpc-pocket-service-desk' ),
+					$ticket_number,
+					$days_waiting,
+					$subject
+				),
+				'url'         => isset( $ticket['url'] ) ? (string) $ticket['url'] : '',
+				'button_text' => __( 'Follow Up', 'pnpc-pocket-service-desk' ),
+			);
 		}
 
 		return $alerts;
@@ -1900,6 +2326,9 @@ public function display_tickets_page()
 
 		$status = isset($_GET['status']) ? sanitize_text_field(wp_unslash($_GET['status'])) : '';
 		$view   = isset($_GET['view']) ? sanitize_text_field(wp_unslash($_GET['view'])) : '';
+		if ( 'review' === $view && ! $this->current_user_can_manage_review_queue() ) {
+			wp_die( esc_html__( 'You do not have permission to access the Review queue.', 'pnpc-pocket-service-desk' ) );
+		}
 		$paged  = isset($_GET['paged']) ? max(1, absint(wp_unslash($_GET['paged']))) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination parameter.
 
 		$per_page = (int) get_option('pnpc_psd_tickets_per_page', 20);
@@ -2004,7 +2433,8 @@ public function display_tickets_page()
 
 		global $wpdb;
 		$table = $wpdb->prefix . 'pnpc_psd_error_log';
-		$rows  = $wpdb->get_results( "SELECT id, type, severity, message, context, created_at FROM {$table} ORDER BY created_at DESC, id DESC", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
+		$rows  = $wpdb->get_results( "SELECT id, type, severity, message, context, created_at FROM {$table} ORDER BY created_at DESC, id DESC", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		nocache_headers();
 		header( 'Content-Type: text/csv; charset=utf-8' );
@@ -2080,6 +2510,7 @@ public function display_tickets_page()
 				'errors' => $this->get_recent_error_log_entries( 20 ),
 				'audit'  => $this->get_recent_audit_log_entries( 20 ),
 			),
+			'support_access'    => function_exists( 'pnpc_psd_get_support_contacts_payload' ) ? pnpc_psd_get_support_contacts_payload( get_current_user_id() ) : array(),
 			'privacy'          => array(
 				'customer_tickets_included'     => 'no',
 				'customer_messages_included'    => 'no',
@@ -2102,11 +2533,13 @@ public function display_tickets_page()
 		global $wpdb;
 		$table = $wpdb->prefix . 'pnpc_psd_error_log';
 		$limit = max( 1, min( 50, absint( $limit ) ) );
-		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching
 		if ( $exists !== $table ) {
 			return array();
 		}
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT type, severity, message, created_at FROM {$table} ORDER BY created_at DESC, id DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT type, severity, message, created_at FROM {$table} ORDER BY created_at DESC, id DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		return is_array( $rows ) ? array_map( array( $this, 'sanitize_support_bundle_row' ), $rows ) : array();
 	}
 
@@ -2120,11 +2553,13 @@ public function display_tickets_page()
 		global $wpdb;
 		$table = $wpdb->prefix . 'pnpc_psd_audit_log';
 		$limit = max( 1, min( 50, absint( $limit ) ) );
-		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching
 		if ( $exists !== $table ) {
 			return array();
 		}
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT ticket_id, actor_id, action, created_at FROM {$table} ORDER BY created_at DESC, id DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT ticket_id, actor_id, action, created_at FROM {$table} ORDER BY created_at DESC, id DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
 		return is_array( $rows ) ? array_map( array( $this, 'sanitize_support_bundle_row' ), $rows ) : array();
 	}
 
@@ -2264,7 +2699,7 @@ public function display_tickets_page()
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 
 		// Get previous ticket (by ID, descending).
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$prev_ticket_id = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT id FROM {$table_name} WHERE id < %d AND deleted_at IS NULL ORDER BY id DESC LIMIT 1",
@@ -2274,7 +2709,7 @@ public function display_tickets_page()
 		$prev_ticket_id = $prev_ticket_id ? absint( $prev_ticket_id ) : 0;
 
 		// Get next ticket (by ID, ascending).
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$next_ticket_id = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT id FROM {$table_name} WHERE id > %d AND deleted_at IS NULL ORDER BY id ASC LIMIT 1",
@@ -2452,6 +2887,35 @@ public function display_tickets_page()
 				'type'              => 'string',
 				'sanitize_callback' => 'esc_url_raw',
 				'default'           => 'https://plugnplayconsultants.com/dashboard/',
+			)
+		);
+
+
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_support_admins_eligible',
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'absint',
+				'default'           => 1,
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_support_contact_user_ids',
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => 'pnpc_psd_sanitize_support_contact_user_ids',
+				'default'           => array(),
+			)
+		);
+		register_setting(
+			'pnpc_psd_settings',
+			'pnpc_psd_support_contact_email_overrides',
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => 'pnpc_psd_sanitize_support_contact_email_overrides',
+				'default'           => array(),
 			)
 		);
 
@@ -3117,25 +3581,31 @@ public function display_tickets_page()
 					if ( isset( $sk['reason'] ) && 'size' === (string) $sk['reason'] && isset( $sk['max'] ) ) {
 						$max_human  = function_exists( 'pnpc_psd_format_filesize' ) ? pnpc_psd_format_filesize( (int) $sk['max'] ) : ( (int) $sk['max'] . ' bytes' );
 						$size_human = ( isset( $sk['size'] ) && function_exists( 'pnpc_psd_format_filesize' ) ) ? pnpc_psd_format_filesize( (int) $sk['size'] ) : '';
+						/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 						$detail = ' ' . sprintf( esc_html__( 'Max per file: %s.', 'pnpc-pocket-service-desk' ), $max_human );
 						if ( $size_human ) {
+							/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 							$detail .= ' ' . sprintf( esc_html__( 'File size was %s.', 'pnpc-pocket-service-desk' ), $size_human );
 						}
 						break;
 					}
 					if ( empty( $detail ) && isset( $sk['reason'] ) && 'type' === (string) $sk['reason'] ) {
 						if ( ! empty( $sk['mime'] ) ) {
+							/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 							$detail .= ' ' . sprintf( esc_html__( 'Detected type: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['mime'] ) );
 						}
 						if ( ! empty( $sk['ext'] ) ) {
+							/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 							$detail .= ' ' . sprintf( esc_html__( 'Extension: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['ext'] ) );
 						}
 						if ( ! empty( $sk['allow'] ) ) {
+							/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 							$detail .= ' ' . sprintf( esc_html__( 'Allowed: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['allow'] ) );
 						}
 						$detail = trim( $detail );
 					}
 					if ( empty( $detail ) && isset( $sk['reason'] ) && 'php' === (string) $sk['reason'] && isset( $sk['code'] ) ) {
+						/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 						$detail = ' ' . sprintf( esc_html__( 'Upload rejected by server (code %d).', 'pnpc-pocket-service-desk' ), (int) $sk['code'] );
 					}
 					if ( empty( $detail ) && isset( $sk['reason'] ) && 'upload' === (string) $sk['reason'] && ! empty( $sk['msg'] ) ) {
@@ -3422,6 +3892,7 @@ public function display_tickets_page()
 
 		$count = PNPC_PSD_Ticket::bulk_archive_closed($ticket_ids);
 		if ( $count > 0 ) {
+			/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 			$message = sprintf(_n('%d ticket moved to archive.', '%d tickets moved to archive.', $count, 'pnpc-pocket-service-desk'), $count);
 			wp_send_json_success(array('message' => $message, 'count' => $count, 'counts' => $this->get_ticket_tab_counts()));
 		}
@@ -3451,6 +3922,7 @@ public function display_tickets_page()
 
 		$count = PNPC_PSD_Ticket::bulk_restore_from_archive($ticket_ids);
 		if ( $count > 0 ) {
+			/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 			$message = sprintf(_n('%d ticket restored from archive.', '%d tickets restored from archive.', $count, 'pnpc-pocket-service-desk'), $count);
 			wp_send_json_success(array('message' => $message, 'count' => $count, 'counts' => $this->get_ticket_tab_counts()));
 		}
@@ -3556,7 +4028,7 @@ public function display_tickets_page()
 	{
 		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
 
-		if ( ! current_user_can('pnpc_psd_delete_tickets') ) {
+		if ( ! $this->current_user_can_manage_review_queue() ) {
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
@@ -3602,7 +4074,7 @@ public function display_tickets_page()
 	{
 		check_ajax_referer('pnpc_psd_admin_nonce', 'nonce');
 
-		if ( ! current_user_can('pnpc_psd_delete_tickets') ) {
+		if ( ! $this->current_user_can_manage_review_queue() ) {
 			wp_send_json_error(array('message' => __('Permission denied.', 'pnpc-pocket-service-desk')));
 		}
 
@@ -3732,6 +4204,9 @@ public function display_tickets_page()
 
 		$status = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : '';
 		$view   = isset($_POST['view']) ? sanitize_text_field(wp_unslash($_POST['view'])) : '';
+		if ( 'review' === $view && ! $this->current_user_can_manage_review_queue() ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'pnpc-pocket-service-desk' ) ), 403 );
+		}
 		$paged  = isset($_POST['paged']) ? absint( wp_unslash( $_POST['paged'] ) ) : 1;
 		$current_user_id = get_current_user_id();
 
@@ -3812,6 +4287,7 @@ public function display_tickets_page()
 								<span class="pnpc-psd-divider-text">
 									<?php
 									printf(
+										/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 										esc_html__('Closed Tickets (%d)', 'pnpc-pocket-service-desk'),
 										count($closed_tickets)
 									);
@@ -3898,9 +4374,10 @@ public function display_tickets_page()
 			return 0;
 		}
 
-		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$attachments_table     = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$attachments_table_sql = esc_sql( $attachments_table );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned table; required for live admin row indicator.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Plugin-owned table; required for live admin row indicator.
 		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
 				'SHOW TABLES LIKE %s',
@@ -3912,11 +4389,11 @@ public function display_tickets_page()
 			return 0;
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is plugin-owned; ticket ID is absint-normalized.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is plugin-owned; ticket ID is absint-normalized.
 		return absint(
 			$wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$attachments_table} WHERE ticket_id = %d AND deleted_at IS NULL",
+					"SELECT COUNT(*) FROM {$attachments_table_sql} WHERE ticket_id = %d AND deleted_at IS NULL",
 					$ticket_id
 				)
 			)
@@ -3934,8 +4411,10 @@ public function display_tickets_page()
 		if ( ! $count ) {
 			return;
 		}
+		/* translators: %d: number of attachments. */
+		$attachment_label = sprintf( _n( '%d attachment', '%d attachments', $count, 'pnpc-pocket-service-desk' ), $count );
 		?>
-		<span class="pnpc-psd-attachment-indicator" title="<?php echo esc_attr( sprintf( _n( '%d attachment', '%d attachments', $count, 'pnpc-pocket-service-desk' ), $count ) ); ?>" aria-label="<?php echo esc_attr( sprintf( _n( '%d attachment', '%d attachments', $count, 'pnpc-pocket-service-desk' ), $count ) ); ?>">
+		<span class="pnpc-psd-attachment-indicator" title="<?php echo esc_attr( $attachment_label ); ?>" aria-label="<?php echo esc_attr( $attachment_label ); ?>">
 			<span class="dashicons dashicons-paperclip"></span>
 			<span class="pnpc-psd-attachment-count"><?php echo esc_html( $count ); ?></span>
 		</span>
@@ -4034,7 +4513,7 @@ public function display_tickets_page()
 		$user          = get_userdata($ticket->user_id);
 		$assigned_user = $ticket->assigned_to ? get_userdata($ticket->assigned_to) : null;
 		$is_review_view = ('review' === $view);
-		$can_bulk = $is_review_view ? current_user_can('pnpc_psd_delete_tickets') : current_user_can('manage_options');
+		$can_bulk = $is_review_view ? $this->current_user_can_manage_review_queue() : current_user_can('manage_options');
 
 		// Extract numeric part from ticket number for sorting
 		$ticket_num_for_sort = (int) preg_replace('/[^0-9]/', '', $ticket->ticket_number);
@@ -4381,7 +4860,7 @@ public function display_tickets_page()
 							'created_at'  => $created_at_utc,
 						);
 
-						// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+						// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 						$wpdb->insert(
 							$attachments_table,
 							$att_data,
@@ -4653,7 +5132,7 @@ public function display_tickets_page()
 			) );
 		}
 
-		fclose( $out );
+		// No explicit fclose() is required for php://output; ending the request flushes the stream.
 		exit;
 	}
 
@@ -4823,6 +5302,192 @@ public function display_tickets_page()
 			( $file_d ? ' &mdash; <code>' . esc_html( $file_d ) . ':' . (int) $line . '</code>' : '' ) .
 			( $msg_d ? '<br/><span style="display:inline-block;margin-top:6px;max-width:900px;">' . esc_html( $msg_d ) . '</span>' : '' ) .
 			'</p></div>';
+	}
+
+
+	/**
+	 * AJAX: return compact ticket activity state for live ticket-detail indicators.
+	 *
+	 * @return void
+	 */
+	public function ajax_ticket_activity_state() {
+		check_ajax_referer( 'pnpc_psd_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_send_json_error( array( 'message' => 'forbidden' ), 403 );
+		}
+
+		$ticket_id = isset( $_POST['ticket_id'] ) ? absint( wp_unslash( $_POST['ticket_id'] ) ) : 0;
+		if ( ! $ticket_id || ! class_exists( 'PNPC_PSD_Ticket' ) || ! class_exists( 'PNPC_PSD_Ticket_Response' ) ) {
+			wp_send_json_error( array( 'message' => 'bad_ticket' ), 400 );
+		}
+
+		$ticket = PNPC_PSD_Ticket::get( $ticket_id );
+		if ( ! $ticket ) {
+			wp_send_json_error( array( 'message' => 'not_found' ), 404 );
+		}
+
+		$responses = PNPC_PSD_Ticket_Response::get_by_ticket( $ticket_id );
+		$response_attachment_count = 0;
+
+		global $wpdb;
+		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
+		$response_attachment_count = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$attachments_table} WHERE ticket_id = %d AND deleted_at IS NULL AND response_id IS NOT NULL AND response_id <> 0",
+				$ticket_id
+			)
+		);
+
+		$customer_responses = 0;
+		$staff_responses    = 0;
+		$last_customer_ts   = 0;
+		$last_staff_ts      = 0;
+
+		foreach ( (array) $responses as $response ) {
+			$created_ts = ! empty( $response->created_at ) ? (int) strtotime( (string) $response->created_at . ' UTC' ) : 0;
+			if ( ! empty( $response->is_staff_response ) ) {
+				$staff_responses++;
+				$last_staff_ts = max( $last_staff_ts, $created_ts );
+			} else {
+				$customer_responses++;
+				$last_customer_ts = max( $last_customer_ts, $created_ts );
+			}
+		}
+
+		wp_send_json_success(
+			array(
+				'response_count'     => count( (array) $responses ),
+				'customer_count'     => $customer_responses,
+				'internal_count'     => $staff_responses,
+				'last_customer_ts'  => $last_customer_ts,
+				'last_staff_ts'     => $last_staff_ts,
+				'attachment_count'  => $response_attachment_count,
+				'updated_at'        => isset( $ticket->updated_at ) ? (string) $ticket->updated_at : '',
+			)
+		);
+	}
+
+
+	/**
+	 * AJAX: render the current ticket conversation thread for live ticket-detail refreshes.
+	 *
+	 * @return void
+	 */
+	public function ajax_ticket_conversation_html() {
+		check_ajax_referer( 'pnpc_psd_admin_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'pnpc_psd_view_tickets' ) ) {
+			wp_send_json_error( array( 'message' => 'forbidden' ), 403 );
+		}
+
+		$ticket_id = isset( $_POST['ticket_id'] ) ? absint( wp_unslash( $_POST['ticket_id'] ) ) : 0;
+		if ( ! $ticket_id || ! class_exists( 'PNPC_PSD_Ticket' ) || ! class_exists( 'PNPC_PSD_Ticket_Response' ) ) {
+			wp_send_json_error( array( 'message' => 'bad_ticket' ), 400 );
+		}
+
+		$ticket = PNPC_PSD_Ticket::get( $ticket_id );
+		if ( ! $ticket ) {
+			wp_send_json_error( array( 'message' => 'not_found' ), 404 );
+		}
+
+		$responses = PNPC_PSD_Ticket_Response::get_by_ticket( $ticket_id );
+
+		global $wpdb;
+		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$response_attachments_map = array();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
+		$all_response_attachments = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$attachments_table} WHERE ticket_id = %d AND deleted_at IS NULL AND response_id IS NOT NULL AND response_id <> 0 ORDER BY id ASC",
+				$ticket_id
+			)
+		);
+
+		if ( ! empty( $all_response_attachments ) ) {
+			foreach ( (array) $all_response_attachments as $attachment ) {
+				$response_id = isset( $attachment->response_id ) ? absint( $attachment->response_id ) : 0;
+				if ( $response_id > 0 ) {
+					if ( ! isset( $response_attachments_map[ $response_id ] ) ) {
+						$response_attachments_map[ $response_id ] = array();
+					}
+					$response_attachments_map[ $response_id ][] = $attachment;
+				}
+			}
+		}
+
+		ob_start();
+		if ( ! empty( $responses ) ) {
+			foreach ( (array) $responses as $r ) {
+				$responder      = get_userdata( $r->user_id );
+				$is_staff       = intval( $r->is_staff_response ) === 1;
+				$responder_name = $responder ? $responder->display_name : __( 'Unknown', 'pnpc-pocket-service-desk' );
+				$initials       = '??';
+				if ( $responder_name ) {
+					$parts    = preg_split( '/\s+/', trim( (string) $responder_name ) );
+					$initials = strtoupper( substr( $parts[0], 0, 1 ) . ( isset( $parts[1] ) ? substr( $parts[1], 0, 1 ) : '' ) );
+				}
+				$responder_image = ( $responder && ! empty( $responder->ID ) ) ? get_user_meta( (int) $responder->ID, 'pnpc_psd_profile_image', true ) : '';
+				$responder_image = is_string( $responder_image ) ? trim( $responder_image ) : '';
+				echo '<div class="pnpc-psd-response ' . esc_attr( $is_staff ? 'pnpc-psd-response-staff' : 'pnpc-psd-response-customer' ) . '">';
+				if ( '' !== $responder_image ) {
+					echo '<img class="pnpc-psd-message-avatar pnpc-psd-message-avatar-image" src="' . esc_url( $responder_image ) . '" alt="' . esc_attr( $responder_name ) . '" />';
+				} else {
+					echo '<div class="pnpc-psd-message-avatar" aria-hidden="true">' . esc_html( $initials ) . '</div>';
+				}
+				echo '<div class="pnpc-psd-message-bubble"><div class="pnpc-psd-response-header">';
+				echo '<strong>' . esc_html( $responder_name ) . '</strong>';
+				if ( $is_staff ) {
+					echo '<span class="pnpc-psd-agent-chip">' . esc_html__( 'Agent', 'pnpc-pocket-service-desk' ) . '</span>';
+				}
+				$date = function_exists( 'pnpc_psd_admin_format_datetime' ) ? pnpc_psd_admin_format_datetime( $r->created_at ) : (string) $r->created_at;
+				echo '<span class="pnpc-psd-response-date">' . esc_html( $date ) . '</span></div>';
+				echo '<div class="pnpc-psd-response-content">' . wp_kses_post( wpautop( $r->response ) ) . '</div>';
+
+				$response_id = isset( $r->id ) ? absint( $r->id ) : 0;
+				$attachments_for_response = $response_id && isset( $response_attachments_map[ $response_id ] ) ? $response_attachments_map[ $response_id ] : array();
+				if ( ! empty( $attachments_for_response ) ) {
+					echo '<div class="pnpc-psd-response-attachments">';
+					echo '<strong>' . esc_html__( 'Attachments:', 'pnpc-pocket-service-desk' ) . '</strong>';
+					foreach ( (array) $attachments_for_response as $attachment ) {
+						$attachment_id = isset( $attachment->id ) ? absint( $attachment->id ) : 0;
+						if ( ! $attachment_id ) {
+							continue;
+						}
+
+						$file_name = isset( $attachment->file_name ) ? (string) $attachment->file_name : '';
+						$file_size = isset( $attachment->file_size ) ? absint( $attachment->file_size ) : 0;
+						$file_size_formatted = function_exists( 'pnpc_psd_format_filesize' ) ? pnpc_psd_format_filesize( $file_size ) : size_format( $file_size );
+						$download_url = function_exists( 'pnpc_psd_get_attachment_download_url' ) ? pnpc_psd_get_attachment_download_url( $attachment_id, $ticket_id, false ) : '';
+						$inline_url = function_exists( 'pnpc_psd_get_attachment_download_url' ) ? pnpc_psd_get_attachment_download_url( $attachment_id, $ticket_id, true ) : '';
+						$file_ext = strtolower( pathinfo( $file_name, PATHINFO_EXTENSION ) );
+						$file_type = function_exists( 'pnpc_psd_get_attachment_type' ) ? pnpc_psd_get_attachment_type( $file_ext ) : 'other';
+						$can_preview = function_exists( 'pnpc_psd_can_preview_attachment' ) ? pnpc_psd_can_preview_attachment( $file_size ) : false;
+
+						if ( $can_preview && in_array( $file_type, array( 'image', 'pdf' ), true ) && '' !== $inline_url ) {
+							echo '<button type="button" class="pnpc-psd-view-attachment button button-small" data-type="' . esc_attr( $file_type ) . '" data-url="' . esc_url( $inline_url ) . '" data-filename="' . esc_attr( $file_name ) . '">' . esc_html__( 'View', 'pnpc-pocket-service-desk' ) . '</button>';
+						}
+
+						if ( '' !== $download_url ) {
+							echo '<a class="pnpc-psd-message-attachment" href="' . esc_url( $download_url ) . '" download>' . esc_html( $file_name ) . ' <span>' . esc_html( $file_size_formatted ) . '</span></a>';
+						}
+					}
+					echo '</div>';
+				}
+
+				echo '</div></div>';
+			}
+		} else {
+			echo '<p>' . esc_html__( 'No responses yet.', 'pnpc-pocket-service-desk' ) . '</p>';
+		}
+		$html = ob_get_clean();
+
+		if ( method_exists( 'PNPC_PSD_Ticket', 'mark_staff_viewed' ) ) {
+			PNPC_PSD_Ticket::mark_staff_viewed( $ticket_id );
+		}
+
+		wp_send_json_success( array( 'html' => $html ) );
 	}
 
 

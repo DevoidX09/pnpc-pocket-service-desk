@@ -150,11 +150,11 @@ class PNPC_PSD_Activator {
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 
 		// Determine whether the tickets table exists.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$table_exists = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name );
 
 		if ( $table_exists ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching
 			$ticket_count = (int) $wpdb->get_var( "SELECT COUNT(1) FROM {$table_name}" );
 			$has_tickets  = ( $ticket_count > 0 );
 		}
@@ -239,9 +239,10 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 	public static function ensure_attachment_schema() {
 		global $wpdb;
 
-		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$attachments_table     = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$attachments_table_sql = esc_sql( $attachments_table );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
 		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
 				'SHOW TABLES LIKE %s',
@@ -251,7 +252,7 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 
 		if ( ! $table_exists ) {
 			$charset_collate = $wpdb->get_charset_collate();
-			$sql = "CREATE TABLE {$attachments_table} (
+			$sql = "CREATE TABLE {$attachments_table_sql} (
 				id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 				ticket_id bigint(20) UNSIGNED NOT NULL,
 				response_id bigint(20) UNSIGNED DEFAULT NULL,
@@ -273,20 +274,20 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 		}
 
 		$columns = array(
-			'response_id' => "ALTER TABLE {$attachments_table} ADD COLUMN response_id bigint(20) UNSIGNED DEFAULT NULL AFTER ticket_id",
-			'file_type'   => "ALTER TABLE {$attachments_table} ADD COLUMN file_type varchar(100) NOT NULL DEFAULT '' AFTER file_path",
-			'file_size'   => "ALTER TABLE {$attachments_table} ADD COLUMN file_size bigint(20) UNSIGNED NOT NULL DEFAULT 0 AFTER file_type",
-			'uploaded_by' => "ALTER TABLE {$attachments_table} ADD COLUMN uploaded_by bigint(20) UNSIGNED NOT NULL DEFAULT 0 AFTER file_size",
-			'created_at'  => "ALTER TABLE {$attachments_table} ADD COLUMN created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL AFTER uploaded_by",
-			'deleted_at'  => "ALTER TABLE {$attachments_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at",
+			'response_id' => "ALTER TABLE {$attachments_table_sql} ADD COLUMN response_id bigint(20) UNSIGNED DEFAULT NULL AFTER ticket_id",
+			'file_type'   => "ALTER TABLE {$attachments_table_sql} ADD COLUMN file_type varchar(100) NOT NULL DEFAULT '' AFTER file_path",
+			'file_size'   => "ALTER TABLE {$attachments_table_sql} ADD COLUMN file_size bigint(20) UNSIGNED NOT NULL DEFAULT 0 AFTER file_type",
+			'uploaded_by' => "ALTER TABLE {$attachments_table_sql} ADD COLUMN uploaded_by bigint(20) UNSIGNED NOT NULL DEFAULT 0 AFTER file_size",
+			'created_at'  => "ALTER TABLE {$attachments_table_sql} ADD COLUMN created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL AFTER uploaded_by",
+			'deleted_at'  => "ALTER TABLE {$attachments_table_sql} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at",
 		);
 
 		foreach ( $columns as $column => $sql ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
-			$exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$attachments_table} LIKE %s", $column ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
+			$exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$attachments_table_sql} LIKE %s", $column ) );
 			if ( ! $exists ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required defensive schema repair.
-				$wpdb->query( $sql );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required defensive schema repair.
+				$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built from fixed schema fragments and prepared values above.
 			}
 		}
 
@@ -294,22 +295,22 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 		// Some hosts/importers can preserve rows but drop the PRIMARY KEY, which makes
 		// AUTO_INCREMENT repair fail and causes new attachment rows to insert badly or
 		// not insert at all. Repair both pieces defensively.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
-		$id_column = $wpdb->get_row( "SHOW COLUMNS FROM {$attachments_table} LIKE 'id'" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
+		$id_column = $wpdb->get_row( "SHOW COLUMNS FROM {$attachments_table_sql} LIKE 'id'" );
 		if ( $id_column ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
-			$primary_key = $wpdb->get_var( "SHOW INDEX FROM {$attachments_table} WHERE Key_name = 'PRIMARY'" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
+			$primary_key = $wpdb->get_var( "SHOW INDEX FROM {$attachments_table_sql} WHERE Key_name = 'PRIMARY'" );
 			if ( ! $primary_key ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required defensive schema repair.
-				$wpdb->query( "ALTER TABLE {$attachments_table} ADD PRIMARY KEY (id)" );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required defensive schema repair.
+				$wpdb->query( "ALTER TABLE {$attachments_table_sql} ADD PRIMARY KEY (id)" );
 			}
 
 			// Re-read after potential primary-key repair.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
-			$id_column = $wpdb->get_row( "SHOW COLUMNS FROM {$attachments_table} LIKE 'id'" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Required defensive schema guard.
+			$id_column = $wpdb->get_row( "SHOW COLUMNS FROM {$attachments_table_sql} LIKE 'id'" );
 			if ( $id_column && false === stripos( (string) $id_column->Extra, 'auto_increment' ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required defensive schema repair.
-				$wpdb->query( "ALTER TABLE {$attachments_table} MODIFY id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT" );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required defensive schema repair.
+				$wpdb->query( "ALTER TABLE {$attachments_table_sql} MODIFY id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT" );
 			}
 		}
 	}
@@ -326,10 +327,11 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 	 */
 	public static function ensure_delete_reason_columns() {
 		global $wpdb;
-		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table     = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table_sql = esc_sql( $tickets_table );
 
 		// Verify tickets table exists.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
 				'SHOW TABLES LIKE %s',
@@ -342,37 +344,37 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 
 		// Check columns individually; some sites can end up with partial migrations.
 		$needs = array(
-			'delete_reason'       => "ALTER TABLE {$tickets_table} ADD COLUMN delete_reason VARCHAR(50) DEFAULT NULL AFTER deleted_at",
-			'delete_reason_other' => "ALTER TABLE {$tickets_table} ADD COLUMN delete_reason_other TEXT DEFAULT NULL AFTER delete_reason",
-			'deleted_by'          => "ALTER TABLE {$tickets_table} ADD COLUMN deleted_by BIGINT(20) UNSIGNED DEFAULT NULL AFTER delete_reason_other",
+			'delete_reason'       => "ALTER TABLE {$tickets_table_sql} ADD COLUMN delete_reason VARCHAR(50) DEFAULT NULL AFTER deleted_at",
+			'delete_reason_other' => "ALTER TABLE {$tickets_table_sql} ADD COLUMN delete_reason_other TEXT DEFAULT NULL AFTER delete_reason",
+			'deleted_by'          => "ALTER TABLE {$tickets_table_sql} ADD COLUMN deleted_by BIGINT(20) UNSIGNED DEFAULT NULL AFTER delete_reason_other",
 		);
 
 		foreach ( $needs as $col => $sql ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
-					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
+					"SHOW COLUMNS FROM {$tickets_table_sql} LIKE %s",
 					$col
 				)
 			);
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
-				$wpdb->query( $sql );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built from fixed schema fragments and prepared values above.
 			}
 		}
 
 		// Add indexes if missing.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$idx_reason = $wpdb->get_results("SHOW INDEX FROM {$tickets_table} WHERE Key_name = 'delete_reason'");
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$idx_reason = $wpdb->get_results("SHOW INDEX FROM {$tickets_table_sql} WHERE Key_name = 'delete_reason'");
 		if ( empty( $idx_reason ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query("ALTER TABLE {$tickets_table} ADD KEY delete_reason (delete_reason)");
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query("ALTER TABLE {$tickets_table_sql} ADD KEY delete_reason (delete_reason)");
 		}
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$idx_deleted_by = $wpdb->get_results("SHOW INDEX FROM {$tickets_table} WHERE Key_name = 'deleted_by'");
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$idx_deleted_by = $wpdb->get_results("SHOW INDEX FROM {$tickets_table_sql} WHERE Key_name = 'deleted_by'");
 		if ( empty( $idx_deleted_by ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query("ALTER TABLE {$tickets_table} ADD KEY deleted_by (deleted_by)");
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query("ALTER TABLE {$tickets_table_sql} ADD KEY deleted_by (deleted_by)");
 		}
 	}
 
@@ -387,10 +389,11 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 	private static function upgrade_to_1_4_0() {
 		global $wpdb;
 
-		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table     = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table_sql = esc_sql( $tickets_table );
 
 		// Verify table exists.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
 				'SHOW TABLES LIKE %s',
@@ -403,32 +406,32 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 		}
 
 		$columns_to_add = array(
-			'pending_delete_at'          => "ALTER TABLE {$tickets_table} ADD COLUMN pending_delete_at datetime DEFAULT NULL AFTER deleted_at",
-			'pending_delete_by'          => "ALTER TABLE {$tickets_table} ADD COLUMN pending_delete_by BIGINT(20) UNSIGNED DEFAULT NULL AFTER pending_delete_at",
-			'pending_delete_reason'      => "ALTER TABLE {$tickets_table} ADD COLUMN pending_delete_reason varchar(100) DEFAULT NULL AFTER pending_delete_by",
-			'pending_delete_reason_other'=> "ALTER TABLE {$tickets_table} ADD COLUMN pending_delete_reason_other text DEFAULT NULL AFTER pending_delete_reason",
+			'pending_delete_at'          => "ALTER TABLE {$tickets_table_sql} ADD COLUMN pending_delete_at datetime DEFAULT NULL AFTER deleted_at",
+			'pending_delete_by'          => "ALTER TABLE {$tickets_table_sql} ADD COLUMN pending_delete_by BIGINT(20) UNSIGNED DEFAULT NULL AFTER pending_delete_at",
+			'pending_delete_reason'      => "ALTER TABLE {$tickets_table_sql} ADD COLUMN pending_delete_reason varchar(100) DEFAULT NULL AFTER pending_delete_by",
+			'pending_delete_reason_other'=> "ALTER TABLE {$tickets_table_sql} ADD COLUMN pending_delete_reason_other text DEFAULT NULL AFTER pending_delete_reason",
 		);
 
 		foreach ( $columns_to_add as $col => $sql ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
-					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
+					"SHOW COLUMNS FROM {$tickets_table_sql} LIKE %s",
 					$col
 				)
 			);
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
-				$wpdb->query( $sql );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built from fixed schema fragments and prepared values above.
 			}
 		}
 
 		// Add indexes to keep review queries fast.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$pending_idx = $wpdb->get_results("SHOW INDEX FROM {$tickets_table} WHERE Key_name = 'pending_delete_at'");
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$pending_idx = $wpdb->get_results("SHOW INDEX FROM {$tickets_table_sql} WHERE Key_name = 'pending_delete_at'");
 		if ( empty( $pending_idx ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query("ALTER TABLE {$tickets_table} ADD KEY pending_delete_at (pending_delete_at)");
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
+			$wpdb->query("ALTER TABLE {$tickets_table_sql} ADD KEY pending_delete_at (pending_delete_at)");
 		}
 
 		update_option( 'pnpc_psd_db_version', '1.4.0' );
@@ -441,29 +444,30 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 	 */
 	private static function upgrade_to_1_5_0() {
 		global $wpdb;
-		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table     = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table_sql = esc_sql( $tickets_table );
 
 		$columns = array(
-			'last_customer_activity_at' => "ALTER TABLE {$tickets_table} ADD COLUMN last_customer_activity_at datetime DEFAULT NULL",
-			'last_staff_activity_at'    => "ALTER TABLE {$tickets_table} ADD COLUMN last_staff_activity_at datetime DEFAULT NULL",
-			'last_customer_viewed_at'   => "ALTER TABLE {$tickets_table} ADD COLUMN last_customer_viewed_at datetime DEFAULT NULL",
-			'last_staff_viewed_at'      => "ALTER TABLE {$tickets_table} ADD COLUMN last_staff_viewed_at datetime DEFAULT NULL",
+			'last_customer_activity_at' => "ALTER TABLE {$tickets_table_sql} ADD COLUMN last_customer_activity_at datetime DEFAULT NULL",
+			'last_staff_activity_at'    => "ALTER TABLE {$tickets_table_sql} ADD COLUMN last_staff_activity_at datetime DEFAULT NULL",
+			'last_customer_viewed_at'   => "ALTER TABLE {$tickets_table_sql} ADD COLUMN last_customer_viewed_at datetime DEFAULT NULL",
+			'last_staff_viewed_at'      => "ALTER TABLE {$tickets_table_sql} ADD COLUMN last_staff_viewed_at datetime DEFAULT NULL",
 		);
 
 		foreach ( $columns as $col => $sql ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
-			$exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$tickets_table} LIKE %s", $col ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			$exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$tickets_table_sql} LIKE %s", $col ) );
 			if ( ! $exists ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
-				$wpdb->query( $sql );
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
+				$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built from fixed schema fragments and prepared values above.
 			}
 		}
 
 		// Backfill: treat ticket creation as customer activity + customer viewed.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
-		$wpdb->query( "UPDATE {$tickets_table} SET last_customer_activity_at = COALESCE(last_customer_activity_at, created_at)" );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
-		$wpdb->query( "UPDATE {$tickets_table} SET last_customer_viewed_at = COALESCE(last_customer_viewed_at, created_at)" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		$wpdb->query( "UPDATE {$tickets_table_sql} SET last_customer_activity_at = COALESCE(last_customer_activity_at, created_at)" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		$wpdb->query( "UPDATE {$tickets_table_sql} SET last_customer_viewed_at = COALESCE(last_customer_viewed_at, created_at)" );
 
 		// Default settings introduced in v1.1.0+.
 		if ( false === get_option( 'pnpc_psd_max_attachment_mb', false ) ) {
@@ -500,21 +504,23 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 		global $wpdb;
 		$charset_collate = $wpdb->get_charset_collate();
 
-		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
-		$audit_table   = $wpdb->prefix . 'pnpc_psd_audit_log';
+		$tickets_table     = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table_sql = esc_sql( $tickets_table );
+		$audit_table       = $wpdb->prefix . 'pnpc_psd_audit_log';
+		$audit_table_sql   = esc_sql( $audit_table );
 
 		// Add archived_at column if missing.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
-		$archived_exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$tickets_table} LIKE %s", 'archived_at' ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		$archived_exists = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$tickets_table_sql} LIKE %s", 'archived_at' ) );
 		if ( ! $archived_exists ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
-			$wpdb->query( "ALTER TABLE {$tickets_table} ADD COLUMN archived_at datetime DEFAULT NULL AFTER deleted_at" );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
-			$wpdb->query( "ALTER TABLE {$tickets_table} ADD KEY archived_at (archived_at)" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
+			$wpdb->query( "ALTER TABLE {$tickets_table_sql} ADD COLUMN archived_at datetime DEFAULT NULL AFTER deleted_at" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Required for plugin activation and updates
+			$wpdb->query( "ALTER TABLE {$tickets_table_sql} ADD KEY archived_at (archived_at)" );
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		$sql_audit = "CREATE TABLE {$audit_table} (
+		$sql_audit = "CREATE TABLE {$audit_table_sql} (
 			id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 			ticket_id bigint(20) UNSIGNED DEFAULT NULL,
 			actor_id bigint(20) UNSIGNED DEFAULT NULL,
@@ -576,10 +582,11 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 		global $wpdb;
 
 		// Add deleted_at column to tickets table if not exists.
-		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table     = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table_sql = esc_sql( $tickets_table );
 
 		// Verify table exists before attempting to alter it.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
 				'SHOW TABLES LIKE %s',
@@ -588,27 +595,28 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 		);
 
 		if ($table_exists) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
-					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
+					"SHOW COLUMNS FROM {$tickets_table_sql} LIKE %s",
 					'deleted_at'
 				)
 			);
 
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
 				$wpdb->query(
-					"ALTER TABLE {$tickets_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER updated_at, ADD KEY deleted_at (deleted_at)"
+					"ALTER TABLE {$tickets_table_sql} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER updated_at, ADD KEY deleted_at (deleted_at)"
 				);
 			}
 		}
 
 		// Add deleted_at column to responses table if not exists.
-		$responses_table = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$responses_table     = $wpdb->prefix . 'pnpc_psd_ticket_responses';
+		$responses_table_sql = esc_sql( $responses_table );
 
 		// Verify table exists before attempting to alter it.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
 				'SHOW TABLES LIKE %s',
@@ -617,27 +625,28 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 		);
 
 		if ($table_exists) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
-					"SHOW COLUMNS FROM {$responses_table} LIKE %s",
+					"SHOW COLUMNS FROM {$responses_table_sql} LIKE %s",
 					'deleted_at'
 				)
 			);
 
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
 				$wpdb->query(
-					"ALTER TABLE {$responses_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
+					"ALTER TABLE {$responses_table_sql} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
 				);
 			}
 		}
 
 		// Add deleted_at column to attachments table if not exists.
-		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$attachments_table     = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
+		$attachments_table_sql = esc_sql( $attachments_table );
 
 		// Verify table exists before attempting to alter it.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
 				'SHOW TABLES LIKE %s',
@@ -646,18 +655,18 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 		);
 
 		if ($table_exists) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
-					"SHOW COLUMNS FROM {$attachments_table} LIKE %s",
+					"SHOW COLUMNS FROM {$attachments_table_sql} LIKE %s",
 					'deleted_at'
 				)
 			);
 
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
 				$wpdb->query(
-					"ALTER TABLE {$attachments_table} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
+					"ALTER TABLE {$attachments_table_sql} ADD COLUMN deleted_at datetime DEFAULT NULL AFTER created_at, ADD KEY deleted_at (deleted_at)"
 				);
 			}
 		}
@@ -675,10 +684,11 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 		global $wpdb;
 
 		// Add delete reason columns to tickets table.
-		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table     = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table_sql = esc_sql( $tickets_table );
 
 		// Verify table exists before attempting to alter it.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
 				'SHOW TABLES LIKE %s',
@@ -688,18 +698,18 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 
 		if ( $table_exists ) {
 			// Check if delete_reason column exists.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
-					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
+					"SHOW COLUMNS FROM {$tickets_table_sql} LIKE %s",
 					'delete_reason'
 				)
 			);
 
 			if ( empty( $column_exists ) ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
 				$wpdb->query(
-					"ALTER TABLE {$tickets_table}
+					"ALTER TABLE {$tickets_table_sql}
 					ADD COLUMN delete_reason VARCHAR(50) DEFAULT NULL AFTER deleted_at,
 					ADD COLUMN delete_reason_other TEXT DEFAULT NULL AFTER delete_reason,
 					ADD COLUMN deleted_by BIGINT(20) UNSIGNED DEFAULT NULL AFTER delete_reason_other,
@@ -710,10 +720,11 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 		}
 
 		// Create ticket meta table for deletion history.
-		$meta_table       = $wpdb->prefix . 'pnpc_psd_ticket_meta';
+		$meta_table         = $wpdb->prefix . 'pnpc_psd_ticket_meta';
+		$meta_table_sql     = esc_sql( $meta_table );
 		$charset_collate = $wpdb->get_charset_collate();
 
-		$sql = "CREATE TABLE IF NOT EXISTS {$meta_table} (
+		$sql = "CREATE TABLE IF NOT EXISTS {$meta_table_sql} (
 			meta_id BIGINT(20) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 			ticket_id BIGINT(20) UNSIGNED NOT NULL,
 			meta_key VARCHAR(255) NOT NULL,
@@ -737,10 +748,11 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 	private static function upgrade_to_1_3_0() {
 		global $wpdb;
 
-		$tickets_table = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table     = $wpdb->prefix . 'pnpc_psd_tickets';
+		$tickets_table_sql = esc_sql( $tickets_table );
 
 		// Verify table exists before attempting to alter it.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$table_exists = $wpdb->get_var(
 			$wpdb->prepare(
 				'SHOW TABLES LIKE %s',
@@ -750,10 +762,10 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 
 		if ( $table_exists ) {
 			// Check if created_by_staff column exists.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$column_exists = $wpdb->get_results(
 				$wpdb->prepare(
-					"SHOW COLUMNS FROM {$tickets_table} LIKE %s",
+					"SHOW COLUMNS FROM {$tickets_table_sql} LIKE %s",
 					'created_by_staff'
 				)
 			);
@@ -761,9 +773,9 @@ if ( ! $has_tickets && ( ! $has_dashboard || $setup_completed_at <= 0 ) ) {
 			if ( empty( $column_exists ) ) {
 				// Note: Table name is safe here as it's constructed from $wpdb->prefix
 				// which is a controlled WordPress constant.
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
 				$wpdb->query(
-					"ALTER TABLE {$tickets_table}
+					"ALTER TABLE {$tickets_table_sql}
 					ADD COLUMN created_by_staff BIGINT(20) UNSIGNED DEFAULT NULL AFTER assigned_to,
 					ADD KEY created_by_staff (created_by_staff)"
 				);

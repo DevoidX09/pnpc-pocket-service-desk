@@ -18,15 +18,26 @@ if ( ! $logo_url ) {
 }
 $logo_alt = apply_filters( 'pnpc_psd_dashboard_logo_alt', 'PNPC Pocket Service Desk' );
 
+$current_user = wp_get_current_user();
+$can_manage_review_queue = current_user_can( 'manage_options' ) || ( $current_user && ! empty( $current_user->roles ) && in_array( 'pnpc_psd_manager', (array) $current_user->roles, true ) );
 $alerts = apply_filters( 'pnpc_psd_dashboard_alerts', array() );
 if ( ! is_array( $alerts ) ) {
 	$alerts = array();
 }
+if ( isset( $this ) && method_exists( $this, 'filter_dismissed_dashboard_alerts' ) ) {
+	$alerts = $this->filter_dismissed_dashboard_alerts( $alerts );
+}
 
 // Review queue count (used for the dashboard alert header indicator).
+// Tie the visible header notification to the currently visible alert payloads so a
+// dismissed/deleted Alert Inbox item does not leave a stale notification behind.
 $review_queue_count = 0;
-if ( class_exists( 'PNPC_PSD_Ticket' ) ) {
-	$review_queue_count = (int) PNPC_PSD_Ticket::get_pending_delete_count();
+foreach ( $alerts as $alert ) {
+	$alert_key = ( isset( $this ) && method_exists( $this, 'get_dashboard_alert_key' ) ) ? $this->get_dashboard_alert_key( (array) $alert ) : '';
+	if ( $can_manage_review_queue && 'review_queue' === $alert_key && class_exists( 'PNPC_PSD_Ticket' ) ) {
+		$review_queue_count = (int) PNPC_PSD_Ticket::get_pending_delete_count();
+		break;
+	}
 }
 
 $opened_week  = isset( $stats['opened']['week'] ) ? (int) $stats['opened']['week'] : 0;
@@ -192,17 +203,23 @@ $menu_settings_url = admin_url( 'admin.php?page=pnpc-service-desk-settings' );
 					$body  = isset( $a['body'] ) ? (string) $a['body'] : '';
 					$url   = isset( $a['url'] ) ? (string) $a['url'] : '';
 					$button_text = isset( $a['button_text'] ) ? (string) $a['button_text'] : __( 'View', 'pnpc-pocket-service-desk' );
+					$alert_key = ( isset( $this ) && method_exists( $this, 'get_dashboard_alert_key' ) ) ? $this->get_dashboard_alert_key( (array) $a ) : sanitize_key( md5( $title . $body . $url ) );
 					?>
-					<div class="psd-alert">
-						<p class="psd-alert-title"><?php echo esc_html( $title ); ?></p>
+					<div class="psd-alert" data-pnpc-psd-alert-key="<?php echo esc_attr( $alert_key ); ?>">
+						<div class="psd-alert-heading">
+							<p class="psd-alert-title"><?php echo esc_html( $title ); ?></p>
+							<button type="button" class="button-link psd-alert-dismiss" data-pnpc-psd-dismiss-alert="<?php echo esc_attr( $alert_key ); ?>" aria-label="<?php esc_attr_e( 'Delete alert', 'pnpc-pocket-service-desk' ); ?>">
+								<span class="dashicons dashicons-dismiss" aria-hidden="true"></span>
+							</button>
+						</div>
 						<p class="psd-alert-body"><?php echo esc_html( $body ); ?></p>
-						<?php if ( $url ) : ?>
-							<p class="psd-alert-actions">
-								<a href="<?php echo esc_url( $url ); ?>" class="button button-small">
+						<p class="psd-alert-actions">
+							<?php if ( $url ) : ?>
+								<a href="<?php echo esc_url( $url ); ?>" class="button button-small" data-pnpc-psd-open-alert="<?php echo esc_attr( $alert_key ); ?>">
 									<?php echo esc_html( $button_text ); ?>
 								</a>
-							</p>
-						<?php endif; ?>
+							<?php endif; ?>
+						</p>
 					</div>
 				<?php endforeach; ?>
 			<?php endif; ?>

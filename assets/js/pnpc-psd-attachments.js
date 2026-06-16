@@ -30,6 +30,9 @@
 
 		bindEvents();
 		buildAttachmentGallery();
+		$(document).on('pnpc_psd_attachment_gallery_refresh', function() {
+			buildAttachmentGallery();
+		});
 	});
 
 	/**

@@ -65,6 +65,7 @@ if (! defined('ABSPATH')) {
 			<p class="pnpc-psd-help-text">
 				<?php
 				printf(
+					/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 					esc_html__( 'Allowed formats: %1$s. Max size per file: %2$dMB (server limits may apply).', 'pnpc-pocket-service-desk' ),
 					esc_html( implode( ', ', $exts ) ),
 					(int) $max_mb

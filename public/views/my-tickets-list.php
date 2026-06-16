@@ -47,22 +47,19 @@ $base_url = remove_query_arg( array( 'pnpc_psd_page' ) );
 			$staff_activity_ts = ( '' !== $staff_activity_raw ) ? strtotime( $staff_activity_raw . ' UTC' ) : 0;
 			$new_responses = ( $staff_activity_ts > $customer_viewed_ts ) ? 1 : 0;
 
-			// Build ticket detail URL:
+			// Build ticket detail URL. Ticket details are rendered on the standalone
+			// /ticket-view/ page only; never route this to the dashboard/list page.
 			$ticket_url = '';
-			if (function_exists('pnpc_psd_get_ticket_detail_page_id')) {
+			$page = get_page_by_path('ticket-view', OBJECT, 'page');
+			if ($page instanceof WP_Post) {
+				$ticket_url = add_query_arg('ticket_id', $ticket->id, get_permalink($page->ID));
+			}
+			if (empty($ticket_url) && function_exists('pnpc_psd_get_ticket_detail_page_id')) {
 				$page_id = pnpc_psd_get_ticket_detail_page_id();
 				if ($page_id && get_post($page_id)) {
 					$ticket_url = add_query_arg('ticket_id', $ticket->id, get_permalink($page_id));
 				}
 			}
-
-			if (empty($ticket_url)) {
-				$page = get_page_by_path('ticket-view');
-				if ($page && ! is_wp_error($page)) {
-					$ticket_url = add_query_arg('ticket_id', $ticket->id, get_permalink($page->ID));
-				}
-			}
-
 			if (empty($ticket_url)) {
 				$ticket_url = add_query_arg('ticket_id', $ticket->id, home_url('/ticket-view/'));
 			}
@@ -74,7 +71,11 @@ $base_url = remove_query_arg( array( 'pnpc_psd_page' ) );
 							<?php echo esc_html($ticket->subject); ?>
 						</a>
 						<?php if ($new_responses > 0) : ?>
-							<span class="pnpc-psd-ticket-updated-dot" title="<?php echo esc_attr(sprintf(_n('%d new response', '%d new responses', $new_responses, 'pnpc-pocket-service-desk'), absint($new_responses))); ?>" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#28a745;margin-left:8px;vertical-align:middle;"></span>
+								<?php
+								/* translators: %d: number of new ticket responses. */
+								$pnpc_psd_new_responses_title = sprintf( _n( '%d new response', '%d new responses', $new_responses, 'pnpc-pocket-service-desk' ), absint( $new_responses ) );
+								?>
+								<span class="pnpc-psd-ticket-updated-dot" title="<?php echo esc_attr( $pnpc_psd_new_responses_title ); ?>" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#28a745;margin-left:8px;vertical-align:middle;"></span>
 						<?php endif; ?>
 					</h3>
 					<div class="pnpc-psd-ticket-meta">
@@ -103,11 +104,13 @@ $base_url = remove_query_arg( array( 'pnpc_psd_page' ) );
 						$created_display = function_exists('pnpc_psd_format_db_datetime_for_display')
 							? pnpc_psd_format_db_datetime_for_display($ticket->created_at)
 							: date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($ticket->created_at));
-						printf(esc_html__('Created %s', 'pnpc-pocket-service-desk'), esc_html($created_display));
+						/* translators: %s: formatted ticket creation date and time. */
+						$pnpc_psd_created_text = esc_html__( 'Created %s', 'pnpc-pocket-service-desk' );
+						echo esc_html( sprintf( $pnpc_psd_created_text, $created_display ) );
 						?>
 					</span>
 					<span class="pnpc-psd-ticket-responses">
-						<?php printf(esc_html(_n('%d response', '%d responses', $response_count, 'pnpc-pocket-service-desk')), absint($response_count)); ?>
+						<?php /* translators: %d: number of ticket responses. */ printf(esc_html(_n('%d response', '%d responses', $response_count, 'pnpc-pocket-service-desk')), absint($response_count)); ?>
 					</span>
 					<a href="<?php echo esc_url($ticket_url); ?>" class="pnpc-psd-button pnpc-psd-button-small pnpc-psd-my-tickets-view-btn"><?php esc_html_e('View Details', 'pnpc-pocket-service-desk'); ?></a>
 				</div>
@@ -137,11 +140,15 @@ $base_url = remove_query_arg( array( 'pnpc_psd_page' ) );
 				?>
 				<div class="pnpc-psd-pagination-meta" style="margin-top: 10px;">
 					<?php
-					printf(
-						esc_html__( 'Page %1$d of %2$d', 'pnpc-pocket-service-desk' ),
-						absint( $current_page ),
-						absint( $total_pages )
-					);
+						/* translators: 1: current page number, 2: total number of pages. */
+						$pnpc_psd_page_count_text = esc_html__( 'Page %1$d of %2$d', 'pnpc-pocket-service-desk' );
+						echo esc_html(
+								sprintf(
+									$pnpc_psd_page_count_text,
+									absint( $current_page ),
+									absint( $total_pages )
+								)
+							);
 					?>
 				</div>
 			</div>

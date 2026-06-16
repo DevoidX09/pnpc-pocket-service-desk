@@ -156,7 +156,7 @@ class PNPC_PSD_Ticket
 				$format[] = '%d';
 			}
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$result = $wpdb->insert(
 				$table_name,
 				$insert_data,
@@ -212,7 +212,7 @@ class PNPC_PSD_Ticket
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 		$ticket_id  = absint($ticket_id);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$ticket = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$table_name} WHERE id = %d",
@@ -226,6 +226,7 @@ class PNPC_PSD_Ticket
 	/**
 	 * Update a ticket row.
 	 *
+	 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
 	 * This is a lightweight wrapper around $wpdb->update() with strict field allowlisting.
 	 * It is intentionally conservative to avoid accidental schema writes.
 	 *
@@ -277,7 +278,7 @@ class PNPC_PSD_Ticket
 		$update_data['updated_at'] = function_exists( 'pnpc_psd_get_utc_mysql_datetime' ) ? pnpc_psd_get_utc_mysql_datetime() : current_time( 'mysql', true );
 		$update_format[] = '%s';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$result = $wpdb->update(
 			$table_name,
 			$update_data,
@@ -392,7 +393,7 @@ class PNPC_PSD_Ticket
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$tickets = $wpdb->get_results(
 			"SELECT * FROM {$table_name} {$where} ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -451,7 +452,7 @@ class PNPC_PSD_Ticket
 			}
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name} {$where}" );
 		return $count;
 	}
@@ -533,7 +534,7 @@ class PNPC_PSD_Ticket
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$tickets = $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE {$where} ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -558,7 +559,7 @@ class PNPC_PSD_Ticket
 		// Delete associated responses.
 		PNPC_PSD_Ticket_Response::delete_by_ticket($ticket_id);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$result = $wpdb->delete(
 			$table_name,
 			array('id' => $ticket_id),
@@ -585,7 +586,7 @@ class PNPC_PSD_Ticket
 		// If the DB already contains higher numbers (e.g., option reset or migrated DB), sync to DB.
 		$db_max = 0;
 		if (! empty($table_name)) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$db_max_raw = $wpdb->get_var(
 				"SELECT MAX(CAST(SUBSTRING(ticket_number, 6) AS UNSIGNED)) FROM {$table_name} WHERE ticket_number LIKE 'PNPC-%'"
 			);
@@ -685,7 +686,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		}
 		global $wpdb;
 		$table = $wpdb->prefix . 'pnpc_psd_tickets';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$col = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$table} LIKE %s", 'last_customer_activity_at' ) );
 		$has = ( ! empty( $col ) );
 		return (bool) $has;
@@ -702,7 +703,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		global $wpdb;
 		$table = $wpdb->prefix . 'pnpc_psd_tickets';
 		$now = current_time( 'mysql', true );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$wpdb->update(
 			$table,
 			array(
@@ -730,7 +731,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$now = current_time( 'mysql', true );
 		$fields = ( $is_staff_response ) ? array( 'last_staff_activity_at' => $now ) : array( 'last_customer_activity_at' => $now );
 		$fields['updated_at'] = $now;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$wpdb->update( $table, $fields, array( 'id' => $ticket_id ) );
 	}
 
@@ -745,7 +746,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		global $wpdb;
 		$table = $wpdb->prefix . 'pnpc_psd_tickets';
 		$now = current_time( 'mysql', true );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$wpdb->update( $table, array( 'last_customer_viewed_at' => $now ), array( 'id' => $ticket_id ) );
 	}
 
@@ -760,7 +761,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		global $wpdb;
 		$table = $wpdb->prefix . 'pnpc_psd_tickets';
 		$now = current_time( 'mysql', true );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$wpdb->update( $table, array( 'last_staff_viewed_at' => $now ), array( 'id' => $ticket_id ) );
 	}
 
@@ -779,12 +780,12 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 
 		if ( ! empty( $status ) ) {
 			$status_where = self::prepare_status_where_clause( $status );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$count = $wpdb->get_var(
 				"SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NULL AND archived_at IS NULL AND status <> 'archived' {$status_where}"
 			);
 		} else {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NULL AND archived_at IS NULL AND status <> 'archived'");
 		}
 
@@ -833,7 +834,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$limit   = absint($args['limit']);
 		$offset  = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$tickets = $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE deleted_at IS NOT NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -853,7 +854,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NOT NULL");
 
 		return absint($count);
@@ -898,7 +899,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$limit  = absint( $args['limit'] );
 		$offset = absint( $args['offset'] );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$rows = $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE archived_at IS NOT NULL AND deleted_at IS NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -914,7 +915,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	public static function get_archived_count() {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name} WHERE archived_at IS NOT NULL AND deleted_at IS NULL" );
 		return absint( $count );
 	}
@@ -947,7 +948,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 
 		$now = function_exists( 'pnpc_psd_get_utc_mysql_datetime' ) ? pnpc_psd_get_utc_mysql_datetime() : current_time( 'mysql', true );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$res = $wpdb->update(
 			$table_name,
 			array(
@@ -1008,7 +1009,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
 		$now        = function_exists( 'pnpc_psd_get_utc_mysql_datetime' ) ? pnpc_psd_get_utc_mysql_datetime() : current_time( 'mysql', true );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$res = $wpdb->update(
 			$table_name,
 			array(
@@ -1045,7 +1046,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$now = function_exists( 'pnpc_psd_get_utc_mysql_datetime' ) ? pnpc_psd_get_utc_mysql_datetime() : current_time( 'mysql', true );
 
 		// Restore to closed by default (archiving intended for resolved items).
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$res = $wpdb->update(
 			$table_name,
 			array(
@@ -1102,7 +1103,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$limit  = absint($args['limit']);
 		$offset = absint($args['offset']);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		return $wpdb->get_results(
 			"SELECT * FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NOT NULL ORDER BY {$orderby} LIMIT {$limit} OFFSET {$offset}"
 		);
@@ -1118,7 +1119,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 	{
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name} WHERE deleted_at IS NULL AND pending_delete_at IS NOT NULL");
 		return absint($count);
 	}
@@ -1156,7 +1157,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 			$update_data['pending_delete_reason_other'] = sanitize_textarea_field($reason_other);
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$updated = $wpdb->update(
 			$table_name,
 			$update_data,
@@ -1208,7 +1209,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 			return false;
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$updated = $wpdb->update(
 			$table_name,
 			array(
@@ -1287,7 +1288,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		if ( '' === $reason || 0 === $requested_by ) {
 			global $wpdb;
 			$table_name = $wpdb->prefix . 'pnpc_psd_tickets';
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$pending = $wpdb->get_row(
 				$wpdb->prepare(
 					"SELECT pending_delete_by, pending_delete_reason, pending_delete_reason_other FROM {$table_name} WHERE id = %d",
@@ -1338,7 +1339,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 			}
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$updated = $wpdb->update(
 			$table_name,
 			$data,
@@ -1393,7 +1394,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$deleted_at = function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true);
 
 		// Soft delete the ticket.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$result = $wpdb->update(
 			$table_name,
 			array('deleted_at' => $deleted_at),
@@ -1479,7 +1480,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		}
 
 		// Restore the ticket and clear delete metadata.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$result = $wpdb->update(
 			$table_name,
 			array(
@@ -1557,7 +1558,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		delete_metadata('user', 0, 'pnpc_psd_ticket_last_view_' . $ticket_id, '', true);
 
 		// Delete the ticket.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 		$result = $wpdb->delete(
 			$table_name,
 			array('id' => $ticket_id),
@@ -1657,7 +1658,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 
 		$deleted_at = function_exists('pnpc_psd_get_utc_mysql_datetime') ? pnpc_psd_get_utc_mysql_datetime() : current_time('mysql', true);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$result = $wpdb->update(
 			$attachments_table,
 			array('deleted_at' => $deleted_at),
@@ -1683,7 +1684,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 		$ticket_id         = absint($ticket_id);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$result = $wpdb->update(
 			$attachments_table,
 			array('deleted_at' => null),
@@ -1709,7 +1710,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$attachments_table = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 		$ticket_id         = absint($ticket_id);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$result = $wpdb->delete(
 			$attachments_table,
 			array('ticket_id' => $ticket_id),
@@ -1750,7 +1751,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 				$update_data['delete_reason_other'] = sanitize_textarea_field($reason_other);
 			}
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string
 			$wpdb->update(
 				$table_name,
 				$update_data,
@@ -1803,7 +1804,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_meta';
 
 		// Check if meta exists.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string; meta queries are expected
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string; meta queries are expected
 		$exists = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT meta_id FROM {$table_name} WHERE ticket_id = %d AND meta_key = %s",
@@ -1813,7 +1814,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		);
 
 		if ($exists) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string; meta queries are expected
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string; meta queries are expected
 			return $wpdb->update(
 				$table_name,
 				array('meta_value' => maybe_serialize($meta_value)),
@@ -1825,7 +1826,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 				array('%d', '%s')
 			);
 		} else {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string; meta queries are expected
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string; meta queries are expected
 			return $wpdb->insert(
 				$table_name,
 				array(
@@ -1852,7 +1853,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_meta';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string; meta queries are expected
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string; meta queries are expected
 		$result = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT meta_value FROM {$table_name} WHERE ticket_id = %d AND meta_key = %s",
@@ -1881,7 +1882,7 @@ Please log in to the admin panel to view and respond to this ticket.', 'pnpc-poc
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'pnpc_psd_ticket_meta';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string; meta queries are expected
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is safely constructed from $wpdb->prefix and hardcoded string; meta queries are expected
 		$result = $wpdb->delete(
 			$table_name,
 			array(

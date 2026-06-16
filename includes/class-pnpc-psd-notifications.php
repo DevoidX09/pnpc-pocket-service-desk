@@ -168,6 +168,49 @@ class PNPC_PSD_Notifications {
 		return $html;
 	}
 
+
+	/**
+	 * Format ticket/reply body for notification emails.
+	 *
+	 * @param string $content Raw ticket/reply content.
+	 * @return string
+	 */
+	private static function notification_excerpt( $content ) {
+		$content = (string) $content;
+		// Preserve user-authored line breaks in notification bodies. wp_trim_words()
+		// collapses whitespace, which flattens signatures into one line.
+		$content = preg_replace( '/<\s*br\s*\/?\s*>/i', "\n", $content );
+		$content = preg_replace( '/<\/(p|div|li|tr|h[1-6])\s*>/i', "\n", $content );
+		$content = wp_strip_all_tags( $content );
+		$content = html_entity_decode( $content, ENT_QUOTES | ENT_HTML5, get_bloginfo( 'charset' ) );
+		$content = str_replace( array( "\r\n", "\r" ), "\n", $content );
+		$content = preg_replace( "/\n{3,}/", "\n\n", $content );
+		$content = trim( (string) $content );
+		if ( '' === $content ) {
+			return '';
+		}
+
+		if ( function_exists( 'mb_strlen' ) && mb_strlen( $content ) > 1200 ) {
+			$content = mb_substr( $content, 0, 1200 ) . '…';
+		} elseif ( strlen( $content ) > 1200 ) {
+			$content = substr( $content, 0, 1200 ) . '…';
+		}
+
+		return $content;
+	}
+
+	/**
+	 * Determine whether customer reply emails should include the staff response body.
+	 *
+	 * @return bool
+	 */
+	private static function should_include_response_body_for_customer() {
+		if ( defined( 'PNPC_PSD_PRO_OPT_ENABLE_EMAIL_REPLIES' ) && 1 === absint( get_option( PNPC_PSD_PRO_OPT_ENABLE_EMAIL_REPLIES, 0 ) ) ) {
+			return true;
+		}
+		return (bool) apply_filters( 'pnpc_psd_customer_notification_include_response_body', false );
+	}
+
 	/**
 	 * Send an email safely.
 	 *
@@ -239,6 +282,7 @@ class PNPC_PSD_Notifications {
 		if ( self::opt_bool( 'pnpc_psd_notify_customer_on_create', 1 ) ) {
 			$dashboard_url   = function_exists( 'pnpc_psd_get_dashboard_url' ) ? pnpc_psd_get_dashboard_url() : '';
 			$ticket_view_url = function_exists( 'pnpc_psd_get_ticket_detail_url' ) ? pnpc_psd_get_ticket_detail_url( $ticket_id ) : '';
+			/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 			$subj = sprintf( __( 'Ticket created: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 			$instruction = apply_filters(
 				'pnpc_psd_customer_ticket_email_reply_instruction',
@@ -265,6 +309,7 @@ class PNPC_PSD_Notifications {
 			$admin_ticket_url = admin_url( 'admin.php?page=pnpc-service-desk-ticket&ticket_id=' . absint( $ticket_id ) );
 			$to = self::get_staff_recipients_for_ticket( $ticket );
 			if ( ! empty( $to ) ) {
+				/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 				$subj = sprintf( __( 'New ticket: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 				$msg  = sprintf(
 					__( "A new support ticket has been created.\n\nTicket: %1\$s\nFrom: %2\$s\nSubject: %3\$s\n\nLog in to review and respond.", 'pnpc-pocket-service-desk' ),
@@ -272,9 +317,13 @@ class PNPC_PSD_Notifications {
 					(string) $user->display_name,
 					(string) $ticket->subject
 				);
-						if ( ! empty( $admin_ticket_url ) ) {
-							$msg .= "\n\n" . __( 'Admin ticket link:', 'pnpc-pocket-service-desk' ) . "\n" . $admin_ticket_url;
-						}
+				$ticket_excerpt = self::notification_excerpt( isset( $ticket->description ) ? $ticket->description : '' );
+				if ( '' !== $ticket_excerpt ) {
+					$msg .= "\n\n" . __( 'Ticket content:', 'pnpc-pocket-service-desk' ) . "\n" . $ticket_excerpt;
+				}
+				if ( ! empty( $admin_ticket_url ) ) {
+					$msg .= "\n\n" . __( 'Admin ticket link:', 'pnpc-pocket-service-desk' ) . "\n" . $admin_ticket_url;
+				}
 				self::send( $to, $subj, $msg );
 			}
 		}
@@ -341,6 +390,7 @@ class PNPC_PSD_Notifications {
 				)
 			);
 			if ( self::opt_bool( 'pnpc_psd_notify_customer_on_staff_reply', 1 ) ) {
+				/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 				$subj = sprintf( __( 'Update on ticket %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 				$instruction = apply_filters(
 					'pnpc_psd_customer_ticket_email_reply_instruction',
@@ -354,6 +404,13 @@ class PNPC_PSD_Notifications {
 					(string) $ticket->subject,
 					(string) $instruction
 				);
+				if ( self::should_include_response_body_for_customer() ) {
+					$response_excerpt = self::notification_excerpt( isset( $response->response ) ? $response->response : '' );
+					if ( '' !== $response_excerpt ) {
+						$msg .= "\n\n" . __( 'Response:', 'pnpc-pocket-service-desk' ) . "\n" . $response_excerpt;
+					}
+				}
+
 				if ( ! empty( $dashboard_url ) ) {
 					$msg .= "\n\n" . __( 'Dashboard:', 'pnpc-pocket-service-desk' ) . "\n" . $dashboard_url;
 				}
@@ -386,6 +443,7 @@ class PNPC_PSD_Notifications {
 			if ( self::opt_bool( 'pnpc_psd_notify_staff_on_customer_reply', 1 ) ) {
 				$to = self::get_staff_recipients_for_ticket( $ticket );
 				if ( ! empty( $to ) ) {
+					/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 					$subj = sprintf( __( 'Customer replied: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 					$msg  = sprintf(
 						__( "A customer has replied to a ticket.\n\nTicket: %1\$s\nCustomer: %2\$s\nSubject: %3\$s\n\nLog in to respond.", 'pnpc-pocket-service-desk' ),
@@ -393,9 +451,17 @@ class PNPC_PSD_Notifications {
 						(string) $customer->display_name,
 						(string) $ticket->subject
 					);
-						if ( ! empty( $admin_ticket_url ) ) {
-							$msg .= "\n\n" . __( 'Admin ticket link:', 'pnpc-pocket-service-desk' ) . "\n" . $admin_ticket_url;
-						}
+					$response_excerpt = self::notification_excerpt( isset( $response->response ) ? $response->response : '' );
+					if ( '' !== $response_excerpt ) {
+						$msg .= "\n\n" . __( 'Customer reply:', 'pnpc-pocket-service-desk' ) . "\n" . $response_excerpt;
+					}
+					$ticket_excerpt = self::notification_excerpt( isset( $ticket->description ) ? $ticket->description : '' );
+					if ( '' !== $ticket_excerpt ) {
+						$msg .= "\n\n" . __( 'Original ticket content:', 'pnpc-pocket-service-desk' ) . "\n" . $ticket_excerpt;
+					}
+					if ( ! empty( $admin_ticket_url ) ) {
+						$msg .= "\n\n" . __( 'Admin ticket link:', 'pnpc-pocket-service-desk' ) . "\n" . $admin_ticket_url;
+					}
 					self::send( $to, $subj, $msg );
 				}
 			}
@@ -420,6 +486,7 @@ class PNPC_PSD_Notifications {
 		if ( ! self::opt_bool( 'pnpc_psd_notify_customer_on_close', 1 ) ) {
 			return;
 		}
+		/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 		$subj = sprintf( __( 'Ticket closed: %s', 'pnpc-pocket-service-desk' ), $ticket->ticket_number );
 		$msg  = sprintf(
 			__( "Hello %1\$s,\n\nYour ticket %2\$s has been marked closed.\n\nSubject: %3\$s\n\nIf you need further help, you can reply to reopen or create a new ticket.", 'pnpc-pocket-service-desk' ),

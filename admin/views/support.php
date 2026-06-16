@@ -25,9 +25,19 @@ $status_class        = 'critical' === $status ? 'notice-error' : ( 'needs_attent
 $detected_site_url   = home_url();
 $prefill_name        = $current_user && $current_user->exists() ? $current_user->display_name : '';
 $prefill_email       = $current_user && $current_user->exists() ? $current_user->user_email : '';
+$support_logo_url    = plugins_url( 'assets/images/pnpc-pocket-service-desk.png', dirname( __FILE__, 3 ) . '/pnpc-pocket-service-desk.php' );
+$support_logo_alt    = __( 'PNPC Pocket Service Desk', 'pnpc-pocket-service-desk' );
 ?>
 <div class="wrap pnpc-psd-support-hub">
-	<h1><?php esc_html_e( 'Service Desk Support', 'pnpc-pocket-service-desk' ); ?></h1>
+	<div class="pnpc-psd-support-header" style="display:flex;align-items:center;gap:14px;margin:14px 0 18px;padding:18px 20px;border-radius:16px;background:#14324d;color:#fff;">
+		<div class="pnpc-psd-logo-treatment" style="width:90px;height:68px;padding:5px;border:1px solid rgba(255,255,255,.72);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.045);box-shadow:0 12px 24px rgba(0,0,0,.16);box-sizing:border-box;flex:0 0 auto;">
+			<img src="<?php echo esc_url( $support_logo_url ); ?>" alt="<?php echo esc_attr( $support_logo_alt ); ?>" style="display:block;width:100%;height:100%;object-fit:contain;" />
+		</div>
+		<div>
+			<h1 style="margin:0;color:#fff;"><?php esc_html_e( 'Service Desk Support', 'pnpc-pocket-service-desk' ); ?></h1>
+			<p style="margin:4px 0 0;color:rgba(255,255,255,.85);"><?php esc_html_e( 'Support access, diagnostics, and troubleshooting resources.', 'pnpc-pocket-service-desk' ); ?></p>
+		</div>
+	</div>
 
 	<div class="notice <?php echo esc_attr( $status_class ); ?> inline">
 		<p><strong><?php esc_html_e( 'Operational Health:', 'pnpc-pocket-service-desk' ); ?></strong> <?php echo esc_html( $label ); ?></p>

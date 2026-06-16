@@ -142,13 +142,22 @@ $staff_users = get_users(
 );
 $current_user_id = get_current_user_id();
 $default_agent_id = absint( get_option( 'pnpc_psd_default_agent_user_id', $current_user_id ) );
+$wizard_logo_url = plugins_url( 'assets/images/pnpc-pocket-service-desk.png', dirname( __FILE__, 3 ) . '/pnpc-pocket-service-desk.php' );
+$wizard_logo_alt = __( 'PNPC Pocket Service Desk', 'pnpc-pocket-service-desk' );
 ?>
 
 <div class="wrap pnpc-psd-setup-wizard pnpc-psd-wizard-container">
 	<div class="pnpc-psd-welcome-hero">
-		<div class="pnpc-psd-hero-kicker"><?php echo esc_html__( 'PNPC Pocket Service Desk', 'pnpc-pocket-service-desk' ); ?></div>
-		<h1><?php echo esc_html__( 'Customer Support Inside WordPress', 'pnpc-pocket-service-desk' ); ?></h1>
-		<p><?php echo esc_html__( 'Follow the guided setup to configure your Service Desk, create pages, configure notifications, and review readiness.', 'pnpc-pocket-service-desk' ); ?></p>
+		<div class="pnpc-psd-welcome-hero-content">
+			<div class="pnpc-psd-logo-treatment pnpc-psd-wizard-logo">
+				<img src="<?php echo esc_url( $wizard_logo_url ); ?>" alt="<?php echo esc_attr( $wizard_logo_alt ); ?>" />
+			</div>
+			<div>
+				<div class="pnpc-psd-hero-kicker"><?php echo esc_html__( 'PNPC Pocket Service Desk', 'pnpc-pocket-service-desk' ); ?></div>
+				<h1><?php echo esc_html__( 'Customer Support Inside WordPress', 'pnpc-pocket-service-desk' ); ?></h1>
+				<p><?php echo esc_html__( 'Follow the guided setup to configure your Service Desk, create pages, configure notifications, and review readiness.', 'pnpc-pocket-service-desk' ); ?></p>
+			</div>
+		</div>
 	</div>
 
 	<?php pnpc_psd_render_setup_progress( $path, $step ); ?>
@@ -192,7 +201,12 @@ $default_agent_id = absint( get_option( 'pnpc_psd_default_agent_user_id', $curre
 					<li class="is-neutral">
 						<span class="dashicons dashicons-tickets-alt" aria-hidden="true"></span>
 						<strong><?php echo esc_html__( 'Tickets', 'pnpc-pocket-service-desk' ); ?></strong>
-						<span><?php echo esc_html( sprintf( _n( '%d ticket detected', '%d tickets detected', $ticket_count, 'pnpc-pocket-service-desk' ), $ticket_count ) ); ?></span>
+							<span>
+								<?php
+								/* translators: %d: number of tickets detected. */
+								echo esc_html( sprintf( _n( '%d ticket detected', '%d tickets detected', $ticket_count, 'pnpc-pocket-service-desk' ), absint( $ticket_count ) ) );
+								?>
+							</span>
 					</li>
 				</ul>
 				<div class="pnpc-psd-help-box">
@@ -218,9 +232,9 @@ $default_agent_id = absint( get_option( 'pnpc_psd_default_agent_user_id', $curre
 					array(
 						'name'              => 'dashboard_page_id',
 						'id'                => 'pnpc-psd-dashboard-page',
-						'show_option_none'  => __( 'Select a page', 'pnpc-pocket-service-desk' ),
+						'show_option_none'  => esc_html__( 'Select a page', 'pnpc-pocket-service-desk' ),
 						'option_none_value' => '0',
-						'selected'          => $dashboard_page_id,
+						'selected'          => absint( $dashboard_page_id ),
 					)
 				);
 				?>

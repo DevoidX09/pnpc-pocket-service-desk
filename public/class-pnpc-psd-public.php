@@ -429,7 +429,10 @@ $ticket_id = isset( $_GET['ticket_id'] ) ? absint( wp_unslash( $_GET['ticket_id'
 		$responses = PNPC_PSD_Ticket_Response::get_by_ticket($ticket_id);
 
 		if ($viewer_id && $ticket_owner_id === $viewer_id) {
-			update_user_meta($viewer_id, 'pnpc_psd_ticket_last_view_' . intval($ticket_id), intval(current_time('timestamp')));
+			update_user_meta($viewer_id, 'pnpc_psd_ticket_last_view_' . intval($ticket_id), time());
+			if ( class_exists( 'PNPC_PSD_Ticket' ) && method_exists( 'PNPC_PSD_Ticket', 'mark_customer_viewed' ) ) {
+				PNPC_PSD_Ticket::mark_customer_viewed( intval( $ticket_id ) );
+			}
 		}
 
 		ob_start();
@@ -794,7 +797,7 @@ ob_start();
 					continue;
 				}
 
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Required to persist ticket attachments in plugin-owned table.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Required to persist ticket attachments in plugin-owned table.
 				$inserted = $wpdb->insert(
 					$attachments_table,
 					array(
@@ -855,12 +858,15 @@ ob_start();
 				if ( empty( $detail_note ) && isset( $sk['reason'] ) && 'type' === (string) $sk['reason'] ) {
 					$det = '';
 					if ( ! empty( $sk['mime'] ) ) {
+						/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 						$det .= ' ' . sprintf( esc_html__( 'Detected type: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['mime'] ) );
 					}
 					if ( ! empty( $sk['ext'] ) ) {
+						/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 						$det .= ' ' . sprintf( esc_html__( 'Extension: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['ext'] ) );
 					}
 					if ( ! empty( $sk['allow'] ) ) {
+						/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 						$det .= ' ' . sprintf( esc_html__( 'Allowed: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['allow'] ) );
 					}
 					$detail_note = trim( $det );
@@ -1149,12 +1155,15 @@ ob_start();
 					if ( empty( $detail_note ) && isset( $sk['reason'] ) && 'type' === (string) $sk['reason'] ) {
 						$det = '';
 						if ( ! empty( $sk['mime'] ) ) {
+							/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 							$det .= ' ' . sprintf( esc_html__( 'Detected type: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['mime'] ) );
 						}
 						if ( ! empty( $sk['ext'] ) ) {
+							/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 							$det .= ' ' . sprintf( esc_html__( 'Extension: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['ext'] ) );
 						}
 						if ( ! empty( $sk['allow'] ) ) {
+							/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 							$det .= ' ' . sprintf( esc_html__( 'Allowed: %s.', 'pnpc-pocket-service-desk' ), esc_html( (string) $sk['allow'] ) );
 						}
 						$detail_note = trim( $det );
@@ -1237,6 +1246,53 @@ ob_start();
 			'url'     => $uploaded_url,
 			'id'      => intval($attachment_id),
 		));
+	}
+
+	/**
+	 * AJAX: Refresh current user dashboard totals for [pnpc_service_desk].
+	 *
+	 * @return void
+	 */
+	public function ajax_get_dashboard_totals() {
+		$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'pnpc_psd_public_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed. Please refresh and try again.', 'pnpc-pocket-service-desk' ) ) );
+		}
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'pnpc-pocket-service-desk' ) ) );
+		}
+
+		$user_id = get_current_user_id();
+		$viewed_ticket_ids_raw = isset( $_POST['viewed_ticket_ids'] ) ? sanitize_text_field( wp_unslash( $_POST['viewed_ticket_ids'] ) ) : '';
+		$viewed_ticket_ids = array_filter( array_map( 'absint', preg_split( '/[^0-9]+/', $viewed_ticket_ids_raw ) ) );
+
+		// This endpoint only returns aggregate counts for the current logged-in user.
+		// Do not require custom capabilities here because many customer/member roles
+		// are allowed to use the shortcode but do not carry staff/admin caps.
+		$tickets = PNPC_PSD_Ticket::get_by_user( $user_id, array( 'limit' => 500 ) );
+		$open_count = count( array_filter( (array) $tickets, function ( $ticket ) {
+			return isset( $ticket->status ) && in_array( $ticket->status, array( 'open', 'in-progress' ), true );
+		} ) );
+		$closed_count = count( array_filter( (array) $tickets, function ( $ticket ) {
+			return isset( $ticket->status ) && 'closed' === $ticket->status;
+		} ) );
+
+		// Dashboard badge must indicate unviewed ticket updates only.
+		// Use the exact same ticket-level source of truth as the public My Tickets green dots:
+		// last_staff_activity_at > last_customer_viewed_at.
+		$unread_count = ( class_exists( 'PNPC_PSD_Ticket_Response' ) && method_exists( 'PNPC_PSD_Ticket_Response', 'count_unread_tickets_for_customer' ) )
+			? (int) PNPC_PSD_Ticket_Response::count_unread_tickets_for_customer( $user_id )
+			: 0;
+
+		wp_send_json_success(
+			array(
+				'open_count'   => (int) $open_count,
+				'closed_count' => (int) $closed_count,
+				'unread_count' => (int) $unread_count,
+				'has_unread'   => $unread_count > 0,
+			)
+		);
 	}
 
 	/**

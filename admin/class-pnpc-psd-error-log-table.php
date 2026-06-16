@@ -59,23 +59,39 @@ class PNPC_PSD_Error_Log_Table extends WP_List_Table {
 		$paged    = $this->get_pagenum();
 		$offset   = ( $paged - 1 ) * $per_page;
 		$type     = isset( $_GET['error_type'] ) ? sanitize_key( wp_unslash( $_GET['error_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter.
-
-		$where  = '';
-		$params = array();
-		if ( '' !== $type ) {
-			$where    = ' WHERE type = %s';
-			$params[] = $type;
+		$tab      = isset( $_GET['diagnostics_tab'] ) ? sanitize_key( wp_unslash( $_GET['diagnostics_tab'] ) ) : 'errors'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter.
+		if ( ! in_array( $tab, array( 'errors', 'trace' ), true ) ) {
+			$tab = 'errors';
 		}
+
+		$where_parts = array();
+		$params      = array();
+		if ( 'trace' === $tab ) {
+			$where_parts[] = "(severity = %s OR message LIKE %s OR message LIKE %s)";
+			$params[]      = 'info';
+			$params[]      = 'Notification trace:%';
+			$params[]      = 'Pro email bridge trace:%';
+		} else {
+			$where_parts[] = "severity IN ('warning','error','critical') AND message NOT LIKE %s AND message NOT LIKE %s";
+			$params[]      = 'Notification trace:%';
+			$params[]      = 'Pro email bridge trace:%';
+		}
+		if ( '' !== $type ) {
+			$where_parts[] = 'type = %s';
+			$params[]      = $type;
+		}
+		$where = ' WHERE ' . implode( ' AND ', $where_parts );
 
 		if ( ! empty( $params ) ) {
-			$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table}{$where}", $params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
-			$sql   = $wpdb->prepare( "SELECT * FROM {$table}{$where} ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d", array_merge( $params, array( $per_page, $offset ) ) ); // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
+			$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table_sql}{$where}", $params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$sql   = $wpdb->prepare( "SELECT * FROM {$table_sql}{$where} ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d", array_merge( $params, array( $per_page, $offset ) ) ); // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter
 		} else {
-			$total = (int) $wpdb->get_var( "SELECT COUNT(1) FROM {$table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
-			$sql   = $wpdb->prepare( "SELECT * FROM {$table} ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d", $per_page, $offset ); // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$total = (int) $wpdb->get_var( "SELECT COUNT(1) FROM {$table_sql}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+			$sql   = $wpdb->prepare( "SELECT * FROM {$table_sql} ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d", $per_page, $offset ); // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter
 		}
 
-		$this->items = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$this->items = $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$this->_column_headers = array( $this->get_columns(), array(), array() );
 		$this->set_pagination_args(
 			array(
@@ -121,9 +137,11 @@ class PNPC_PSD_Error_Log_Table extends WP_List_Table {
 		}
 
 		$current = isset( $_GET['error_type'] ) ? sanitize_key( wp_unslash( $_GET['error_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter.
+		$tab     = isset( $_GET['diagnostics_tab'] ) ? sanitize_key( wp_unslash( $_GET['diagnostics_tab'] ) ) : 'errors'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter.
 		$types   = array( '', 'email', 'attachment', 'database', 'runtime', 'licensing' );
 		echo '<div class="alignleft actions">';
 		echo '<label class="screen-reader-text" for="error_type">' . esc_html__( 'Filter by error type', 'pnpc-pocket-service-desk' ) . '</label>';
+		echo '<input type="hidden" name="diagnostics_tab" value="' . esc_attr( $tab ) . '" />';
 		echo '<select id="error_type" name="error_type">';
 		foreach ( $types as $type ) {
 			$label = '' === $type ? __( 'All error types', 'pnpc-pocket-service-desk' ) : ucfirst( $type );

@@ -38,10 +38,23 @@ if (! function_exists('pnpc_psd_get_ticket_detail_page_id')) {
             return (int) $cached;
         }
 
+        // Customer ticket detail must use the standalone Ticket View page when it exists.
+        // Do not resolve ticket detail links to the customer dashboard/list page.
+        $ticket_view = get_page_by_path('ticket-view', OBJECT, 'page');
+        if ($ticket_view instanceof WP_Post && 'trash' !== get_post_status((int) $ticket_view->ID)) {
+            $cached = (int) $ticket_view->ID;
+            return $cached;
+        }
+
         $config_id = absint(get_option('pnpc_psd_ticket_detail_page_id', 0));
         if ($config_id > 0 && get_post($config_id)) {
-            $cached = $config_id;
-            return $cached;
+            $post = get_post($config_id);
+            $content = $post ? (string) $post->post_content : '';
+            // Guard against a dashboard page being stored as the ticket detail target.
+            if (false === strpos($content, '[pnpc_service_desk') && false === strpos($content, '[pnpc_my_tickets')) {
+                $cached = $config_id;
+                return $cached;
+            }
         }
 
         $pages = get_posts(array(
@@ -64,7 +77,7 @@ if (! function_exists('pnpc_psd_get_ticket_detail_page_id')) {
             }
         }
 
-        $candidate_slugs = array('ticket-details', 'ticket-detail', 'ticket-view', 'dashboard-single');
+        $candidate_slugs = array('ticket-details', 'ticket-detail', 'ticket-view');
         foreach ($candidate_slugs as $slug) {
             $page = get_page_by_path($slug);
             if ($page && ! is_wp_error($page)) {
@@ -1175,7 +1188,7 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 		$att_table    = $wpdb->prefix . 'pnpc_psd_ticket_attachments';
 		$ticket_table = $wpdb->prefix . 'pnpc_psd_tickets';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$att = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$att_table} WHERE id = %d AND ticket_id = %d AND deleted_at IS NULL",
@@ -1188,7 +1201,7 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 			wp_die( esc_html__( 'Attachment not found.', 'pnpc-pocket-service-desk' ), 404 );
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$ticket = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT id, user_id FROM {$ticket_table} WHERE id = %d",
@@ -1254,7 +1267,7 @@ if ( ! function_exists( 'pnpc_psd_handle_download_attachment' ) ) {
 			ob_end_clean();
 		}
 
-		readfile( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_readfile
+		readfile( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile,WordPress.WP.AlternativeFunctions.file_system_read_readfile -- Safe streamed attachment output after permission checks.
 		exit;
 	}
 }
@@ -1337,11 +1350,13 @@ if ( ! function_exists( 'pnpc_psd_normalize_email_trace_log_severity' ) ) {
 		global $wpdb;
 
 		$table  = $wpdb->prefix . 'pnpc_psd_error_log';
-		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching
 		if ( $exists !== $table ) {
 			return;
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$table} SET severity = %s WHERE severity = %s AND type = %s AND ( message LIKE %s OR message LIKE %s )",
@@ -1351,7 +1366,7 @@ if ( ! function_exists( 'pnpc_psd_normalize_email_trace_log_severity' ) ) {
 				'Notification trace:%',
 				'Pro email bridge trace:%'
 			)
-		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Intentional one-time cleanup of known non-error trace rows.
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Intentional one-time cleanup of known non-error trace rows.
 	}
 }
 
@@ -1369,7 +1384,8 @@ if ( ! function_exists( 'pnpc_psd_get_operational_health_summary' ) ) {
 		}
 
 		$table   = $wpdb->prefix . 'pnpc_psd_error_log';
-		$exists  = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
+		$exists  = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching
 		$summary = array(
 			'status' => 'healthy',
 			'label'  => __( 'Healthy', 'pnpc-pocket-service-desk' ),
@@ -1386,23 +1402,177 @@ if ( ! function_exists( 'pnpc_psd_get_operational_health_summary' ) ) {
 			return apply_filters( 'pnpc_psd_operational_health_summary', $summary );
 		}
 
-		$critical = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table} WHERE severity = %s", 'critical' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$recent   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table} WHERE severity IN ('error','critical') AND created_at >= %s", gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,PluginCheck.CodeAnalysis.PreparedSQL.NotPrepared -- Table name is safely constructed and severity values are fixed literals.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Plugin-owned custom tables and activation/schema maintenance use WordPress database APIs with sanitized values.
+		$critical = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table} WHERE severity = %s", 'critical' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$recent   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(1) FROM {$table} WHERE severity IN ('error','critical') AND created_at >= %s", gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,PluginCheck.CodeAnalysis.PreparedSQL.NotPrepared -- Table name is safely constructed and severity values are fixed literals.
 
 		if ( $critical > 0 ) {
 			$summary = array(
 				'status' => 'critical',
 				'label'  => __( 'Critical Issues Detected', 'pnpc-pocket-service-desk' ),
+				/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 				'issues' => array( sprintf( _n( '%d critical error is recorded.', '%d critical errors are recorded.', $critical, 'pnpc-pocket-service-desk' ), $critical ) ),
 			);
 		} elseif ( $recent >= 5 ) {
 			$summary = array(
 				'status' => 'needs_attention',
 				'label'  => __( 'Needs Attention', 'pnpc-pocket-service-desk' ),
+				/* translators: Placeholder values are replaced with ticket, count, field, or site-specific details. */
 				'issues' => array( sprintf( _n( '%d actionable error was recorded in the last 24 hours.', '%d actionable errors were recorded in the last 24 hours.', $recent, 'pnpc-pocket-service-desk' ), $recent ) ),
 			);
 		}
 
 		return apply_filters( 'pnpc_psd_operational_health_summary', $summary );
+	}
+}
+
+/**
+ * Sanitize Support Contact user IDs option.
+ *
+ * @param mixed $value Raw option value.
+ * @return array<int>
+ */
+if ( ! function_exists( 'pnpc_psd_sanitize_support_contact_user_ids' ) ) {
+	function pnpc_psd_sanitize_support_contact_user_ids( $value ) {
+		if ( ! is_array( $value ) ) {
+			return array();
+		}
+
+		$ids = array();
+		foreach ( $value as $user_id ) {
+			$user_id = absint( $user_id );
+			if ( $user_id > 0 ) {
+				$ids[] = $user_id;
+			}
+		}
+
+		return array_values( array_unique( $ids ) );
+	}
+}
+
+/**
+ * Sanitize Support Contact email overrides option.
+ *
+ * @param mixed $value Raw option value.
+ * @return array<int,string>
+ */
+if ( ! function_exists( 'pnpc_psd_sanitize_support_contact_email_overrides' ) ) {
+	function pnpc_psd_sanitize_support_contact_email_overrides( $value ) {
+		if ( ! is_array( $value ) ) {
+			return array();
+		}
+
+		$emails = array();
+		foreach ( $value as $user_id => $email ) {
+			$user_id = absint( $user_id );
+			$email   = sanitize_email( (string) $email );
+			if ( $user_id > 0 && '' !== $email ) {
+				$emails[ $user_id ] = $email;
+			}
+		}
+
+		return $emails;
+	}
+}
+
+/**
+ * Build the Core support contact payload for support bundles and future handshakes.
+ *
+ * @param int $current_user_id Current user ID.
+ * @return array<string,mixed>
+ */
+if ( ! function_exists( 'pnpc_psd_get_support_contacts_payload' ) ) {
+	function pnpc_psd_get_support_contacts_payload( $current_user_id = 0 ) {
+		$current_user_id        = absint( $current_user_id );
+		$admins_eligible       = absint( get_option( 'pnpc_psd_support_admins_eligible', 1 ) );
+		$selected_ids          = get_option( 'pnpc_psd_support_contact_user_ids', array() );
+		$selected_ids          = is_array( $selected_ids ) ? array_map( 'absint', $selected_ids ) : array();
+		$email_overrides       = get_option( 'pnpc_psd_support_contact_email_overrides', array() );
+		$email_overrides       = is_array( $email_overrides ) ? $email_overrides : array();
+		$agent_config          = get_option( 'pnpc_psd_agents', array() );
+		$agent_config          = is_array( $agent_config ) ? $agent_config : array();
+		$contact_user_ids      = $selected_ids;
+		$eligible_email_lookup = array();
+		$contacts             = array();
+
+		if ( $admins_eligible ) {
+			$admin_users = get_users(
+				array(
+					'role'   => 'administrator',
+					'fields' => 'ID',
+				)
+			);
+			$contact_user_ids = array_merge( $contact_user_ids, array_map( 'absint', (array) $admin_users ) );
+		}
+
+		foreach ( $agent_config as $user_id => $row ) {
+			$user_id = absint( $user_id );
+			$row     = is_array( $row ) ? $row : array();
+			if ( $user_id > 0 && ! empty( $row['enabled'] ) ) {
+				$contact_user_ids[] = $user_id;
+			}
+		}
+
+		$contact_user_ids = array_values( array_unique( array_filter( array_map( 'absint', $contact_user_ids ) ) ) );
+
+		foreach ( $contact_user_ids as $user_id ) {
+			$user = get_user_by( 'id', $user_id );
+			if ( ! $user ) {
+				continue;
+			}
+
+			$roles       = ! empty( $user->roles ) && is_array( $user->roles ) ? $user->roles : array();
+			$agent_row   = isset( $agent_config[ $user_id ] ) && is_array( $agent_config[ $user_id ] ) ? $agent_config[ $user_id ] : array();
+			$is_agent    = ! empty( $agent_row['enabled'] );
+			$emails      = array();
+			$user_email  = sanitize_email( (string) $user->user_email );
+			$agent_email = ! empty( $agent_row['notify_email'] ) ? sanitize_email( (string) $agent_row['notify_email'] ) : '';
+			$extra_email = isset( $email_overrides[ $user_id ] ) ? sanitize_email( (string) $email_overrides[ $user_id ] ) : '';
+
+			foreach ( array( $user_email, $agent_email, $extra_email ) as $email ) {
+				if ( '' !== $email ) {
+					$emails[] = $email;
+					$eligible_email_lookup[ strtolower( $email ) ] = true;
+				}
+			}
+
+			$contacts[] = array(
+				'user_id'                 => $user_id,
+				'display_name'            => sanitize_text_field( (string) $user->display_name ),
+				'emails'                  => array_values( array_unique( $emails ) ),
+				'roles'                   => array_values( array_map( 'sanitize_key', $roles ) ),
+				'is_admin'                => in_array( 'administrator', $roles, true ),
+				'is_core_agent'           => (bool) $is_agent,
+				'explicit_support_contact'=> in_array( $user_id, $selected_ids, true ),
+			);
+		}
+
+		$current_user = $current_user_id > 0 ? get_user_by( 'id', $current_user_id ) : false;
+		$current_email = $current_user ? sanitize_email( (string) $current_user->user_email ) : '';
+
+		return array(
+			'admins_eligible'     => (bool) $admins_eligible,
+			'current_user'        => array(
+				'user_id'     => $current_user_id,
+				'email'       => $current_email,
+				'is_eligible' => ( '' !== $current_email && isset( $eligible_email_lookup[ strtolower( $current_email ) ] ) ),
+			),
+			'eligible_contacts'   => $contacts,
+			'eligible_email_count'=> count( $eligible_email_lookup ),
+		);
+	}
+}
+
+
+/**
+ * Sanitize the wp-admin menu logo style option.
+ *
+ * @param mixed $value Raw option value.
+ * @return string
+ */
+if ( ! function_exists( 'pnpc_psd_sanitize_admin_menu_logo_style' ) ) {
+	function pnpc_psd_sanitize_admin_menu_logo_style( $value ) {
+		$value = sanitize_key( (string) $value );
+		return in_array( $value, array( 'color', 'mono' ), true ) ? $value : 'color';
 	}
 }

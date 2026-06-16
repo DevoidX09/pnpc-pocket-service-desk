@@ -19,23 +19,32 @@
 	gap: 12px;
 }
 
+
+.pnpc-psd-logo-treatment,
 .pnpc-psd-dashboard .psd-logo {
-	width: 44px;
-	height: 44px;
-	border-radius: 10px;
+	width: 90px;
+	height: 68px;
+	padding: 5px;
+	border: 1px solid rgba(255, 255, 255, 0.72);
+	border-radius: 12px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	overflow: hidden;
-	background: #fff;
-	border: 1px solid #dcdcde;
-	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	background: rgba(255, 255, 255, 0.045);
+	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
+	box-sizing: border-box;
+	overflow: visible;
+	flex: 0 0 auto;
 }
 
+.pnpc-psd-logo-treatment img,
 .pnpc-psd-dashboard .psd-logo img {
+	display: block;
+	width: 100%;
+	height: 100%;
 	max-width: 100%;
 	max-height: 100%;
-	display: block;
+	object-fit: contain;
 }
 
 .pnpc-psd-dashboard .psd-logo--placeholder {
@@ -248,14 +257,6 @@
 	z-index: 1;
 }
 
-.pnpc-psd-dashboard .psd-logo {
-	width: 58px;
-	height: 58px;
-	border-radius: 16px;
-	border-color: rgba(255, 255, 255, .44);
-	box-shadow: 0 12px 24px rgba(0, 0, 0, .16);
-}
-
 .pnpc-psd-dashboard .psd-title,
 .pnpc-psd-dashboard .psd-subtitle {
 	color: #fff;
@@ -340,4 +341,136 @@
 .pnpc-psd-dashboard .psd-support-card p {
 	margin: 4px 0 0;
 	color: #5d500f;
+}
+
+/* Alert Inbox state/action polish. */
+.pnpc-psd-dashboard .psd-alert-heading {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.pnpc-psd-dashboard .psd-alert-dismiss {
+	width: 28px;
+	height: 28px;
+	min-width: 28px;
+	border-radius: 999px;
+	color: #7a5d00;
+	line-height: 1;
+	text-decoration: none;
+}
+
+.pnpc-psd-dashboard .psd-alert-dismiss:hover,
+.pnpc-psd-dashboard .psd-alert-dismiss:focus {
+	background: rgba(122, 93, 0, .10);
+	color: #4f3c00;
+}
+
+.pnpc-psd-dashboard .psd-alert-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Launch polish for admin ticket list. */
+.wrap.pnpc-psd-ticket-list-page {
+	--pnpc-psd-deep: #14324d;
+	--pnpc-psd-blue: #2271b1;
+	--pnpc-psd-soft: #f6f9fb;
+	--pnpc-psd-line: #dce6ee;
+}
+
+.pnpc-psd-ticket-list-hero {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+	margin: 14px 0 18px;
+	padding: 20px 22px;
+	border-radius: 18px;
+	background: linear-gradient(135deg, var(--pnpc-psd-deep) 0%, #1f6f95 64%, #2d9a89 100%);
+	box-shadow: 0 16px 40px rgba(20, 50, 77, .14);
+	color: #fff;
+}
+
+.pnpc-psd-ticket-list-hero h1 {
+	margin: 0;
+	color: #fff;
+	font-size: 24px;
+	line-height: 1.2;
+}
+
+.pnpc-psd-ticket-list-hero p {
+	margin: 4px 0 0;
+	color: rgba(255, 255, 255, .88);
+}
+
+.pnpc-psd-ticket-list-actions {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.pnpc-psd-ticket-list-actions .button {
+	border-color: rgba(255, 255, 255, .55);
+	background: rgba(255, 255, 255, .94);
+	color: var(--pnpc-psd-deep);
+	font-weight: 650;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, .10);
+}
+
+.pnpc-psd-ticket-list-page .subsubsub {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	float: none;
+	margin: 0 0 14px;
+}
+
+.pnpc-psd-ticket-list-page .subsubsub li {
+	margin: 0;
+	padding: 0;
+	color: transparent;
+}
+
+.pnpc-psd-ticket-list-page .subsubsub a {
+	display: inline-flex;
+	align-items: center;
+	padding: 7px 11px;
+	border: 1px solid var(--pnpc-psd-line);
+	border-radius: 999px;
+	background: #fff;
+	color: #14324d;
+	font-weight: 650;
+	text-decoration: none;
+}
+
+.pnpc-psd-ticket-list-page .subsubsub a.current,
+.pnpc-psd-ticket-list-page .subsubsub a:hover,
+.pnpc-psd-ticket-list-page .subsubsub a:focus {
+	background: #eaf4fb;
+	border-color: #9cc8e5;
+	color: #0b5f93;
+}
+
+.pnpc-psd-ticket-list-page #pnpc-psd-tickets-table {
+	border: 1px solid var(--pnpc-psd-line);
+	border-radius: 16px;
+	box-shadow: 0 10px 28px rgba(20, 50, 77, .07);
+	overflow: hidden;
+}
+
+.pnpc-psd-ticket-list-page #pnpc-psd-tickets-table thead th,
+.pnpc-psd-ticket-list-page #pnpc-psd-tickets-table thead td {
+	background: #f3f7fa;
+	border-bottom: 1px solid var(--pnpc-psd-line);
+	color: #14324d;
+	font-weight: 700;
+}
+
+.pnpc-psd-ticket-list-page #pnpc-psd-tickets-table tbody tr:hover td,
+.pnpc-psd-ticket-list-page #pnpc-psd-tickets-table tbody tr:hover th {
+	background: #fbfdff;
 }

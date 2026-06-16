@@ -132,7 +132,8 @@ var $panel = $('<div/>', {
 			loadList(ticketId, $list, $status, i18n, badges);
 		}
 
-		// Load notes on first open.
+		// Load immediately so the existing-notes indicator is visible before the panel is opened.
+		ensureLoaded();
 
 		$toggle.on('click', function () {
 			ensureLoaded();

@@ -1097,3 +1097,104 @@ function pnpcPsdRemoveSelectedTicketRows(selectedIds) {
 	});
 
 })( jQuery );
+/* Ticket-detail lightweight activity indicators. */
+(function($) {
+	'use strict';
+	$(function() {
+		var $detail = $('#pnpc-psd-ticket-detail');
+		if (!$detail.length || typeof pnpcPsdAdmin === 'undefined') {
+			return;
+		}
+		var ticketId = parseInt($detail.attr('data-ticket-id') || '0', 10);
+		if (!ticketId) {
+			return;
+		}
+		var baseline = null;
+		function getBadge($el, cls, label) {
+			var $badge = $el.find('.' + cls);
+			if (!$badge.length) {
+				$badge = $('<span/>', { 'class': 'pnpc-psd-live-tab-badge ' + cls, text: label || 'New' }).hide();
+				$el.append($badge);
+			}
+			return $badge;
+		}
+		function setBadge($el, cls, show, label) {
+			if (!$el.length) { return; }
+			getBadge($el, cls, label).toggle(!!show);
+		}
+		function refreshCustomerThread(markBaseline) {
+			var $refreshButton = $('.pnpc-psd-conversation-refresh-button').first();
+			$refreshButton.addClass('is-refreshing').attr('aria-busy', 'true');
+			$.ajax({
+				url: pnpcPsdAdmin.ajax_url,
+				type: 'POST',
+				dataType: 'json',
+				data: { action: 'pnpc_psd_admin_ticket_conversation_html', nonce: pnpcPsdAdmin.nonce, ticket_id: ticketId }
+			}).done(function(resp) {
+				if (resp && resp.success && resp.data && typeof resp.data.html === 'string') {
+					$('.pnpc-psd-conversation-modern-card .pnpc-psd-message-thread').first().html(resp.data.html);
+					$(document).trigger('pnpc_psd_attachment_gallery_refresh');
+					if (markBaseline) { baseline = null; poll(); }
+				}
+			}).always(function() {
+				$refreshButton.removeClass('is-refreshing').removeAttr('aria-busy');
+			});
+		}
+		function customerTab() {
+			return $('.pnpc-psd-reply-tab').filter(function() { return /client|customer/i.test($(this).text()); }).first();
+		}
+		function ensureConversationRefreshButton() {
+			var $header = $('.pnpc-psd-conversation-modern-header').first();
+			if (!$header.length || $header.find('.pnpc-psd-conversation-refresh-button').length) {
+				return;
+			}
+			$header.append('<button type="button" class="button button-small pnpc-psd-conversation-refresh-button" title="Refresh conversation" aria-label="Refresh conversation"><span class="dashicons dashicons-update" aria-hidden="true"></span></button>');
+		}
+		ensureConversationRefreshButton();
+		function poll() {
+			$.ajax({
+				url: pnpcPsdAdmin.ajax_url,
+				type: 'POST',
+				dataType: 'json',
+				data: { action: 'pnpc_psd_admin_ticket_activity_state', nonce: pnpcPsdAdmin.nonce, ticket_id: ticketId }
+			}).done(function(resp) {
+				if (!(resp && resp.success && resp.data)) { return; }
+				var data = resp.data;
+				if (!baseline) {
+					baseline = data;
+					return;
+				}
+				var customerNew = parseInt(data.customer_count, 10) > parseInt(baseline.customer_count || 0, 10);
+				var attachmentNew = parseInt(data.attachment_count || 0, 10) > parseInt(baseline.attachment_count || 0, 10);
+				var internalNew = parseInt(data.internal_count, 10) > parseInt(baseline.internal_count || 0, 10);
+				setBadge(customerTab(), 'pnpc-psd-live-tab-badge-customer', customerNew, 'New');
+				setBadge($('.pnpc-psd-pro-internal-tab, .pnpc-psd-pro-internal-discussion-tab').first(), 'pnpc-psd-live-tab-badge-internal', internalNew, 'New');
+				if ((customerNew || attachmentNew) && customerTab().hasClass('is-active')) { refreshCustomerThread(true); }
+				if (internalNew && $('.pnpc-psd-pro-internal-discussion-tab').first().hasClass('is-active')) { $('.pnpc-psd-pro-internal-discussion-tab').first().trigger('pnpcPsdRefreshInternalDiscussion'); }
+			});
+		}
+		setInterval(poll, 10000);
+		poll();
+		$(document).on('click', '.pnpc-psd-conversation-refresh-button', function() {
+			refreshCustomerThread(true);
+		});
+		$(document).on('click', '.pnpc-psd-reply-tab, .pnpc-psd-pro-internal-tab, .pnpc-psd-pro-internal-discussion-tab', function() {
+			$(this).find('.pnpc-psd-live-tab-badge').hide();
+			if ($(this).is(customerTab())) { refreshCustomerThread(true); }
+			poll();
+		});
+	});
+})(jQuery);
+
+/* Hide empty WordPress notice containers on Service Desk screens. */
+(function($) {
+	'use strict';
+	$(function() {
+		$('.notice, .pnpc-psd-message').each(function() {
+			var $notice = $(this);
+			if (!$notice.text().trim() && !$notice.find('input, button, a, select, textarea, img, svg').length) {
+				$notice.hide();
+			}
+		});
+	});
+})(jQuery);

@@ -19,33 +19,35 @@ $closed_count = count(array_filter($tickets, function ($ticket) {
 	return 'closed' === $ticket->status;
 }));
 
-// Count individual unread support replies across the customer's active tickets.
-$updated_open_count = 0;
-if ( $user_id && class_exists( 'PNPC_PSD_Ticket_Response' ) && method_exists( 'PNPC_PSD_Ticket_Response', 'count_unread_for_customer' ) ) {
-	$updated_open_count = PNPC_PSD_Ticket_Response::count_unread_for_customer( $user_id );
-}
+// Count unread customer-facing ticket updates. This must represent unviewed updates,
+// not merely the presence of an open ticket. Keep this aligned with the My Tickets
+// green-dot semantics by counting actual responses after the customer's last view.
+$updated_open_count = ( $user_id && class_exists( 'PNPC_PSD_Ticket_Response' ) && method_exists( 'PNPC_PSD_Ticket_Response', 'count_unread_tickets_for_customer' ) )
+	? (int) PNPC_PSD_Ticket_Response::count_unread_tickets_for_customer( $user_id )
+	: 0;
 ?>
-<div class="pnpc-psd-dashboard">
+<div class="pnpc-psd-dashboard" data-pnpc-psd-dashboard="1">
 
 	<?php if ((bool) get_option('pnpc_psd_show_welcome_service_desk', 1) && $user_id) : ?>
-		<h2><?php printf(esc_html__('Welcome, %s!', 'pnpc-pocket-service-desk'), esc_html($current_user->display_name)); ?></h2>
+		<h2><?php /* translators: %s: current user's display name. */ printf(esc_html__('Welcome, %s!', 'pnpc-pocket-service-desk'), esc_html($current_user->display_name)); ?></h2>
 	<?php endif; ?>
 
-	<div class="pnpc-psd-ticket-totals" style="max-width:760px;margin:16px 0;padding:20px;border-radius:8px;background:linear-gradient(180deg,#ffffff,#f7f9fb);box-shadow:0 1px 4px rgba(0,0,0,0.04);border:1px solid #e6eef6;">
-		<h3 style="margin-top:0;color:#234; font-size:1.15rem;"><?php esc_html_e('Ticket Totals', 'pnpc-pocket-service-desk'); ?></h3>
-		<div style="display:flex;gap:20px;align-items:stretch;">
-			<div class="pnpc-psd-dashboard-total-card" style="flex:1;padding:12px;border-radius:6px;background:#fff;border:1px solid #e6eef6;text-align:center;">
-				<?php if (! empty($updated_open_count)) : ?>
-					<span class="pnpc-psd-new-indicator-badge pnpc-psd-dashboard-alert-badge" title="<?php esc_attr_e('New unread activity', 'pnpc-pocket-service-desk'); ?>" aria-label="<?php esc_attr_e('New unread activity', 'pnpc-pocket-service-desk'); ?>"><?php esc_html_e('New', 'pnpc-pocket-service-desk'); ?></span>
-				<?php endif; ?>
-				<div style="font-size:20px;font-weight:700;color:#e05a4f;">
+	<div class="pnpc-psd-ticket-totals">
+		<div class="pnpc-psd-ticket-totals-header">
+			<h3><?php esc_html_e('Ticket Totals', 'pnpc-pocket-service-desk'); ?></h3>
+			<p><?php esc_html_e('A live snapshot of your support activity.', 'pnpc-pocket-service-desk'); ?></p>
+		</div>
+		<div class="pnpc-psd-ticket-total-grid">
+			<div class="pnpc-psd-dashboard-total-card pnpc-psd-dashboard-total-card-open">
+				<span class="pnpc-psd-new-indicator-badge pnpc-psd-dashboard-alert-badge<?php echo ! empty( $updated_open_count ) ? ' is-visible' : ''; ?>" data-pnpc-psd-dashboard-alert="1" title="<?php esc_attr_e('New unread activity', 'pnpc-pocket-service-desk'); ?>" aria-label="<?php esc_attr_e('New unread activity', 'pnpc-pocket-service-desk'); ?>" <?php echo empty( $updated_open_count ) ? 'hidden' : ''; ?>><?php esc_html_e('New', 'pnpc-pocket-service-desk'); ?></span>
+				<div class="pnpc-psd-total-number" data-pnpc-psd-open-count="1">
 					<?php echo esc_html($open_count); ?>
 				</div>
-				<div style="color:#666;"><?php esc_html_e('Open / In-Progress', 'pnpc-pocket-service-desk'); ?></div>
+				<div class="pnpc-psd-total-label"><?php esc_html_e('Open / In-Progress', 'pnpc-pocket-service-desk'); ?></div>
 			</div>
-			<div style="flex:1;padding:12px;border-radius:6px;background:#fff;border:1px solid #e6eef6;text-align:center;">
-				<div style="font-size:20px;font-weight:700;color:#2b9f6a;"><?php echo esc_html($closed_count); ?></div>
-				<div style="color:#666;"><?php esc_html_e('Closed', 'pnpc-pocket-service-desk'); ?></div>
+			<div class="pnpc-psd-dashboard-total-card pnpc-psd-dashboard-total-card-closed">
+				<div class="pnpc-psd-total-number" data-pnpc-psd-closed-count="1"><?php echo esc_html($closed_count); ?></div>
+				<div class="pnpc-psd-total-label"><?php esc_html_e('Closed', 'pnpc-pocket-service-desk'); ?></div>
 			</div>
 		</div>
 	</div>

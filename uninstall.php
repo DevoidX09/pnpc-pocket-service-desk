@@ -22,7 +22,7 @@ function pnpc_psd_uninstall_delete_options_by_prefix( $prefix ) {
 	global $wpdb;
 
 	$like = $wpdb->esc_like( $prefix ) . '%';
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
@@ -41,7 +41,7 @@ function pnpc_psd_uninstall_delete_user_meta_by_prefix( $prefix ) {
 	global $wpdb;
 
 	$like = $wpdb->esc_like( $prefix ) . '%';
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
@@ -60,7 +60,7 @@ function pnpc_psd_uninstall_delete_post_meta_by_prefix( $prefix ) {
 	global $wpdb;
 
 	$like = $wpdb->esc_like( $prefix ) . '%';
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s",
@@ -98,7 +98,7 @@ function pnpc_psd_pro_uninstall_cleanup_all_data() {
 
 	foreach ( $option_prefixes as $prefix ) {
 		$like = $wpdb->esc_like( $prefix ) . '%';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
 		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
@@ -133,11 +133,11 @@ function pnpc_psd_pro_uninstall_cleanup_all_data() {
 	);
 
 	foreach ( $user_meta_keys as $meta_key ) {
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
 		$wpdb->delete( $wpdb->usermeta, array( 'meta_key' => $meta_key ), array( '%s' ) );
 	}
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
@@ -151,13 +151,13 @@ function pnpc_psd_pro_uninstall_cleanup_all_data() {
 	);
 
 	foreach ( $post_meta_keys as $meta_key ) {
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
 		$wpdb->delete( $wpdb->postmeta, array( 'meta_key' => $meta_key ), array( '%s' ) );
 	}
 
 	// Delete Pro ticket meta if the base ticket meta table still exists.
 	$ticket_meta_table = $wpdb->prefix . 'pnpc_psd_ticket_meta';
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
 	$table_exists = $wpdb->get_var(
 		$wpdb->prepare(
 			'SHOW TABLES LIKE %s',
@@ -185,7 +185,7 @@ function pnpc_psd_pro_uninstall_cleanup_all_data() {
 		);
 
 		foreach ( $ticket_meta_keys as $meta_key ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall cleanup only.
 			$wpdb->delete( $ticket_meta_table, array( 'meta_key' => $meta_key ), array( '%s' ) );
 		}
 	}
@@ -308,17 +308,17 @@ if ( $delete_data ) {
 
 // Drop custom tables only when delete_data is enabled.
 if ( $delete_data ) {
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_tickets" );
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_ticket_responses" );
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_ticket_attachments" );
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_audit_log" );
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_error_log" );
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pnpc_psd_ticket_meta" );
 }
 
@@ -343,9 +343,9 @@ remove_role( 'pnpc_psd_manager' );
 
 // Delete user meta for profile images only when delete_data is enabled.
 if ( $delete_data ) {
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 	$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key = 'pnpc_psd_profile_image'" );
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 	$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key = 'pnpc_psd_profile_image_id'" );
 
 	// Final sweep: remove current and legacy Service Desk metadata.

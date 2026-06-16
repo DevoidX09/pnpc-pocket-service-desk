@@ -63,7 +63,7 @@ class PNPC_PSD_Audit_Log {
 
 		$formats = array( '%d', '%d', '%s', '%s', '%s' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$ok = $wpdb->insert( $table, $data, $formats );
 
 		if ( false === $ok ) {
@@ -87,7 +87,8 @@ class PNPC_PSD_Audit_Log {
 	 */
 	private static function enforce_retention_cap( $cap ) {
 		global $wpdb;
-		$table = $wpdb->prefix . 'pnpc_psd_audit_log';
+		$table     = $wpdb->prefix . 'pnpc_psd_audit_log';
+		$table_sql = esc_sql( $table );
 		$cap   = absint( $cap );
 		if ( $cap < 1 ) {
 			return;
@@ -96,11 +97,11 @@ class PNPC_PSD_Audit_Log {
 		// MySQL requires a derived table when deleting with a subquery on the same table.
 		// Use prepared statement for security compliance.
 		$sql = $wpdb->prepare(
-			"DELETE FROM {$table} WHERE id NOT IN (SELECT id FROM (SELECT id FROM {$table} ORDER BY id DESC LIMIT %d) t)",
+			"DELETE FROM {$table_sql} WHERE id NOT IN (SELECT id FROM (SELECT id FROM {$table_sql} ORDER BY id DESC LIMIT %d) t)",
 			$cap
 		);
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$wpdb->query( $sql );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- SQL is built from fixed schema fragments and prepared values above.
 	}
 
 	/**
@@ -116,7 +117,7 @@ class PNPC_PSD_Audit_Log {
 		$ticket_id = absint( $ticket_id );
 		$limit    = max( 1, absint( $limit ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT * FROM {$table} WHERE ticket_id = %d ORDER BY id DESC LIMIT %d",

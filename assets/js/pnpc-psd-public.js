@@ -8,11 +8,15 @@
 		// Customer dashboard alert badge is intentionally a boolean activity indicator.
 		// Do not show an unreliable numeric count here.
 		$('.pnpc-psd-dashboard .pnpc-psd-dashboard-total-card .pnpc-psd-new-indicator-badge').each(function() {
-			$(this)
+			var $badge = $(this);
+			$badge
 				.addClass('pnpc-psd-dashboard-alert-badge')
 				.text('New')
 				.attr('title', 'New unread activity')
 				.attr('aria-label', 'New unread activity');
+			if (!$badge.hasClass('is-visible')) {
+				$badge.prop('hidden', true);
+			}
 		});
 
 		var createFiles = [];
@@ -68,6 +72,125 @@
 				}
 			});
 		});
+
+		// ================================
+		// Service Desk dashboard totals: Lightweight refresh/polling
+		// ================================
+		function ensureDashboardAlertBadge($card) {
+			var $badge = $card.find('[data-pnpc-psd-dashboard-alert="1"]');
+			if (!$badge.length) {
+				$badge = $('<span/>', {
+					class: 'pnpc-psd-new-indicator-badge pnpc-psd-dashboard-alert-badge',
+					'data-pnpc-psd-dashboard-alert': '1',
+					title: 'New unread activity',
+					'aria-label': 'New unread activity',
+					text: 'New'
+				});
+				$card.prepend($badge);
+			}
+			return $badge;
+		}
+
+		function getViewedTicketIds() {
+			var raw = '';
+			try {
+				raw = window.localStorage ? (window.localStorage.getItem('pnpcPsdViewedTickets') || '') : '';
+			} catch (e) {
+				raw = '';
+			}
+			return raw.split(',').map(function(id) {
+				return parseInt(id, 10) || 0;
+			}).filter(function(id, index, list) {
+				return id > 0 && list.indexOf(id) === index;
+			});
+		}
+
+		function rememberViewedTicket(ticketId) {
+			ticketId = parseInt(ticketId, 10) || 0;
+			if (!ticketId) {
+				return;
+			}
+			try {
+				if (!window.localStorage) {
+					return;
+				}
+				var ids = getViewedTicketIds();
+				if (ids.indexOf(ticketId) === -1) {
+					ids.push(ticketId);
+				}
+				window.localStorage.setItem('pnpcPsdViewedTickets', ids.slice(-50).join(','));
+			} catch (e) {}
+		}
+
+		function getCurrentTicketIdFromUrl() {
+			var match = window.location.search.match(/[?&]ticket_id=([0-9]+)/);
+			return match ? (parseInt(match[1], 10) || 0) : 0;
+		}
+
+		function markCurrentTicketViewed() {
+			var ticketId = getCurrentTicketIdFromUrl();
+			if (!ticketId || !$('.pnpc-psd-ticket-detail').length || typeof pnpcPsdPublic === 'undefined') {
+				return;
+			}
+			rememberViewedTicket(ticketId);
+			$.ajax({
+				url: pnpcPsdPublic.ajax_url,
+				type: 'POST',
+				data: {
+					action: 'pnpc_psd_get_ticket_detail',
+					nonce: pnpcPsdPublic.nonce,
+					ticket_id: ticketId
+				}
+			}).always(function() {
+				$(document).trigger('pnpc:dashboardTotalsChanged');
+			});
+		}
+
+		function refreshDashboardTotals() {
+			var $dashboard = $('[data-pnpc-psd-dashboard="1"]');
+			if (!$dashboard.length || typeof pnpcPsdPublic === 'undefined') {
+				return;
+			}
+			$.ajax({
+				url: pnpcPsdPublic.ajax_url,
+				type: 'POST',
+				data: {
+					action: 'pnpc_psd_get_dashboard_totals',
+					nonce: pnpcPsdPublic.nonce,
+					viewed_ticket_ids: getViewedTicketIds().join(',')
+				},
+				success: function(result) {
+					if (!(result && result.success && result.data)) {
+						return;
+					}
+					$dashboard.find('[data-pnpc-psd-open-count="1"]').text(String(result.data.open_count || 0));
+					$dashboard.find('[data-pnpc-psd-closed-count="1"]').text(String(result.data.closed_count || 0));
+					var $card = $dashboard.find('.pnpc-psd-dashboard-total-card').first();
+					if ($card.length) {
+						var $badge = ensureDashboardAlertBadge($card);
+						var hasUnread = !!result.data.has_unread;
+						$badge.toggleClass('is-visible', hasUnread);
+						$badge.prop('hidden', !hasUnread);
+						$badge.attr('aria-hidden', hasUnread ? 'false' : 'true');
+					}
+				}
+			});
+		}
+
+		markCurrentTicketViewed();
+
+		if ($('[data-pnpc-psd-dashboard="1"]').length) {
+			refreshDashboardTotals();
+			setInterval(refreshDashboardTotals, 7000);
+			$(document).on('visibilitychange focus pnpc:dashboardTotalsChanged', function() {
+				if (!document.hidden) {
+					refreshDashboardTotals();
+				}
+			});
+			$(window).on('pageshow', function() {
+				refreshDashboardTotals();
+			});
+		}
 
 		// ================================
 		// My Tickets: Lightweight refresh/polling
@@ -226,8 +349,12 @@
 						$form.data('pnpcCreateFiles', createFiles);
 						renderAttachmentList(createFiles, $form.find('.pnpc-psd-attachments-list'), '#ticket-attachments');
 						$form[0].reset();
-						// Allow creating another ticket without leaving the page.
-						$submitBtn.prop('disabled', false);
+						// Keep the customer dashboard in sync after a new ticket is created.
+						// A lightweight reload is the safest launch-path behavior because it refreshes
+						// My Support Tickets, Ticket Totals, and notification badges together.
+						setTimeout(function() {
+							window.location.reload();
+						}, 900);
 
 					} else if (result && result.data && result.data.message) {
 						showCreateMessage('error', result.data.message, $form);

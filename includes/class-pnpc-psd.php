@@ -121,6 +121,8 @@ class PNPC_PSD
 		// Real-time update AJAX handlers
 		$this->loader->add_action('wp_ajax_pnpc_psd_get_new_ticket_count', $plugin_admin, 'ajax_get_new_ticket_count');
 		$this->loader->add_action('wp_ajax_pnpc_psd_refresh_ticket_list', $plugin_admin, 'ajax_refresh_ticket_list');
+		$this->loader->add_action('wp_ajax_pnpc_psd_admin_ticket_activity_state', $plugin_admin, 'ajax_ticket_activity_state');
+		$this->loader->add_action('wp_ajax_pnpc_psd_admin_ticket_conversation_html', $plugin_admin, 'ajax_ticket_conversation_html');
 
 		// Client Notes (free): list/add/delete via AJAX.
 		$this->loader->add_action( 'wp_ajax_pnpc_psd_client_notes_list', $internal_notes, 'ajax_list' );
@@ -161,6 +163,7 @@ $this->loader->add_action('wp_ajax_pnpc_psd_create_ticket', $plugin_public, 'aja
 		$this->loader->add_action('wp_ajax_pnpc_psd_respond_to_ticket', $plugin_public, 'ajax_respond_to_ticket');
 		$this->loader->add_action('wp_ajax_pnpc_psd_upload_profile_image', $plugin_public, 'ajax_upload_profile_image');
 		$this->loader->add_action('wp_ajax_pnpc_psd_refresh_my_tickets', $plugin_public, 'ajax_refresh_my_tickets');
+		$this->loader->add_action('wp_ajax_pnpc_psd_get_dashboard_totals', $plugin_public, 'ajax_get_dashboard_totals');
 		$this->loader->add_action('wp_ajax_pnpc_psd_get_ticket_detail', $plugin_public, 'ajax_get_ticket_detail');
 	}
 
